@@ -1,0 +1,38 @@
+/* src/assets/styles/globals.css */
+
+  @tailwind base;
+  @tailwind components;
+  @tailwind utilities;
+  
+  body {
+    font-family: 'Inter', sans-serif;
+    @apply bg-gray-50;
+  }
+  
+  .btn {
+    @apply px-4 py-2 rounded-md font-medium transition-colors duration-200;
+  }
+  
+  .btn-primary {
+    @apply bg-blue-600 text-white hover:bg-blue-700;
+  }
+  
+  .btn-secondary {
+    @apply bg-gray-200 text-gray-800 hover:bg-gray-300;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 text-white hover:bg-red-700;
+  }
+  
+  .input-field {
+    @apply w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500;
+  }
+  
+  .card {
+    @apply bg-white rounded-lg shadow-md p-4;
+  }
+  
+  .section-title {
+    @apply text-xl font-semibold text-gray-800 mb-4;
+  }

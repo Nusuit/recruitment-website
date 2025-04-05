@@ -1,0 +1,106 @@
+/* Base styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: 'Arial', sans-serif;
+  line-height: 1.6;
+  color: #333;
+  background-color: #f4f4f4;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 15px;
+}
+
+/* Header */
+header {
+  background-color: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 1rem 0;
+}
+
+/* Navigation */
+nav ul {
+  display: flex;
+  list-style: none;
+}
+
+nav ul li {
+  margin-right: 20px;
+}
+
+nav ul li a {
+  text-decoration: none;
+  color: #333;
+  font-weight: 500;
+}
+
+nav ul li a:hover {
+  color: #007bff;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  padding: 8px 16px;
+  background-color: #007bff;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.btn:hover {
+  background-color: #0056b3;
+}
+
+/* Forms */
+.form-group {
+  margin-bottom: 15px;
+}
+
+.form-control {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+
+/* Cards */
+.card {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+
+/* Job listings */
+.job-listing {
+  border-bottom: 1px solid #eee;
+  padding: 15px 0;
+}
+
+/* Dashboard sections */
+.dashboard-section {
+  margin-bottom: 30px;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  nav ul {
+    flex-direction: column;
+  }
+  
+  nav ul li {
+    margin-bottom: 10px;
+  }
+}

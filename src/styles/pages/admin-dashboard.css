@@ -71,14 +71,14 @@
   .collapse-icon {
     width: 20px;
     height: 20px;
-    background-image: url('/assets/images/icons/collapse.svg');
+    background-image: url('../../../public/assets/images/icons/minimize.svg');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
   }
   
   .collapse-icon.expand {
-    background-image: url('/assets/images/icons/expand.svg');
+    background-image: url('../../../public/assets/images/icons/maximize.svg');
   }
   
   /* Admin Info */
@@ -223,7 +223,7 @@
     padding-left: 36px;
     border: 1px solid var(--gray-300);
     border-radius: var(--border-radius-full);
-    background-image: url('/assets/images/icons/search.svg');
+    background-image: url('../../../public/assets/images/icons/search.svg');
     background-size: 16px;
     background-repeat: no-repeat;
     background-position: 12px center;
@@ -296,7 +296,7 @@
   .dropdown-arrow {
     width: 16px;
     height: 16px;
-    background-image: url('/assets/images/icons/chevron-down.svg');
+    background-image: url('../../../public/assets/images/icons/chevron.svg');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;

@@ -1,0 +1,82 @@
+/* Form Elements */
+.form-group {
+  margin-bottom: var(--spacing-3);
+}
+
+.form-label {
+  display: block;
+  margin-bottom: var(--spacing-1);
+  font-weight: 500;
+}
+
+.form-control {
+  display: block;
+  width: 100%;
+  padding: var(--spacing-2);
+  font-size: var(--font-size-md);
+  line-height: 1.5;
+  color: var(--text-primary);
+  background-color: var(--white);
+  background-clip: padding-box;
+  border: 1px solid var(--secondary-light);
+  border-radius: var(--border-radius);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+  border-color: var(--primary-light);
+  outline: 0;
+  box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.form-text {
+  display: block;
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--text-secondary);
+}
+
+.form-check {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-2);
+}
+
+.form-check-input {
+  margin-right: var(--spacing-2);
+}
+
+.form-check-label {
+  margin-bottom: 0;
+}
+
+/* Form Validation */
+.is-invalid {
+  border-color: var(--danger);
+}
+
+.invalid-feedback {
+  display: block;
+  width: 100%;
+  margin-top: var(--spacing-1);
+  font-size: var(--font-size-sm);
+  color: var(--danger);
+}
+
+/* Submit Button */
+.form-submit {
+  width: 100%;
+  padding: var(--spacing-2);
+  font-weight: 500;
+}
+
+/* Search Form */
+.search-form {
+  display: flex;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-3);
+}
+
+.search-form .form-control {
+  flex: 1;
+}

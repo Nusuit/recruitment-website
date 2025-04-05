@@ -1,0 +1,123 @@
+/* Home Page */
+.hero-section {
+  background-color: var(--primary);
+  color: var(--white);
+  padding: var(--spacing-5) 0;
+  text-align: center;
+}
+
+.hero-section h1 {
+  font-size: 2.5rem;
+  margin-bottom: var(--spacing-3);
+  color: var(--white);
+}
+
+.hero-section p {
+  font-size: var(--font-size-lg);
+  max-width: 800px;
+  margin: 0 auto var(--spacing-4);
+}
+
+.search-jobs {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  padding: var(--spacing-3);
+  max-width: 800px;
+  margin: 0 auto;
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.search-jobs input {
+  flex: 1;
+  padding: var(--spacing-2);
+  border: 1px solid var(--secondary-light);
+  border-radius: var(--border-radius);
+}
+
+/* Featured Jobs Section */
+.featured-jobs {
+  padding: var(--spacing-5) 0;
+}
+
+.section-title {
+  text-align: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.jobs-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-3);
+}
+
+.job-card {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.job-card:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-md);
+}
+
+.job-card-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+}
+
+.company-logo {
+  width: 50px;
+  height: 50px;
+  margin-right: var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  object-fit: contain;
+  background-color: var(--light);
+}
+
+.job-title {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-1);
+}
+
+.company-name {
+  color: var(--text-secondary);
+}
+
+.job-details {
+  margin-bottom: var(--spacing-3);
+}
+
+.job-meta {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-2);
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+/* Authentication Pages */
+.auth-container {
+  max-width: 450px;
+  margin: 0 auto;
+  padding: var(--spacing-4);
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.auth-header {
+  text-align: center;
+  margin-bottom: var(--spacing-4);
+}
+
+.auth-footer {
+  text-align: center;
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--light);
+}

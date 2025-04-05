@@ -2,11 +2,54 @@ import axios from 'axios';
 
 // Create axios instance for auth API
 const authAPI = axios.create({
-  baseURL: process.env.REACT_APP_API_URL || '/api',
+  baseURL: '/api',
   headers: {
     'Content-Type': 'application/json'
   }
 });
+
+// Dữ liệu mẫu cho người dùng
+const mockUsers = [
+  {
+    id: 1,
+    name: "Nguyễn Văn A",
+    email: "admin@example.com",
+    password: "password123",
+    role: "admin",
+    phone: "0987654321",
+    address: "Hà Nội, Việt Nam",
+    avatar: null,
+    createdAt: "2023-07-10T08:30:00Z",
+    verified: true
+  },
+  {
+    id: 2,
+    name: "Trần Thị B",
+    email: "user@example.com",
+    password: "password123",
+    role: "user",
+    phone: "0123456789",
+    address: "Hồ Chí Minh, Việt Nam",
+    avatar: null,
+    createdAt: "2023-07-15T10:45:00Z",
+    verified: true
+  },
+  {
+    id: 3,
+    name: "Lê Văn C",
+    email: "employer@example.com",
+    password: "password123",
+    role: "employer",
+    phone: "0369852147",
+    address: "Đà Nẵng, Việt Nam",
+    avatar: null,
+    createdAt: "2023-07-20T14:15:00Z",
+    verified: true
+  }
+];
+
+// Mock tokens for password reset and email verification
+const mockTokens = [];
 
 // Add token to requests if available
 authAPI.interceptors.request.use(config => {
@@ -42,41 +85,66 @@ authAPI.interceptors.response.use(
 // Login user
 export const login = async (email, password) => {
   try {
-    const response = await authAPI.post('/auth/login', {
-      email,
-      password
-    });
+    // Tìm user trong dữ liệu mẫu
+    const user = mockUsers.find(user => 
+      user.email === email && user.password === password
+    );
     
-    // Store token and user data
-    const { token, user } = response.data;
-    localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
-    
-    return { success: true, user };
+    if (user) {
+      // Không gửi mật khẩu về client
+      const { password, ...userWithoutPassword } = user;
+      
+      // Tạo token giả
+      const token = `mock-token-${user.id}-${Date.now()}`;
+      
+      // Lưu token và thông tin người dùng
+      localStorage.setItem('token', token);
+      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
+      
+      return { success: true, user: userWithoutPassword };
+    } else {
+      return { success: false, error: 'Invalid email or password.' };
+    }
   } catch (error) {
     console.error('Login error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Login failed. Please check your credentials.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Login failed. Please check your credentials.' };
   }
 };
 
 // Register user
 export const register = async (userData) => {
   try {
-    const response = await authAPI.post('/auth/register', userData);
+    // Kiểm tra email đã tồn tại chưa
+    if (mockUsers.some(user => user.email === userData.email)) {
+      return { success: false, error: 'Email already exists.' };
+    }
     
-    // Store token and user data if auto-login
-    const { token, user } = response.data;
+    // Tạo người dùng mới
+    const newUser = {
+      id: mockUsers.length + 1,
+      ...userData,
+      role: userData.role || 'user',
+      createdAt: new Date().toISOString(),
+      verified: false // Cần xác minh email
+    };
+    
+    // Thêm vào danh sách người dùng
+    mockUsers.push(newUser);
+    
+    // Không gửi mật khẩu về client
+    const { password, ...userWithoutPassword } = newUser;
+    
+    // Tạo token giả
+    const token = `mock-token-${newUser.id}-${Date.now()}`;
+    
+    // Lưu token và thông tin người dùng
     localStorage.setItem('token', token);
-    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem('user', JSON.stringify(userWithoutPassword));
     
-    return { success: true, user };
+    return { success: true, user: userWithoutPassword };
   } catch (error) {
     console.error('Registration error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Registration failed. Please try again.' };
   }
 };
 
@@ -91,55 +159,139 @@ export const logout = () => {
 // Forgot password
 export const forgotPassword = async (email) => {
   try {
-    const response = await authAPI.post('/auth/forgot-password', { email });
-    return { success: true, message: response.data.message };
+    // Kiểm tra email có tồn tại không
+    const user = mockUsers.find(user => user.email === email);
+    
+    if (!user) {
+      return { success: false, error: 'Email not found.' };
+    }
+    
+    // Tạo token reset password
+    const resetToken = `reset-${user.id}-${Date.now()}`;
+    
+    // Lưu token (trong thực tế sẽ lưu vào database)
+    mockTokens.push({
+      userId: user.id,
+      token: resetToken,
+      type: 'reset',
+      expiresAt: new Date(Date.now() + 3600000).toISOString() // Hết hạn sau 1 giờ
+    });
+    
+    console.log(`Reset password link would be sent to ${email} with token: ${resetToken}`);
+    
+    return { 
+      success: true, 
+      message: 'Password reset instructions have been sent to your email.' 
+    };
   } catch (error) {
     console.error('Forgot password error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Failed to process forgot password request.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Failed to process forgot password request.' };
   }
 };
 
 // Reset password
 export const resetPassword = async (token, password) => {
   try {
-    const response = await authAPI.post('/auth/reset-password', {
-      token,
-      password
-    });
+    // Tìm token trong danh sách
+    const tokenData = mockTokens.find(t => t.token === token && t.type === 'reset');
     
-    return { success: true, message: response.data.message };
+    if (!tokenData) {
+      return { success: false, error: 'Invalid or expired token.' };
+    }
+    
+    // Kiểm tra token hết hạn chưa
+    if (new Date(tokenData.expiresAt) < new Date()) {
+      return { success: false, error: 'Token has expired.' };
+    }
+    
+    // Tìm user và cập nhật mật khẩu
+    const userIndex = mockUsers.findIndex(user => user.id === tokenData.userId);
+    
+    if (userIndex !== -1) {
+      mockUsers[userIndex] = {
+        ...mockUsers[userIndex],
+        password
+      };
+      
+      // Xóa token đã sử dụng
+      const tokenIndex = mockTokens.findIndex(t => t.token === token);
+      if (tokenIndex !== -1) {
+        mockTokens.splice(tokenIndex, 1);
+      }
+      
+      return { success: true, message: 'Password has been reset successfully.' };
+    } else {
+      return { success: false, error: 'User not found.' };
+    }
   } catch (error) {
     console.error('Reset password error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Failed to reset password.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Failed to reset password.' };
   }
 };
 
 // Verify email
 export const verifyEmail = async (token) => {
   try {
-    const response = await authAPI.post('/auth/verify-email', { token });
-    return { success: true, message: response.data.message };
+    // Tìm token trong danh sách
+    const tokenData = mockTokens.find(t => t.token === token && t.type === 'verify');
+    
+    if (!tokenData) {
+      return { success: false, error: 'Invalid or expired token.' };
+    }
+    
+    // Kiểm tra token hết hạn chưa
+    if (new Date(tokenData.expiresAt) < new Date()) {
+      return { success: false, error: 'Token has expired.' };
+    }
+    
+    // Tìm user và cập nhật trạng thái xác minh
+    const userIndex = mockUsers.findIndex(user => user.id === tokenData.userId);
+    
+    if (userIndex !== -1) {
+      mockUsers[userIndex] = {
+        ...mockUsers[userIndex],
+        verified: true
+      };
+      
+      // Xóa token đã sử dụng
+      const tokenIndex = mockTokens.findIndex(t => t.token === token);
+      if (tokenIndex !== -1) {
+        mockTokens.splice(tokenIndex, 1);
+      }
+      
+      return { success: true, message: 'Email has been verified successfully.' };
+    } else {
+      return { success: false, error: 'User not found.' };
+    }
   } catch (error) {
     console.error('Email verification error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Failed to verify email.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Failed to verify email.' };
   }
 };
 
 // Get current user
 export const getCurrentUser = async () => {
   try {
-    const response = await authAPI.get('/auth/me');
-    return { success: true, user: response.data.user };
+    const userJson = localStorage.getItem('user');
+    
+    if (!userJson) {
+      return { success: false };
+    }
+    
+    const user = JSON.parse(userJson);
+    
+    // Kiểm tra xem người dùng có trong hệ thống không
+    const existingUser = mockUsers.find(u => u.id === user.id);
+    
+    if (!existingUser) {
+      // Người dùng không tồn tại, đăng xuất
+      logout();
+      return { success: false };
+    }
+    
+    return { success: true, user };
   } catch (error) {
     console.error('Get current user error:', error);
-    
-    // Not returning error as failure since this might be called on app init
     return { success: false };
   }
 };
@@ -147,34 +299,72 @@ export const getCurrentUser = async () => {
 // Update user profile
 export const updateProfile = async (userData) => {
   try {
-    const response = await authAPI.put('/auth/profile', userData);
+    const currentUser = JSON.parse(localStorage.getItem('user'));
     
-    // Update stored user data
-    localStorage.setItem('user', JSON.stringify(response.data.user));
+    if (!currentUser) {
+      return { success: false, error: 'User not logged in.' };
+    }
     
-    return { success: true, user: response.data.user };
+    // Tìm và cập nhật thông tin người dùng
+    const userIndex = mockUsers.findIndex(user => user.id === currentUser.id);
+    
+    if (userIndex !== -1) {
+      // Các trường không được phép cập nhật
+      const { id, email, role, password, createdAt, verified, ...updatableFields } = userData;
+      
+      // Cập nhật thông tin
+      mockUsers[userIndex] = {
+        ...mockUsers[userIndex],
+        ...updatableFields
+      };
+      
+      // Không gửi mật khẩu về client
+      const { password: pwd, ...updatedUser } = mockUsers[userIndex];
+      
+      // Cập nhật thông tin người dùng trong localStorage
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      
+      return { success: true, user: updatedUser };
+    } else {
+      return { success: false, error: 'User not found.' };
+    }
   } catch (error) {
     console.error('Update profile error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Failed to update profile.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Failed to update profile.' };
   }
 };
 
 // Change password
 export const changePassword = async (currentPassword, newPassword) => {
   try {
-    const response = await authAPI.put('/auth/change-password', {
-      currentPassword,
-      newPassword
-    });
+    const currentUser = JSON.parse(localStorage.getItem('user'));
     
-    return { success: true, message: response.data.message };
+    if (!currentUser) {
+      return { success: false, error: 'User not logged in.' };
+    }
+    
+    // Tìm người dùng
+    const userIndex = mockUsers.findIndex(user => user.id === currentUser.id);
+    
+    if (userIndex !== -1) {
+      // Kiểm tra mật khẩu hiện tại
+      if (mockUsers[userIndex].password !== currentPassword) {
+        return { success: false, error: 'Current password is incorrect.' };
+      }
+      
+      // Cập nhật mật khẩu mới
+      mockUsers[userIndex] = {
+        ...mockUsers[userIndex],
+        password: newPassword
+      };
+      
+      return { success: true, message: 'Password changed successfully.' };
+    } else {
+      return { success: false, error: 'User not found.' };
+    }
   } catch (error) {
     console.error('Change password error:', error);
-    
-    const errorMessage = error.response?.data?.message || 'Failed to change password.';
-    return { success: false, error: errorMessage };
+    return { success: false, error: 'Failed to change password.' };
   }
 };
 

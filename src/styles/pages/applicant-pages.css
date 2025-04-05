@@ -1,0 +1,321 @@
+/* Applicant Dashboard */
+.dashboard-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.stat-card {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+}
+
+.stat-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: var(--spacing-1);
+}
+
+.stat-label {
+  color: var(--text-secondary);
+}
+
+.recent-applications {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-4);
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+}
+
+.applications-list {
+  border-top: 1px solid var(--light);
+}
+
+.application-item {
+  padding: var(--spacing-3) 0;
+  border-bottom: 1px solid var(--light);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.application-info {
+  flex: 1;
+}
+
+.application-job {
+  font-weight: 600;
+  margin-bottom: var(--spacing-1);
+}
+
+.application-company {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.application-date {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.application-status {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius-sm);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.status-applied {
+  background-color: rgba(23, 162, 184, 0.1);
+  color: var(--info);
+}
+
+.status-reviewing {
+  background-color: rgba(255, 193, 7, 0.1);
+  color: var(--warning);
+}
+
+.status-interview {
+  background-color: rgba(0, 123, 255, 0.1);
+  color: var(--primary);
+}
+
+.status-selected {
+  background-color: rgba(40, 167, 69, 0.1);
+  color: var(--success);
+}
+
+.status-rejected {
+  background-color: rgba(220, 53, 69, 0.1);
+  color: var(--danger);
+}
+
+/* Job Search Page */
+.search-filters {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+}
+
+.filter-section {
+  margin-bottom: var(--spacing-3);
+}
+
+.filter-title {
+  font-weight: 600;
+  margin-bottom: var(--spacing-2);
+}
+
+.filter-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-2);
+}
+
+.filter-checkbox {
+  display: flex;
+  align-items: center;
+}
+
+/* Job Details Page */
+.job-detail-header {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+  margin-bottom: var(--spacing-3);
+  display: flex;
+  align-items: center;
+}
+
+.job-detail-logo {
+  width: 80px;
+  height: 80px;
+  margin-right: var(--spacing-3);
+  border-radius: var(--border-radius-sm);
+  object-fit: contain;
+  background-color: var(--light);
+}
+
+.job-detail-info {
+  flex: 1;
+}
+
+.job-detail-title {
+  font-size: var(--font-size-xl);
+  margin-bottom: var(--spacing-1);
+}
+
+.job-detail-company {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-2);
+}
+
+.job-meta-info {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--spacing-3);
+  color: var(--text-secondary);
+}
+
+.job-detail-content {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+}
+
+.job-description {
+  margin-bottom: var(--spacing-4);
+}
+
+.job-section {
+  margin-bottom: var(--spacing-3);
+}
+
+.job-section-title {
+  font-size: var(--font-size-lg);
+  margin-bottom: var(--spacing-2);
+}
+
+.requirements-list,
+.benefits-list {
+  list-style-position: inside;
+  margin-bottom: var(--spacing-3);
+}
+
+.requirements-list li,
+.benefits-list li {
+  margin-bottom: var(--spacing-1);
+}
+
+.application-sidebar {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+  position: sticky;
+  top: var(--spacing-3);
+}
+
+.apply-button {
+  width: 100%;
+  margin-bottom: var(--spacing-3);
+}
+
+.save-job {
+  width: 100%;
+  background-color: transparent;
+  border: 1px solid var(--primary);
+  color: var(--primary);
+}
+
+.save-job:hover {
+  background-color: rgba(0, 123, 255, 0.1);
+}
+
+/* Profile Page */
+.profile-container {
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: var(--spacing-3);
+}
+
+.profile-sidebar {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+}
+
+.profile-avatar {
+  width: 120px;
+  height: 120px;
+  border-radius: 50%;
+  object-fit: cover;
+  margin: 0 auto var(--spacing-3);
+  display: block;
+}
+
+.profile-name {
+  text-align: center;
+  margin-bottom: var(--spacing-1);
+}
+
+.profile-title {
+  text-align: center;
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-3);
+}
+
+.profile-completion {
+  margin-bottom: var(--spacing-3);
+}
+
+.completion-label {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: var(--spacing-1);
+}
+
+.completion-bar {
+  height: 8px;
+  background-color: var(--light);
+  border-radius: var(--border-radius-sm);
+  overflow: hidden;
+}
+
+.completion-progress {
+  height: 100%;
+  background-color: var(--success);
+}
+
+.profile-content {
+  background-color: var(--white);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-3);
+}
+
+.profile-section {
+  margin-bottom: var(--spacing-4);
+}
+
+.profile-section:last-child {
+  margin-bottom: 0;
+}
+
+.section-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: var(--spacing-2);
+  border-bottom: 1px solid var(--light);
+  margin-bottom: var(--spacing-3);
+}
+
+.edit-button {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-1);
+  color: var(--primary);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: var(--font-size-sm);
+}

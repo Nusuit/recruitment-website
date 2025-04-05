@@ -58,7 +58,7 @@
     padding-left: 36px;
     border: 1px solid var(--gray-300);
     border-radius: var(--border-radius);
-    background-image: url('/assets/images/icons/search.svg');
+    /* background-image: url('/assets/images/icons/search.svg'); */
     background-size: 16px;
     background-repeat: no-repeat;
     background-position: 12px center;

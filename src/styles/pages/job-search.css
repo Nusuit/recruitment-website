@@ -70,7 +70,7 @@
     opacity: 0.5;
   }
   
-  .search-input:nth-child(1)::before {
+  /* .search-input:nth-child(1)::before {
     background-image: url('/assets/images/icons/search.svg');
   }
   
@@ -80,7 +80,7 @@
   
   .search-input:nth-child(3)::before {
     background-image: url('/assets/images/icons/category.svg');
-  }
+  } */
   
   .advanced-filter-btn {
     padding: var(--spacing-3) var(--spacing-4);
@@ -324,7 +324,7 @@
   .location-icon {
     width: 16px;
     height: 16px;
-    background-image: url('/assets/images/icons/location.svg');
+    /* background-image: url('/assets/images/icons/location.svg'); */
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -349,7 +349,7 @@
   .salary-icon {
     width: 16px;
     height: 16px;
-    background-image: url('/assets/images/icons/salary.svg');
+    /* background-image: url('/assets/images/icons/salary.svg'); */
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
@@ -387,15 +387,15 @@
   .bookmark-icon {
     width: 20px;
     height: 20px;
-    background-image: url('/assets/images/icons/bookmark.svg');
+    /* background-image: url('/assets/images/icons/bookmark.svg'); */
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
   }
   
-  .bookmark-icon.filled {
+  /* .bookmark-icon.filled {
     background-image: url('/assets/images/icons/bookmark-filled.svg');
-  }
+  } */
   
   .apply-now-btn {
     padding: var(--spacing-2) var(--spacing-4);

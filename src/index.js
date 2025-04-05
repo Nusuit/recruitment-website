@@ -2,8 +2,11 @@ import React from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import App from './App';
+// Import main styles
+import './styles/variables.css';
 import './styles/global.css';
-import './styles/App.css'; // Add this import to ensure App.css is loaded
+import './styles/layouts.css';
+import './styles/App.css';
 
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.getElementById('root');

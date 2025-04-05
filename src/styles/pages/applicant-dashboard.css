@@ -104,7 +104,7 @@
     background-position: center;
   }
   
-  .dashboard-icon {
+  /* .dashboard-icon {
     background-image: url('/assets/images/icons/dashboard.svg');
   }
   
@@ -122,11 +122,11 @@
   
   .profile-icon {
     background-image: url('/assets/images/icons/profile.svg');
-  }
+  } */
   
-  .logout-icon {
+  /* .logout-icon {
     background-image: url('/assets/images/icons/logout.svg');
-  }
+  } */
   
   .nav-link:hover,
   .nav-link.active {
@@ -210,7 +210,7 @@
     background-position: center;
   }
   
-  .applications-icon {
+  /* .applications-icon {
     background-color: rgba(59, 130, 246, 0.1);
     background-image: url('/assets/images/icons/applications.svg');
   }
@@ -228,7 +228,7 @@
   .saved-jobs-icon {
     background-color: rgba(245, 158, 11, 0.1);
     background-image: url('/assets/images/icons/saved.svg');
-  }
+  } */
   
   .stat-count {
     font-size: var(--font-size-3xl);

@@ -61,7 +61,9 @@ const ApplicantLayout = () => {
         </aside>
         
         <main className="main-content">
-          <Outlet />
+          <div className="page-container">
+            <Outlet />
+          </div>
         </main>
       </div>
       

@@ -1,0 +1,198 @@
+/* Style fixes for components that might be missing proper styling */
+
+/* Fix for header navigation on mobile */
+@media (max-width: 767px) {
+    .main-nav {
+      display: none;
+    }
+    
+    .mobile-menu-btn {
+      display: block !important;
+    }
+    
+    .mobile-menu.open {
+      display: block !important;
+    }
+  }
+  
+  /* Fix for form input placeholders */
+  ::placeholder {
+    color: var(--gray-400);
+    opacity: 1;
+  }
+  
+  /* Fix for button styling consistency */
+  button, 
+  input[type="submit"] {
+    cursor: pointer;
+  }
+  
+  button:disabled, 
+  input[type="submit"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+  }
+  
+  /* Fix for profile display */
+  .profile-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  
+  .profile-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--primary);
+    color: var(--white);
+    font-weight: 600;
+    font-size: 1.5rem;
+  }
+  
+  /* Fix for job cards in lists */
+  .job-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-4);
+  }
+  
+  /* Fix for tables in admin sections */
+  .table-header, 
+  .job-row,
+  .application-row {
+    display: grid;
+    align-items: center;
+  }
+  
+  /* Fix for form sections */
+  .form-section {
+    margin-bottom: var(--spacing-6);
+  }
+  
+  .form-section h3 {
+    margin-bottom: var(--spacing-4);
+    padding-bottom: var(--spacing-2);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  
+  /* Fix for social media inputs */
+  .social-input {
+    display: flex;
+    align-items: center;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    overflow: hidden;
+  }
+  
+  .social-prefix {
+    background-color: var(--gray-100);
+    padding: var(--spacing-2) var(--spacing-3);
+    color: var(--text-secondary);
+    font-size: var(--font-size-sm);
+    border-right: 1px solid var(--gray-300);
+  }
+  
+  .social-input input {
+    border: none !important;
+    flex: 1;
+  }
+  
+  /* Fix for admin layout sidebar */
+  .admin-sidebar {
+    height: 100vh;
+    position: fixed;
+    overflow-y: auto;
+  }
+  
+  /* Fix for page containers */
+  .page-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 var(--spacing-4);
+  }
+  
+  /* Fix for responsive tables */
+  @media (max-width: 768px) {
+    .table-header {
+      display: none;
+    }
+    
+    .job-row,
+    .application-row {
+      display: flex;
+      flex-direction: column;
+      padding: var(--spacing-4);
+      margin-bottom: var(--spacing-4);
+      border: 1px solid var(--gray-200);
+      border-radius: var(--border-radius);
+    }
+    
+    .col-job,
+    .col-date,
+    .col-status,
+    .col-actions {
+      width: 100%;
+      padding: var(--spacing-2) 0;
+    }
+    
+    .col-actions {
+      display: flex;
+      justify-content: flex-start;
+      margin-top: var(--spacing-2);
+    }
+  }
+  
+  /* Fix for missing icons */
+  .dashboard-icon,
+  .jobs-icon,
+  .saved-icon,
+  .applications-icon,
+  .profile-icon,
+  .logout-icon,
+  .search-icon,
+  .location-icon {
+    width: 24px;
+    height: 24px;
+    display: inline-block;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: contain;
+  }
+  
+  /* Fix any layout issues in applicant dashboard */
+  .applicant-layout .main-content {
+    min-height: calc(100vh - 70px - 200px); /* Accounting for header and footer */
+  }
+  
+  /* Fix for job details page */
+  .job-details-page .job-content {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--spacing-6);
+  }
+  
+  @media (max-width: 992px) {
+    .job-details-page .job-content {
+      grid-template-columns: 1fr;
+    }
+  }
+  
+  /* Fix for application forms */
+  .apply-form .form-row {
+    display: flex;
+    gap: var(--spacing-4);
+  }
+  
+  .apply-form .form-group {
+    flex: 1;
+  }
+  
+  @media (max-width: 768px) {
+    .apply-form .form-row {
+      flex-direction: column;
+      gap: var(--spacing-4);
+    }
+  }

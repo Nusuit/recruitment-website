@@ -3,24 +3,6 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { JobsProvider } from './contexts/JobsContext';
 
-// CSS imports - reorganize for better structure
-import './styles/components/footer.css';
-import './styles/components/forms.css';
-import './styles/components/header.css';
-import './styles/variables.css'; // Add CSS variables first
-import './styles/global.css'; // Global styles
-import './styles/App.css'; 
-import './styles/layouts.css'; // Add layout styles
-import './styles/pages/guest-pages.css'; // Guest pages styles
-import './styles/pages/admin-dashboard.css'; // Admin dashboard styles
-import './styles/pages/applicant-pages.css'; // Applicant pages styles
-import './styles/pages/auth-pages.css'; // Auth pages styles (login, signup, etc.)
-import './styles/pages/applicant-dashboard.css';
-import './styles/pages/home-page.css';
-import './styles/pages/job-details.css';
-import './styles/pages/job-management.css';
-import './styles/pages/job-search.css';
-
 // Guest Pages
 import HomePage from './pages/guest/HomePage';
 import AboutPage from './pages/guest/AboutPage';
@@ -54,6 +36,27 @@ import AdminLayout from './components/layouts/AdminLayout';
 
 // Importing useAuth for the auth guards
 import useAuth from './hooks/useAuth';
+
+// Component styles
+import './styles/components/footer.css';
+import './styles/components/forms.css';
+import './styles/components/header.css';
+import './styles/component-styles.css';
+
+// Page styles 
+import './styles/pages/guest-pages.css';
+import './styles/pages/admin-dashboard.css';
+import './styles/pages/applicant-pages.css';
+import './styles/pages/auth-pages.css';
+import './styles/pages/applicant-dashboard.css';
+import './styles/pages/home-page.css';
+import './styles/pages/job-details.css';
+import './styles/pages/job-management.css';
+import './styles/pages/job-search.css';
+
+// Style fixes and fallbacks
+import './styles/fixes.css';
+import './styles/utilities.css';
 
 // Auth Guards
 const GuestRoute = ({ children }) => {

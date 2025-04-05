@@ -91,7 +91,7 @@
     opacity: 0.5;
   }
   
-  .search-input-group:nth-child(1)::before {
+  /* .search-input-group:nth-child(1)::before {
     background-image: url('/assets/images/icons/search.svg');
   }
   
@@ -101,7 +101,7 @@
   
   .search-input-group:nth-child(3)::before {
     background-image: url('/assets/images/icons/category.svg');
-  }
+  } */
   
   .search-button {
     width: 100%;

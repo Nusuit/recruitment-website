@@ -177,3 +177,50 @@ body, html {
 .justify-between {
   justify-content: space-between;
 }
+
+/* In layouts.css */
+.main-content {
+  flex: 1;
+  min-height: 100vh;
+  margin-left: 0; /* Remove left margin if sidebar is hidden */
+  width: 100%; /* Use full width */
+}
+
+.page-container {
+  padding: 2rem;
+  max-width: 1200px;
+  margin: 0 auto; /* Center the content */
+  width: 100%;
+}
+
+/* Fix for the job listings page specifically */
+.job-search-content {
+  display: grid;
+  grid-template-columns: 1fr; /* Use a single column if needed */
+  gap: var(--spacing-6);
+  width: 100%;
+}
+
+.job-results {
+  flex: 1;
+  width: 100%;
+}
+
+/* If you're using a sidebar, make sure it's properly positioned */
+.sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  height: 100vh;
+  z-index: 50;
+  transform: translateX(0); /* Ensure it's not pushed off-screen */
+}
+
+/* Make sure the container is properly centered */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 1rem;
+  width: 100%;
+  position: relative; /* This helps with positioning issues */
+}

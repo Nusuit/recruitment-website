@@ -1,8 +1,10 @@
 :root {
   /* Color palette */
-  --primary-color: #0056b3;
-  --primary-light: #4d94ff;
-  --primary-dark: #003b7a;
+  --primary-color: #00BFA6;
+  --primary-light: #4DDBC8;
+  --primary-dark: #00A68F;
+  --bg-light: #FDFFF0;
+  --background-color: var(--bg-light);
   --secondary-color: #6c757d;
   --secondary-light: #a1a8ae;
   --secondary-dark: #494f54;

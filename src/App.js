@@ -1,7 +1,18 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Link, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { JobsProvider } from './contexts/JobsContext';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import CssBaseline from '@mui/material/CssBaseline';
+
+// Import CSS files
+import './styles/reset.css';
+import './styles/theme.css';
+import './styles/global.css';
+import './styles/utilities.css';
+import './styles/modern-components.css';
+import './styles/layouts/admin-layout.css';
+import './styles/layouts/footer.css';
 
 // Guest Pages
 import HomePage from './pages/guest/HomePage';
@@ -63,57 +74,119 @@ const ProtectedRoute = ({ children, requiredRole }) => {
   return children;
 };
 
+// Create a custom theme
+const theme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+      light: '#42a5f5',
+      dark: '#0d47a1',
+    },
+    secondary: {
+      main: '#f50057',
+      light: '#ff4081',
+      dark: '#c51162',
+    },
+    background: {
+      default: '#f5f5f5',
+    },
+  },
+  typography: {
+    fontFamily: '"Roboto", "Helvetica", "Arial", sans-serif',
+    h1: {
+      fontSize: '2.5rem',
+      fontWeight: 600,
+    },
+    h2: {
+      fontSize: '2rem',
+      fontWeight: 500,
+    },
+    button: {
+      textTransform: 'none',
+    },
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 8,
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 12,
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+        },
+      },
+    },
+  },
+});
+
 function App() {
   return (
-    <AuthProvider>
-      <JobsProvider>
-        <Routes>
-          {/* Guest Routes */}
-          <Route path="/" element={<GuestLayout />}>
-            <Route index element={<HomePage />} />
-            <Route path="about" element={<AboutPage />} />
-            <Route path="jobs" element={<JobsPage />} />
-            <Route path="jobs/:id" element={<JobDetailsPage />} />
-            <Route path="contact" element={<ContactPage />} />
-            <Route path="login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-            <Route path="signup" element={<GuestRoute><SignUpPage /></GuestRoute>} />
-            <Route path="forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-            <Route path="reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
-            <Route path="verify-email" element={<GuestRoute><EmailVerificationPage /></GuestRoute>} />
-          </Route>
-          
-          {/* Applicant Routes */}
-          <Route path="/applicant" element={
-            <ProtectedRoute requiredRole="applicant">
-              <ApplicantLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="dashboard" element={<ApplicantDashboard />} />
-            <Route path="jobs" element={<JobSearchPage />} />
-            <Route path="jobs/:id" element={<JobDetailsPage />} />
-            <Route path="saved-jobs" element={<SavedJobsPage />} />
-            <Route path="applications" element={<ApplicationsPage />} />
-            <Route path="profile" element={<ProfilePage />} />
-          </Route>
-          
-          {/* Admin Routes */}
-          <Route path="/admin" element={
-            <ProtectedRoute requiredRole="admin">
-              <AdminLayout />
-            </ProtectedRoute>
-          }>
-            <Route path="dashboard" element={<AdminDashboard />} />
-            <Route path="jobs" element={<JobManagement />} />
-            <Route path="applicants" element={<ApplicantsManagement />} />
-            <Route path="company-profile" element={<CompanyProfilePage />} />
-            <Route path="reports" element={<ReportsPage />} />
-          </Route>
-          
-          {/* 404 Route */}
-          <Route path="*" element={<div className="not-found">Không tìm thấy trang</div>} />
-        </Routes>
-      </JobsProvider>
-    </AuthProvider>
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <JobsProvider>
+          <Routes>
+            {/* Guest Routes */}
+            <Route path="/" element={<GuestLayout />}>
+              <Route index element={<HomePage />} />
+              <Route path="about" element={<AboutPage />} />
+              <Route path="jobs" element={<JobsPage />} />
+              <Route path="jobs/:id" element={<JobDetailsPage />} />
+              <Route path="contact" element={<ContactPage />} />
+              <Route path="login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+              <Route path="signup" element={<GuestRoute><SignUpPage /></GuestRoute>} />
+              <Route path="forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
+              <Route path="reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
+              <Route path="verify-email" element={<GuestRoute><EmailVerificationPage /></GuestRoute>} />
+            </Route>
+            
+            {/* Applicant Routes */}
+            <Route path="/applicant" element={
+              <ProtectedRoute requiredRole="applicant">
+                <ApplicantLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<ApplicantDashboard />} />
+              <Route path="jobs" element={<JobSearchPage />} />
+              <Route path="jobs/:id" element={<JobDetailsPage />} />
+              <Route path="saved-jobs" element={<SavedJobsPage />} />
+              <Route path="applications" element={<ApplicationsPage />} />
+              <Route path="profile" element={<ProfilePage />} />
+            </Route>
+            
+            {/* Admin Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute requiredRole="admin">
+                <AdminLayout />
+              </ProtectedRoute>
+            }>
+              <Route path="dashboard" element={<AdminDashboard />} />
+              <Route path="jobs" element={<JobManagement />} />
+              <Route path="applicants" element={<ApplicantsManagement />} />
+              <Route path="company-profile" element={<CompanyProfilePage />} />
+              <Route path="reports" element={<ReportsPage />} />
+            </Route>
+            
+            {/* 404 Route */}
+            <Route path="*" element={
+              <div className="not-found">
+                <div className="container">
+                  <h1>404</h1>
+                  <h2>Không tìm thấy trang</h2>
+                  <p>Trang bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
+                  <Link to="/" className="btn btn-primary">Về trang chủ</Link>
+                </div>
+              </div>
+            } />
+          </Routes>
+        </JobsProvider>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }
 

@@ -1,0 +1,133 @@
+/* Normalize CSS - Đảm bảo tính nhất quán trên các trình duyệt */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-text-size-adjust: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-sans);
+  color: var(--text-primary);
+  background-color: var(--background);
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  scroll-behavior: smooth;
+}
+
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+}
+
+input, button, textarea, select {
+  font: inherit;
+}
+
+p, h1, h2, h3, h4, h5, h6 {
+  overflow-wrap: break-word;
+  margin: 0;
+}
+
+h1 {
+  font-size: var(--font-size-4xl);
+  line-height: 1.2;
+  font-weight: 700;
+  margin-bottom: var(--spacing-4);
+}
+
+h2 {
+  font-size: var(--font-size-3xl);
+  line-height: 1.25;
+  font-weight: 700;
+  margin-bottom: var(--spacing-3);
+}
+
+h3 {
+  font-size: var(--font-size-2xl);
+  line-height: 1.3;
+  font-weight: 600;
+  margin-bottom: var(--spacing-2);
+}
+
+h4 {
+  font-size: var(--font-size-xl);
+  line-height: 1.35;
+  font-weight: 600;
+  margin-bottom: var(--spacing-2);
+}
+
+p {
+  margin-bottom: var(--spacing-4);
+}
+
+a {
+  color: var(--primary);
+  text-decoration: none;
+  transition: color var(--transition-normal) ease;
+}
+
+a:hover {
+  color: var(--primary-dark);
+}
+
+ul, ol {
+  padding-left: var(--spacing-6);
+  margin-bottom: var(--spacing-4);
+}
+
+li {
+  margin-bottom: var(--spacing-2);
+}
+
+/* Form elements */
+button, 
+input, 
+optgroup, 
+select, 
+textarea {
+  font-family: inherit;
+  font-size: 100%;
+  line-height: 1.15;
+  margin: 0;
+}
+
+button, 
+[type="button"], 
+[type="reset"], 
+[type="submit"] {
+  -webkit-appearance: button;
+  appearance: button;
+}
+
+:focus {
+  outline: 2px solid var(--primary-light);
+  outline-offset: 2px;
+}
+
+/* Remove scrollbar in webkit browsers */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--gray-100);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: var(--border-radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}

@@ -1,8 +1,10 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import SocialIcons from './SocialIcons';
+import { FaFacebook, FaTwitter, FaLinkedin, FaInstagram, FaMapMarkerAlt, FaEnvelope, FaPhone } from 'react-icons/fa';
 
 const Footer = () => {
+  const currentYear = new Date().getFullYear();
+  
   return (
     <footer className="site-footer">
       <div className="footer-top">
@@ -11,55 +13,77 @@ const Footer = () => {
             <div className="footer-logo">
               <img src="/assets/images/logo.svg" alt="MyaCorp" />
             </div>
-            <div className="company-info">
-              <p>Find Jobs</p>
-              <p>Company List</p>
-              <p>Career Guide</p>
-              <p>Salary Reference</p>
+            <p className="company-info">
+              Connecting top talent with the best opportunities in the fashion industry. We're dedicated to helping passionate professionals find their dream careers.
+            </p>
+            <div className="footer-social">
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" aria-label="Facebook">
+                <FaFacebook size={18} />
+              </a>
+              <a href="https://twitter.com" target="_blank" rel="noopener noreferrer" aria-label="Twitter">
+                <FaTwitter size={18} />
+              </a>
+              <a href="https://linkedin.com" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">
+                <FaLinkedin size={18} />
+              </a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" aria-label="Instagram">
+                <FaInstagram size={18} />
+              </a>
             </div>
           </div>
           
           <div className="footer-section">
-            <h3>EMPLOYERS</h3>
+            <h3>Quick Links</h3>
             <ul className="footer-links">
-              <li><Link to="/post-job">Post Job Openings</Link></li>
-              <li><Link to="/search-resumes">Search Resumes</Link></li>
-              <li><Link to="/pricing">Service Price List</Link></li>
-              <li><Link to="/contact">Contact Us</Link></li>
+              <li><Link to="/">Home</Link></li>
+              <li><Link to="/jobs">Find Jobs</Link></li>
+              <li><Link to="/about">About Us</Link></li>
+              <li><Link to="/contact">Contact</Link></li>
+              <li><Link to="/blog">Blog & News</Link></li>
+              <li><Link to="/faqs">FAQs</Link></li>
             </ul>
           </div>
           
           <div className="footer-section">
-            <h3>CONTACT</h3>
+            <h3>For Employers</h3>
+            <ul className="footer-links">
+              <li><Link to="/post-job">Post Job Openings</Link></li>
+              <li><Link to="/search-resumes">Search Resumes</Link></li>
+              <li><Link to="/pricing">Service Price List</Link></li>
+              <li><Link to="/employer-login">Employer Login</Link></li>
+              <li><Link to="/success-stories">Success Stories</Link></li>
+            </ul>
+          </div>
+          
+          <div className="footer-section">
+            <h3>Contact Us</h3>
             <ul className="contact-info">
               <li>
-                <i className="location-icon"></i>
-                <span>MyaCorp HCM</span>
+                <FaMapMarkerAlt className="contact-icon" />
+                <span>MyaCorp HCM, 123 Fashion Street<br />District 1, Ho Chi Minh City</span>
               </li>
               <li>
-                <i className="email-icon"></i>
+                <FaEnvelope className="contact-icon" />
                 <span>info@myacorp.com</span>
               </li>
               <li>
-                <i className="phone-icon"></i>
-                <span>+84 999 999 999</span>
-              </li>
-              <li>
-                <i className="phone-icon"></i>
+                <FaPhone className="contact-icon" />
                 <span>+84 999 999 999</span>
               </li>
             </ul>
-          </div>
-
-          <div className="footer-section">
-            <h3>FOLLOW US</h3>
-            <SocialIcons className="footer-social" size="medium" color="light" />
           </div>
         </div>
       </div>
       
       <div className="footer-bottom">
-        <p>&copy; {new Date().getFullYear()} MyaCorp. All rights reserved.</p>
+        <div className="footer-bottom-content">
+          <p>&copy; {currentYear} MyaCorp. All rights reserved.</p>
+          <div className="footer-legal">
+            <Link to="/privacy">Privacy Policy</Link>
+            <Link to="/terms">Terms of Service</Link>
+            <Link to="/cookies">Cookie Policy</Link>
+          </div>
+        </div>
       </div>
     </footer>
   );

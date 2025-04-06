@@ -1,123 +1,155 @@
-import React, { useContext, useState } from 'react';
-import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
+import React, { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import { 
+  MdDashboard, MdWork, MdPeople, MdBusiness, 
+  MdBarChart, MdMenu, MdClose, MdLogout, MdNotifications, 
+  MdSearch, MdKeyboardArrowLeft, MdKeyboardArrowRight
+} from 'react-icons/md';
 
-const AdminLayout = () => {
-  const { user, logout } = useContext(AuthContext);
+const AdminLayout = ({ children }) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
 
-  // Sidebar menu items
-  const menuItems = [
-    { label: 'Dashboard', path: '/admin/dashboard', icon: 'dashboard-icon' },
-    { label: 'Job Management', path: '/admin/jobs', icon: 'jobs-icon' },
-    { label: 'Applicants', path: '/admin/applicants', icon: 'applicants-icon' },
-    { label: 'Company Profile', path: '/admin/company-profile', icon: 'company-icon' },
-    { label: 'Reports', path: '/admin/reports', icon: 'reports-icon' },
-  ];
-
-  // Check if a menu item is active
-  const isActive = (path) => {
-    return location.pathname === path || location.pathname.startsWith(`${path}/`);
-  };
+  const user = JSON.parse(localStorage.getItem('user') || '{"name": "Admin User"}');
 
   const handleLogout = () => {
-    logout();
-    navigate('/');
+    localStorage.removeItem('user');
+    navigate('/login');
+  };
+
+  const toggleSidebar = () => {
+    setCollapsed(!collapsed);
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
 
   return (
-    <div className={`admin-layout ${sidebarCollapsed ? 'collapsed' : ''}`}>
-      <aside className="admin-sidebar">
+    <div className={`admin-layout ${collapsed ? 'collapsed' : ''}`}>
+      {/* Mobile menu button - shown only on mobile */}
+      <button 
+        className="mobile-menu-toggle" 
+        onClick={toggleMobileMenu}
+        aria-label="Toggle mobile menu"
+      >
+        {mobileMenuOpen ? <MdClose size={24} /> : <MdMenu size={24} />}
+      </button>
+
+      {/* Sidebar */}
+      <aside className={`admin-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="company-logo">
-            <img src="/assets/images/logo.svg" alt="MyaCorp" />
-            {!sidebarCollapsed && <span className="company-name">MyaCorp</span>}
+            <img src="/assets/images/logo.svg" alt="MyaCorp Logo" />
+            {!collapsed && <span className="company-name">MyaCorp</span>}
           </div>
           <button 
-            className="collapse-btn"
-            onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+            className="collapse-btn" 
+            onClick={toggleSidebar}
+            aria-label="Toggle sidebar"
           >
-            <i className={`collapse-icon ${sidebarCollapsed ? 'expand' : 'collapse'}`}></i>
+            {collapsed ? <MdKeyboardArrowRight size={20} /> : <MdKeyboardArrowLeft size={20} />}
           </button>
         </div>
-        
+
         <div className="admin-info">
           <div className="admin-avatar">
-            <img src="/assets/images/admin-avatar.png" alt={user?.name} />
+            <img src="/assets/images/admin-avatar.png" alt="Admin Avatar" />
           </div>
-          
-          {!sidebarCollapsed && (
+          {!collapsed && (
             <div className="admin-details">
-              <h3>{user?.name || 'Admin'}</h3>
-              <p className="admin-role">Administrator</p>
+              <h3>{user.name}</h3>
+              <span className="admin-role">Administrator</span>
             </div>
           )}
         </div>
-        
+
         <nav className="sidebar-nav">
           <ul className="nav-menu">
-            {menuItems.map((item, index) => (
-              <li 
-                key={index} 
-                className={`nav-item ${isActive(item.path) ? 'active' : ''}`}
-              >
-                <Link to={item.path} className="nav-link">
-                  <i className={item.icon}></i>
-                  {!sidebarCollapsed && <span>{item.label}</span>}
-                </Link>
-              </li>
-            ))}
+            <li className="nav-item">
+              <NavLink to="/admin/dashboard" className="nav-link">
+                <MdDashboard size={20} />
+                {!collapsed && <span>Dashboard</span>}
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink to="/admin/jobs" className="nav-link">
+                <MdWork size={20} />
+                {!collapsed && <span>Jobs Management</span>}
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink to="/admin/applicants" className="nav-link">
+                <MdPeople size={20} />
+                {!collapsed && <span>Applicants</span>}
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink to="/admin/company-profile" className="nav-link">
+                <MdBusiness size={20} />
+                {!collapsed && <span>Company Profile</span>}
+              </NavLink>
+            </li>
+            <li className="nav-item">
+              <NavLink to="/admin/reports" className="nav-link">
+                <MdBarChart size={20} />
+                {!collapsed && <span>Reports</span>}
+              </NavLink>
+            </li>
           </ul>
         </nav>
-        
+
         <div className="sidebar-footer">
           <button className="logout-btn" onClick={handleLogout}>
-            <i className="logout-icon"></i>
-            {!sidebarCollapsed && <span>Logout</span>}
+            <MdLogout size={20} />
+            {!collapsed && <span>Logout</span>}
           </button>
         </div>
       </aside>
-      
+
+      {/* Main Content */}
       <div className="admin-content-wrapper">
         <header className="admin-header">
           <div className="header-search">
             <input 
               type="text" 
+              className="search-input" 
               placeholder="Search..." 
-              className="search-input"
             />
+            <MdSearch className="search-icon" size={20} />
           </div>
-          
           <div className="header-actions">
             <div className="notifications-dropdown">
               <button className="notifications-btn">
-                <i className="notifications-icon"></i>
+                <MdNotifications size={24} />
                 <span className="notification-badge">3</span>
               </button>
             </div>
-            
             <div className="admin-dropdown">
               <button className="admin-menu-btn">
-                <img 
-                  src="/assets/images/admin-avatar.png" 
-                  alt={user?.name} 
-                  className="admin-avatar-small"
-                />
-                <span className="admin-name">{user?.name || 'Admin'}</span>
-                <i className="dropdown-arrow"></i>
+                <div className="admin-avatar-small">
+                  <img src="/assets/images/admin-avatar.png" alt="Admin" />
+                </div>
+                <span className="admin-name">{user.name}</span>
               </button>
             </div>
           </div>
         </header>
-        
-        <main className="admin-main-content">
-          <Outlet />
-        </main>
-        
+
+        <div className="admin-main-content">
+          {children}
+        </div>
+
         <footer className="admin-footer">
-          <p>© 2025 MyaCorp Admin Panel. All rights reserved.</p>
+          <div className="admin-footer-content">
+            <p>&copy; {new Date().getFullYear()} MyaCorp. All rights reserved.</p>
+            <div className="footer-links">
+              <a href="/admin/help">Help Center</a>
+              <a href="/admin/privacy">Privacy Policy</a>
+              <a href="/admin/terms">Terms of Service</a>
+            </div>
+          </div>
         </footer>
       </div>
     </div>

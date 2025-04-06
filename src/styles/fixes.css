@@ -14,6 +14,33 @@
       display: block !important;
     }
   }
+
+/* Fix for header */
+.header-container {
+  display: block;
+  width: 100%;
+}
+
+.header-wrapper {
+  display: flex !important; /* Force flex display */
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.main-nav {
+  display: flex !important; /* Force flex display on desktop */
+}
+
+@media (max-width: 768px) {
+  .main-nav {
+    display: none !important; /* Override at mobile breakpoint */
+  }
+  
+  .main-nav.show {
+    display: flex !important; /* But show when the "show" class is added */
+  }
+}
   
   /* Fix for form input placeholders */
   ::placeholder {

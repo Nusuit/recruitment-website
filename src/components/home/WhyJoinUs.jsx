@@ -6,13 +6,13 @@ const WhyJoinUs = () => {
       id: 1,
       icon: 'collaborative-icon',
       title: 'Collaborative Culture',
-      description: 'Work with a diverse team in an environment that values creativity and teamwork.'
+      description: 'Work with talented professionals in a creative and positive environment.'
     },
     {
       id: 2,
       icon: 'growth-icon',
       title: 'Professional Growth',
-      description: 'Develop your skills through ongoing training and advancement opportunities.'
+      description: 'Develop your skills through training and advancement opportunities.'
     },
     {
       id: 3,
@@ -24,17 +24,17 @@ const WhyJoinUs = () => {
       id: 4,
       icon: 'benefits-icon',
       title: 'Competitive Benefits',
-      description: 'Enjoy comprehensive health insurance, retirement plans, and generous vacation time.'
+      description: 'Enjoy comprehensive benefits, retirement plans, and generous vacation time.'
     }
   ];
 
   return (
-    <div className="why-join-grid">
+    <div className="benefits-grid">
       {benefits.map(benefit => (
-        <div key={benefit.id} className="why-join-item">
-          <div className={`why-join-icon ${benefit.icon}`}></div>
-          <h3 className="why-join-title">{benefit.title}</h3>
-          <p className="why-join-description">{benefit.description}</p>
+        <div key={benefit.id} className="benefit-card">
+          <div className={`benefit-icon ${benefit.icon}`}></div>
+          <h3>{benefit.title}</h3>
+          <p>{benefit.description}</p>
         </div>
       ))}
     </div>

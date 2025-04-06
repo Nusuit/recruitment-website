@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { getJobs } from '../../api/jobs';
 
 const LatestJobs = () => {
   const [jobs, setJobs] = useState([]);
@@ -12,18 +11,53 @@ const LatestJobs = () => {
       try {
         setLoading(true);
         
-        // Get latest jobs, limit to 4
-        const response = await getJobs({ 
-          limit: 4, 
-          sort: 'latest',
-          status: 'active'
-        });
+        // In a real app, this would be an API call
+        // For now, we'll use sample data
+        const sampleJobs = [
+          {
+            id: 1,
+            title: 'Sale Associate',
+            company: 'MyaCorp',
+            location: 'HCM, Vietnam',
+            type: 'Full Time',
+            salary: '$5k-8k/month',
+            daysRemaining: 4,
+            featured: true
+          },
+          {
+            id: 2,
+            title: 'Sale Associate',
+            company: 'MyaCorp',
+            location: 'Da Nang, Vietnam',
+            type: 'Full Time',
+            salary: '$5k-8k/month',
+            daysRemaining: 4
+          },
+          {
+            id: 3,
+            title: 'Designer',
+            company: 'MyaCorp',
+            location: 'Hanoi, Vietnam',
+            type: 'Full Time',
+            salary: '$7k-9k/month',
+            daysRemaining: 6
+          },
+          {
+            id: 4,
+            title: 'Designer',
+            company: 'MyaCorp',
+            location: 'HCM, Vietnam',
+            type: 'Remote',
+            salary: '$7k-9k/month',
+            daysRemaining: 8
+          }
+        ];
         
-        if (response.success) {
-          setJobs(response.jobs);
-        } else {
-          setError(response.error);
-        }
+        // Simulate API delay
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        setJobs(sampleJobs);
+        setError(null);
       } catch (err) {
         console.error('Error fetching latest jobs:', err);
         setError('Failed to load latest jobs. Please try again later.');
@@ -35,88 +69,54 @@ const LatestJobs = () => {
     fetchLatestJobs();
   }, []);
   
-  // Fallback data if API call fails
-  const sampleJobs = [
-    {
-      id: 1,
-      title: 'Sales Associate',
-      company: 'MyaCorp',
-      location: 'HCM, Vietnam',
-      type: 'Full Time',
-      salary: '$1800 - $2200',
-      postedDate: '2025-03-28',
-      daysRemaining: 14
-    },
-    {
-      id: 2,
-      title: 'Fashion Designer',
-      company: 'MyaCorp',
-      location: 'Remote',
-      type: 'Contract',
-      salary: '$2500 - $3500',
-      postedDate: '2025-03-27',
-      daysRemaining: 10
-    },
-    {
-      id: 3,
-      title: 'Marketing Specialist',
-      company: 'MyaCorp',
-      location: 'HCM, Vietnam',
-      type: 'Full Time',
-      salary: '$2200 - $2800',
-      postedDate: '2025-03-25',
-      daysRemaining: 12
-    },
-    {
-      id: 4,
-      title: 'Store Manager',
-      company: 'MyaCorp',
-      location: 'Hanoi, Vietnam',
-      type: 'Full Time',
-      salary: '$2800 - $3500',
-      postedDate: '2025-03-22',
-      daysRemaining: 8
-    }
-  ];
-  
-  const displayJobs = jobs.length > 0 ? jobs : sampleJobs;
-  
   if (loading) {
     return <div className="loading-container">Loading latest jobs...</div>;
   }
   
+  if (error) {
+    return <div className="error-message">{error}</div>;
+  }
+  
   return (
     <div className="latest-jobs-grid">
-      {displayJobs.map(job => (
+      {jobs.map(job => (
         <div key={job.id} className="job-card">
-          <div className="job-card-header">
+          <div className="job-card-logo">
+            {job.featured && <div className="featured-tag">Featured</div>}
+            <img src="/assets/images/icons/job-icon.png" alt="Job Icon" />
+          </div>
+          <div className="job-card-content">
             <h3 className="job-title">
               <Link to={`/jobs/${job.id}`}>{job.title}</Link>
             </h3>
-            <span className="job-type">{job.type}</span>
-          </div>
-          
-          <div className="job-details">
-            <div className="job-meta">
-              <span className="job-company">{job.company}</span>
-              <span className="job-location">
-                <i className="location-icon"></i>
-                {job.location}
-              </span>
+            
+            <div className="job-info">
+              <div className="job-meta">
+                <span className="company">{job.company}</span>
+                <span className="location">
+                  <i className="location-icon"></i>
+                  {job.location}
+                </span>
+                <span className="job-type">{job.type}</span>
+              </div>
+              
+              <div className="job-salary">
+                <i className="salary-icon"></i>
+                <span>{job.salary}</span>
+              </div>
             </div>
             
-            <div className="job-salary">
-              <i className="salary-icon"></i>
-              <span>{job.salary}</span>
+            <div className="job-deadline">
+              <span className="deadline-label">{job.daysRemaining} days remaining</span>
             </div>
           </div>
           
-          <div className="job-card-footer">
-            <span className="job-deadline">
-              {job.daysRemaining} days remaining
-            </span>
+          <div className="job-card-actions">
+            <button className="save-job-btn">
+              <i className="bookmark-icon"></i>
+            </button>
             
-            <Link to={`/jobs/${job.id}`} className="view-details-btn">
+            <Link to={`/jobs/${job.id}`} className="apply-now-btn">
               Apply Now
             </Link>
           </div>

@@ -34,54 +34,30 @@ import GuestLayout from './components/layouts/GuestLayout';
 import ApplicantLayout from './components/layouts/ApplicantLayout';
 import AdminLayout from './components/layouts/AdminLayout';
 
-// Importing useAuth for the auth guards
-import useAuth from './hooks/useAuth';
-
-// Component styles
-import './styles/components/footer.css';
-import './styles/components/forms.css';
-import './styles/components/header.css';
-import './styles/component-styles.css';
-
-// Page styles 
-import './styles/pages/guest-pages.css';
-import './styles/pages/admin-dashboard.css';
-import './styles/pages/applicant-pages.css';
-import './styles/pages/auth-pages.css';
-import './styles/pages/applicant-dashboard.css';
-import './styles/pages/home-page.css';
-import './styles/pages/job-details.css';
-import './styles/pages/job-management.css';
-import './styles/pages/job-search.css';
-
-// Style fixes and fallbacks
-import './styles/fixes.css';
-import './styles/utilities.css';
-
 // Auth Guards
 const GuestRoute = ({ children }) => {
-  const { user } = useAuth();
-  if (user) {
+  const isAuthenticated = localStorage.getItem('user') !== null;
+  if (isAuthenticated) {
+    const user = JSON.parse(localStorage.getItem('user'));
     return user.role === 'admin' ? <Navigate to="/admin/dashboard" /> : <Navigate to="/applicant/dashboard" />;
   }
   return children;
 };
 
 const ProtectedRoute = ({ children, requiredRole }) => {
-  const { user, loading } = useAuth();
+  const isAuthenticated = localStorage.getItem('user') !== null;
   
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-  
-  if (!user) {
+  if (!isAuthenticated) {
     return <Navigate to="/login" />;
   }
   
-  if (requiredRole && user.role !== requiredRole) {
-    return user.role === 'admin' 
-      ? <Navigate to="/admin/dashboard" /> 
-      : <Navigate to="/applicant/dashboard" />;
+  if (requiredRole) {
+    const user = JSON.parse(localStorage.getItem('user'));
+    if (user.role !== requiredRole) {
+      return user.role === 'admin' 
+        ? <Navigate to="/admin/dashboard" /> 
+        : <Navigate to="/applicant/dashboard" />;
+    }
   }
   
   return children;
@@ -134,7 +110,7 @@ function App() {
           </Route>
           
           {/* 404 Route */}
-          <Route path="*" element={<div>Page Not Found</div>} />
+          <Route path="*" element={<div className="not-found">Không tìm thấy trang</div>} />
         </Routes>
       </JobsProvider>
     </AuthProvider>

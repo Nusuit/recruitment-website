@@ -27,7 +27,7 @@ const StepsToGetJob = () => {
     <div className="steps-container">
       <div className="steps-grid">
         {steps.map(step => (
-          <div key={step.id} className="step-item">
+          <div key={step.id} className="step-card">
             <div className="step-number">{step.id}</div>
             <div className={`step-icon ${step.icon}`}></div>
             <h3 className="step-title">{step.title}</h3>

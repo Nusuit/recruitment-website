@@ -1,43 +1,14 @@
-import React, { useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
+import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const Header = ({ userType = 'guest' }) => {
-  const { user, logout } = useContext(AuthContext);
-  const navigate = useNavigate();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   
-  const handleLogout = () => {
-    logout();
-    navigate('/');
+  // Toggle mobile menu
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen(!mobileMenuOpen);
   };
-  
-  // Base navigation for all user types
-  const navLinks = [
-    { name: 'Home', path: '/' },
-    { name: 'Job Openings', path: '/jobs' },
-    { name: 'About Us', path: '/about' },
-    { name: 'Contact', path: '/contact' },
-  ];
-  
-  // Additional links for applicants
-  const applicantLinks = [
-    { name: 'My Applications', path: '/applicant/applications' },
-    { name: 'Saved Jobs', path: '/applicant/saved-jobs' },
-  ];
-  
-  // Additional links for admins
-  const adminLinks = [
-    { name: 'Dashboard', path: '/admin/dashboard' },
-    { name: 'Manage Jobs', path: '/admin/jobs' },
-    { name: 'Applicants', path: '/admin/applicants' },
-  ];
-  
-  // Determine which links to show based on user type
-  const links = 
-    userType === 'applicant' ? [...navLinks, ...applicantLinks] :
-    userType === 'admin' ? [...navLinks, ...adminLinks] :
-    navLinks;
-  
+
   return (
     <header className="header-container">
       <div className="header-wrapper">
@@ -47,13 +18,19 @@ const Header = ({ userType = 'guest' }) => {
           </Link>
         </div>
         
-        <nav className="main-nav">
+        <button 
+          className={`mobile-menu-btn ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}
+          onClick={toggleMobileMenu}
+        >
+          <span className="hamburger-icon"></span>
+        </button>
+        
+        <nav className={`main-nav ${mobileMenuOpen ? 'show' : ''}`}>
           <ul className="nav-links">
-            {links.map((link, index) => (
-              <li key={index}>
-                <Link to={link.path}>{link.name}</Link>
-              </li>
-            ))}
+            <li><Link to="/" className="nav-link">Home</Link></li>
+            <li><Link to="/jobs" className="nav-link">Job Openings</Link></li>
+            <li><Link to="/about" className="nav-link">About Us</Link></li>
+            <li><Link to="/contact" className="nav-link">Contact</Link></li>
           </ul>
         </nav>
         
@@ -64,18 +41,37 @@ const Header = ({ userType = 'guest' }) => {
         </div>
         
         <div className="auth-buttons">
-          {user ? (
-            <>
-              <div className="user-menu">
-                <span className="username">{user.name}</span>
-                <button onClick={handleLogout} className="logout-btn">Logout</button>
-              </div>
-            </>
-          ) : (
+          {userType === 'guest' ? (
             <>
               <Link to="/login" className="login-btn">Login</Link>
               <Link to="/signup" className="signup-btn">Sign Up</Link>
             </>
+          ) : (
+            <div className="user-menu">
+              <span className="username">User</span>
+              <button className="logout-btn">Logout</button>
+            </div>
+          )}
+        </div>
+      </div>
+      
+      {/* Mobile menu */}
+      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
+        <ul className="mobile-nav-links">
+          <li><Link to="/">Home</Link></li>
+          <li><Link to="/jobs">Job Openings</Link></li>
+          <li><Link to="/about">About Us</Link></li>
+          <li><Link to="/contact">Contact</Link></li>
+        </ul>
+        
+        <div className="mobile-auth-buttons">
+          {userType === 'guest' ? (
+            <>
+              <Link to="/login" className="login-btn">Login</Link>
+              <Link to="/signup" className="signup-btn">Sign Up</Link>
+            </>
+          ) : (
+            <button className="logout-btn">Logout</button>
           )}
         </div>
       </div>

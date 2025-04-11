@@ -12,11 +12,7 @@ const ForgotPasswordPage = () => {
             <p>"In order to be irreplaceable, one must always be different."</p>
             <cite>- Coco Chanel</cite>
           </div>
-          <img 
-            src="/assets/images/illustrations/fashion-sketch.png" 
-            alt="Fashion sketch illustration" 
-            className="fashion-illustration"
-          />
+          <img src="/assets/images/forgot_password.png" alt="Forgot Password Illustration" className="forgot-password-image" />
         </div>
       </div>
     </div>

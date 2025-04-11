@@ -1,0 +1,88 @@
+/* Modal component styles */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-50);
+  }
+  
+  .modal-container {
+    background-color: var(--white);
+    border-radius: var(--border-radius-lg);
+    width: 90%;
+    max-width: 600px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--shadow-lg);
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .modal-header {
+    padding: var(--spacing-4);
+    border-bottom: 1px solid var(--gray-200);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  
+  .modal-title {
+    font-size: var(--font-size-lg);
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .modal-close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+  }
+  
+  .modal-content {
+    padding: var(--spacing-4);
+    flex: 1;
+    overflow-y: auto;
+  }
+  
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-2);
+    padding: var(--spacing-4);
+    border-top: 1px solid var(--gray-200);
+  }
+  
+  .modal-footer {
+    padding: var(--spacing-4);
+    border-top: 1px solid var(--gray-200);
+  }
+  
+  /* Modal transition animations */
+  .modal-enter {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  
+  .modal-enter-active {
+    opacity: 1;
+    transform: scale(1);
+    transition: opacity 300ms, transform 300ms;
+  }
+  
+  .modal-exit {
+    opacity: 1;
+  }
+  
+  .modal-exit-active {
+    opacity: 0;
+    transform: scale(0.9);
+    transition: opacity 300ms, transform 300ms;
+  }

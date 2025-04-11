@@ -93,6 +93,10 @@ const ContactPage = () => {
           </div>
         </div>
       </div>
+      
+      <div className="contact-image-section">
+        <img src="/assets/images/contact.png" alt="Contact Illustration" className="contact-image" />
+      </div>
     </div>
   );
 };

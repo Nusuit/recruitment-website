@@ -91,17 +91,50 @@
     opacity: 0.5;
   }
   
-  .search-input-group:nth-child(1)::before {
+  .search-input-group {
+    flex: 1;
+    position: relative;
+  }
+  
+  .search-input-group input,
+  .search-input-group select {
+    width: 100%;
+    padding: var(--spacing-3) var(--spacing-4);
+    padding-left: 40px; /* Đảm bảo có đủ chỗ cho icon */
+    border: 1px solid var(--gray-300);
+    border-radius: var(--border-radius);
+    font-size: var(--font-size-base);
+    background-color: var(--white);
+  }
+  
+  /* Style chung cho icon */
+  .search-input-group::before {
+    content: '';
+    position: absolute;
+    left: var(--spacing-3); /* Hoặc 12px-15px tùy bạn căn chỉnh */
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px; /* Kích thước icon */
+    height: 20px; /* Kích thước icon */
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: center;
+    opacity: 0.5; /* Có thể điều chỉnh độ mờ */
+    pointer-events: none; /* Đảm bảo icon không cản trở việc click vào input */
+  }
+  
+  /* Gán icon cụ thể bằng class */
+  /* .search-input-keywords::before {
     background-image: url('/assets/images/icons/search.svg');
   }
   
-  .search-input-group:nth-child(2)::before {
+  .search-input-location::before {
     background-image: url('/assets/images/icons/location.svg');
   }
   
-  .search-input-group:nth-child(3)::before {
+  .search-input-category::before {
     background-image: url('/assets/images/icons/category.svg');
-  }
+  } */
   
   .search-button {
     width: 100%;

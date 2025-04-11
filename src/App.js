@@ -6,13 +6,28 @@ import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
 // Import CSS files
-import './styles/reset.css';
-import './styles/theme.css';
-import './styles/global.css';
-import './styles/utilities.css';
-import './styles/modern-components.css';
+// 1. Base
+import './styles/base/reset.css'; 
+import './styles/base/variables.css';
+
+// 2. Layout
+import './styles/layouts.css';
 import './styles/layouts/admin-layout.css';
-import './styles/layouts/footer.css';
+
+// 3. Components
+import './styles/components/header.css';
+import './styles/components/footer.css';
+import './styles/components/buttons.css';
+import './styles/components/cards.css';
+import './styles/components/forms.css';
+import './styles/components/modals.css';
+import './styles/components/alerts.css';
+
+// 4. Pages
+import './styles/pages/home-page.css';
+import './styles/pages/job-search.css';
+import './styles/pages/job-details.css';
+import './styles/pages/auth-pages.css';
 
 // Guest Pages
 import HomePage from './pages/guest/HomePage';
@@ -44,6 +59,12 @@ import ReportsPage from './pages/admin/ReportsPage';
 import GuestLayout from './components/layouts/GuestLayout';
 import ApplicantLayout from './components/layouts/ApplicantLayout';
 import AdminLayout from './components/layouts/AdminLayout';
+
+// 5. Utilities và animations
+import './styles/utilities.css';
+import './styles/animations.css';
+// 6. Fixes
+import './styles/fixes.css';
 
 // Auth Guards
 const GuestRoute = ({ children }) => {

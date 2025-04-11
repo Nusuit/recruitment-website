@@ -36,7 +36,8 @@ html, body {
 /* Typography */
 h1, h2, h3, h4, h5, h6 {
   font-weight: 600;
-  margin-bottom: var(--spacing-3);
+  line-height: 1.2;
+  margin-bottom: var(--spacing-4);
   color: var(--text-primary);
 }
 
@@ -90,7 +91,7 @@ a:hover {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: var(--spacing-2, 8px) var(--spacing-4, 24px);
+  padding: var(--spacing-3) var(--spacing-6);
   font-weight: 500;
   border-radius: var(--border-radius, 8px);
   transition: all 0.2s ease-in-out;
@@ -107,6 +108,8 @@ a:hover {
 .btn-primary:hover {
   background-color: var(--primary-dark);
   border-color: var(--primary-dark);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-md);
 }
 
 .btn-secondary {
@@ -188,6 +191,20 @@ a:hover {
 .job-card:hover {
   transform: translateY(-3px);
   box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+}
+
+/* Card improvements */
+.card {
+  background: white;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow);
+  padding: var(--spacing-6);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
 }
 
 /* Footer Styles */
@@ -319,26 +336,102 @@ a:hover {
     color: var(--primary-color);
   }
   
-  /* Responsive adjustments */
-  @media (max-width: 992px) {
-    .section {
-      padding: 40px 0;
-    }
+  /* Content Typography */
+.content-title {
+  font-size: var(--font-size-2xl);
+  font-weight: 700;
+  color: var(--text-color);
+  margin-bottom: var(--spacing-4);
+}
+
+.content-subtitle {
+  font-size: var(--font-size-lg);
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-6);
+}
+
+.content-text {
+  font-size: var(--font-size-base);
+  line-height: 1.6;
+  color: var(--text-color);
+  margin-bottom: var(--spacing-4);
+}
+
+.content-highlight {
+  font-size: var(--font-size-lg);
+  font-weight: 500;
+  color: var(--primary);
+  margin-bottom: var(--spacing-4);
+  padding: var(--spacing-4);
+  background-color: var(--primary-light);
+  border-radius: var(--border-radius);
+}
+
+/* Content Lists */
+.content-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.content-list li {
+  position: relative;
+  padding-left: var(--spacing-6);
+  margin-bottom: var(--spacing-3);
+}
+
+.content-list li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--primary);
+}
+
+/* Content Grid */
+.content-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--spacing-6);
+}
+
+@media (max-width: 768px) {
+  .content-title {
+    font-size: var(--font-size-xl);
+  }
+  
+  .content-subtitle {
+    font-size: var(--font-size-base);
+  }
+  
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+  .section {
+    padding: 40px 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .social-links {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--spacing-2);
+  }
+  
+  .footer-content {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-6);
   }
 
-  @media (max-width: 768px) {
-    .social-links {
-      flex-direction: column;
-      align-items: flex-start;
-      gap: var(--spacing-2);
-    }
-    
-    .footer-content {
-      grid-template-columns: 1fr;
-      gap: var(--spacing-6);
-    }
-
-    .section-title {
-      margin-bottom: 30px;
-    }
+  .section-title {
+    margin-bottom: 30px;
   }
+}

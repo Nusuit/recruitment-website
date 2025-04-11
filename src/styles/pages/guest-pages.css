@@ -121,3 +121,12 @@
   padding-top: var(--spacing-3);
   border-top: 1px solid var(--light);
 }
+
+.about-image-section img,
+.login-image-section img,
+.hero-image img {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: var(--spacing-4);
+  border-radius: var(--border-radius-lg);
+}

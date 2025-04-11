@@ -1,0 +1,115 @@
+/* src/styles/components/alerts.css */
+
+/* Alert Component */
+.alert {
+    padding: var(--spacing-4);
+    border-radius: var(--border-radius-md);
+    margin-bottom: var(--spacing-4);
+    display: flex;
+    align-items: flex-start;
+    border-left: 4px solid transparent;
+  }
+  
+  .alert-icon {
+    margin-right: var(--spacing-3);
+    flex-shrink: 0;
+  }
+  
+  .alert-content {
+    flex: 1;
+  }
+  
+  .alert-title {
+    font-weight: 600;
+    margin-bottom: var(--spacing-1);
+  }
+  
+  .alert-info {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info);
+    border-left-color: var(--info);
+  }
+  
+  .alert-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+    border-left-color: var(--success);
+  }
+  
+  .alert-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+    border-left-color: var(--warning);
+  }
+  
+  .alert-error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+    border-left-color: var(--error);
+  }
+  
+  /* Badge Component */
+  .badge {
+    display: inline-flex;
+    padding: var(--spacing-0-5) var(--spacing-2);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+  }
+  
+  .badge-primary {
+    background-color: rgba(14, 165, 233, 0.1);
+    color: var(--primary);
+  }
+  
+  .badge-success {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+  }
+  
+  .badge-error {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+  }
+  
+  .badge-warning {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+  }
+  
+  /* Status badges */
+  .status-badge {
+    display: inline-block;
+    padding: var(--spacing-1) var(--spacing-2);
+    border-radius: var(--border-radius-full);
+    font-size: var(--font-size-xs);
+    font-weight: 500;
+  }
+  
+  .status-pending {
+    background-color: rgba(107, 114, 128, 0.1);
+    color: var(--secondary);
+  }
+  
+  .status-shortlisted {
+    background-color: rgba(59, 130, 246, 0.1);
+    color: var(--info);
+  }
+  
+  .status-interview {
+    background-color: rgba(245, 158, 11, 0.1);
+    color: var(--warning);
+  }
+  
+  .status-hired {
+    background-color: rgba(16, 185, 129, 0.1);
+    color: var(--success);
+  }
+  
+  .status-rejected {
+    background-color: rgba(239, 68, 68, 0.1);
+    color: var(--error);
+  }

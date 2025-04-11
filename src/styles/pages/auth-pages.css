@@ -397,3 +397,14 @@
     flex-direction: column;
   }
 }
+
+.auth-image-section {
+  text-align: center;
+  margin-top: var(--spacing-6);
+}
+
+.auth-image-section img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--border-radius-lg);
+}

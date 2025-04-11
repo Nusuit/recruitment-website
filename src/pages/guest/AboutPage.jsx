@@ -9,7 +9,11 @@ const AboutPage = () => {
   return (
     <div className="about-page">
       <AboutHero />
-      
+      <div className="about-image-section">
+        <img src="/assets/images/aboutus1.png" alt="About Us" className="about-image" />
+        <img src="/assets/images/about2.png" alt="Our Mission" className="about-image" />
+        <img src="/assets/images/about3.png" alt="Our Vision" className="about-image" />
+      </div>
       <div className="about-content">
         <section className="team-network-section">
           <TeamNetwork />

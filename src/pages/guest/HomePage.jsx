@@ -81,6 +81,8 @@ const HomePage = () => {
               src="/api/placeholder/500/400" 
               alt="Fashion professional" 
             />
+            <img src="/assets/images/homepage.png" alt="Homepage Illustration" className="homepage-image" />
+            <img src="/assets/images/homepage1.png" alt="Homepage Secondary Illustration" className="homepage-secondary-image" />
           </div>
         </div>
       </section>

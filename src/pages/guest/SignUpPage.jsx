@@ -17,6 +17,7 @@ const SignUpPage = () => {
             alt="Fashion designers illustration" 
             className="fashion-illustration"
           />
+          <img src="/assets/images/register.png" alt="Sign Up Illustration" className="signup-image" />
         </div>
       </div>
     </div>

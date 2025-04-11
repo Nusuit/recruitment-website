@@ -146,6 +146,7 @@ const LoginPage = () => {
             alt="Fashion models illustration" 
             className="fashion-illustration"
           />
+          <img src="/assets/images/login.png" alt="Login Illustration" className="login-image" />
         </div>
       </div>
     </div>

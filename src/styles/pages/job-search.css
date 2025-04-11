@@ -247,18 +247,18 @@
   
   /* Job Card */
   .job-card {
-    background-color: var(--white);
+    background: white;
     border-radius: var(--border-radius-lg);
     box-shadow: var(--shadow);
-    padding: var(--spacing-4);
-    display: flex;
-    gap: var(--spacing-4);
-    transition: transform 0.2s ease;
+    padding: var(--spacing-6);
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
   }
   
   .job-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-lg);
+    border-color: var(--primary-light);
   }
   
   .job-card-logo {
@@ -283,8 +283,9 @@
   }
   
   .job-title {
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-xl);
     font-weight: 600;
+    color: var(--text-primary);
     margin-bottom: var(--spacing-2);
   }
   
@@ -306,11 +307,18 @@
   .job-meta {
     display: flex;
     align-items: center;
-    gap: var(--spacing-3);
+    gap: var(--spacing-4);
+    margin-top: var(--spacing-4);
+    color: var(--text-light);
   }
   
   .company {
     color: var(--text-light);
+    font-weight: 500;
+  }
+  
+  .job-company {
+    color: var(--text-secondary);
     font-weight: 500;
   }
   

@@ -60,7 +60,7 @@ const LoginForm = () => {
   return (
     <div className="login-form-section">
       <div className="brand-logo">
-        <img src="/assets/images/logo.svg" alt="MyJob" />
+        <img src="/assets/images/logo.png" alt="MyJob" />
         <span>MyJob</span>
       </div>
       

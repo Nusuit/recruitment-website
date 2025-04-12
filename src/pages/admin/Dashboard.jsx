@@ -1,299 +1,200 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
-import JobsContext from '../../contexts/JobsContext';
-import SavedJobs from '../../components/jobs/SavedJobs';
-import ApplicationsList from '../../components/applicant/ApplicationsList';
+import { recruiterAPI } from '../../api/recruiter';
 
-const Dashboard = () => {
-  const { user } = useContext(AuthContext);
-  const { getUserApplications, getSavedJobs, getRecommendedJobs, loading } = useContext(JobsContext);
-  
+const RecruiterDashboard = () => {
   const [stats, setStats] = useState({
-    applications: 0,
-    pendingApplications: 0,
+    totalJobs: 0,
+    activeJobs: 0,
+    totalApplications: 0,
+    newApplications: 0,
     interviews: 0,
-    savedJobs: 0
+    hired: 0
   });
-  
-  const [recentActivity, setRecentActivity] = useState([]);
-  const [recommendedJobs, setRecommendedJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+
+  const [recentJobs, setRecentJobs] = useState([]);
+  const [recentApplications, setRecentApplications] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
-      if (loading) return;
-      
-      setIsLoading(true);
-      
       try {
-        // Get data from JobsContext
-        const applications = getUserApplications();
-        const savedJobs = getSavedJobs();
-        const recommended = getRecommendedJobs ? getRecommendedJobs() : [];
+        setLoading(true);
+        
+        // Fetch jobs
+        const jobsResponse = await recruiterAPI.getJobs();
+        const jobs = jobsResponse.jobs;
         
         // Calculate stats
-        const pending = applications.filter(app => 
-          app.status === 'Pending Review' || app.status === 'Shortlisted'
-        ).length;
-        
-        const interviews = applications.filter(app => 
-          app.status === 'Interview Scheduled'
-        ).length;
+        const activeJobs = jobs.filter(job => job.status === 'active');
+        const totalApplications = jobs.reduce((sum, job) => sum + job.applicationsCount, 0);
+        const newApplications = jobs.reduce((sum, job) => 
+          sum + job.newApplicationsCount, 0
+        );
         
         setStats({
-          applications: applications.length,
-          pendingApplications: pending,
-          interviews: interviews,
-          savedJobs: savedJobs.length
+          totalJobs: jobs.length,
+          activeJobs: activeJobs.length,
+          totalApplications,
+          newApplications,
+          interviews: jobs.reduce((sum, job) => sum + job.interviewsCount, 0),
+          hired: jobs.reduce((sum, job) => sum + job.hiredCount, 0)
         });
+
+        // Get recent jobs
+        setRecentJobs(jobs.slice(0, 5));
+
+        // Get recent applications
+        const recentApps = [];
+        for (const job of jobs) {
+          if (recentApps.length >= 5) break;
+          
+          const appsResponse = await recruiterAPI.getJobApplications(job.id);
+          recentApps.push(...appsResponse.applications);
+        }
         
-        // Get recent activity
-        const activity = [
-          ...applications.map(app => ({
-            type: 'application',
-            id: app.id,
-            jobTitle: app.jobTitle,
-            date: app.appliedDate,
-            status: app.status
-          }))
-        ];
-        
-        // Sort by date descending
-        activity.sort((a, b) => new Date(b.date) - new Date(a.date));
-        
-        setRecentActivity(activity.slice(0, 5)); // Get latest 5 activities
-        
-        // Set recommended jobs
-        setRecommendedJobs(recommended.slice(0, 3)); // Top 3 recommendations
-        
-        setIsLoading(false);
-      } catch (error) {
-        console.error('Error fetching dashboard data:', error);
-        setIsLoading(false);
+        setRecentApplications(recentApps.slice(0, 5));
+        setError(null);
+      } catch (err) {
+        setError('Failed to load dashboard data. Please try again.');
+        console.error('Error loading dashboard:', err);
+      } finally {
+        setLoading(false);
       }
     };
-    
+
     fetchDashboardData();
-  }, [loading, getUserApplications, getSavedJobs, getRecommendedJobs]);
+  }, []);
 
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+  if (loading) {
+    return <div className="loading-indicator">Loading dashboard data...</div>;
+  }
 
-  // Sample recommended jobs for when no real recommendations available
-  const sampleRecommendedJobs = [
-    {
-      id: 1,
-      title: 'Fashion Designer',
-      company: 'MyaCorp',
-      location: 'HCM, Vietnam',
-      type: 'Full Time',
-      salary: '$2500 - $3500',
-      matchScore: 95
-    },
-    {
-      id: 2,
-      title: 'Visual Merchandiser',
-      company: 'MyaCorp',
-      location: 'HCM, Vietnam',
-      type: 'Full Time',
-      salary: '$2000 - $2800',
-      matchScore: 88
-    },
-    {
-      id: 3,
-      title: 'Fashion Marketing Specialist',
-      company: 'MyaCorp',
-      location: 'Remote',
-      type: 'Full Time',
-      salary: '$2200 - $3000',
-      matchScore: 82
-    }
-  ];
-
-  // Use sample data if no real recommendations available
-  const displayRecommendedJobs = recommendedJobs.length > 0 ? 
-    recommendedJobs : sampleRecommendedJobs;
-
-  if (isLoading) {
-    return <div className="loading-container">Loading dashboard data...</div>;
+  if (error) {
+    return <div className="error-message">{error}</div>;
   }
 
   return (
-    <div className="applicant-dashboard">
+    <div className="recruiter-dashboard">
       <div className="dashboard-header">
         <h1>Dashboard</h1>
-        <p className="welcome-message">
-          Welcome back, {user?.firstName || 'there'}! Here's your job application summary.
-        </p>
+        <Link to="/recruiter/jobs/new" className="post-job-btn">
+          Post New Job
+        </Link>
       </div>
-      
-      <div className="dashboard-stats">
+
+      <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-icon applications-icon"></div>
-          <div className="stat-content">
-            <h2>{stats.applications}</h2>
-            <p>Total Applications</p>
-          </div>
+          <div className="stat-value">{stats.totalJobs}</div>
+          <div className="stat-label">Total Jobs</div>
         </div>
         
         <div className="stat-card">
-          <div className="stat-icon pending-icon"></div>
-          <div className="stat-content">
-            <h2>{stats.pendingApplications}</h2>
-            <p>Pending Applications</p>
-          </div>
+          <div className="stat-value">{stats.activeJobs}</div>
+          <div className="stat-label">Active Jobs</div>
         </div>
         
         <div className="stat-card">
-          <div className="stat-icon interviews-icon"></div>
-          <div className="stat-content">
-            <h2>{stats.interviews}</h2>
-            <p>Interviews</p>
-          </div>
+          <div className="stat-value">{stats.totalApplications}</div>
+          <div className="stat-label">Total Applications</div>
         </div>
         
         <div className="stat-card">
-          <div className="stat-icon saved-icon"></div>
-          <div className="stat-content">
-            <h2>{stats.savedJobs}</h2>
-            <p>Saved Jobs</p>
-          </div>
+          <div className="stat-value">{stats.newApplications}</div>
+          <div className="stat-label">New Applications</div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-value">{stats.interviews}</div>
+          <div className="stat-label">Interviews Scheduled</div>
+        </div>
+        
+        <div className="stat-card">
+          <div className="stat-value">{stats.hired}</div>
+          <div className="stat-label">Candidates Hired</div>
         </div>
       </div>
-      
-      <div className="dashboard-sections">
-        <div className="dashboard-section">
+
+      <div className="dashboard-content">
+        <div className="recent-jobs">
           <div className="section-header">
-            <h2>Job Recommendations</h2>
-            <Link to="/applicant/jobs" className="view-all-link">Browse All Jobs</Link>
+            <h2>Recent Job Posts</h2>
+            <Link to="/recruiter/jobs" className="view-all">
+              View All Jobs
+            </Link>
           </div>
-          
-          <div className="recommended-jobs">
-            {displayRecommendedJobs.map(job => (
-              <div key={job.id} className="recommended-job-card">
-                <div className="job-match-score">
-                  <div className="score-badge">{job.matchScore}%</div>
-                  <span>Match</span>
+
+          <div className="jobs-list">
+            {recentJobs.map(job => (
+              <div key={job.id} className="job-card">
+                <div className="job-header">
+                  <h3>{job.title}</h3>
+                  <span className={`status ${job.status}`}>{job.status}</span>
                 </div>
                 
-                <div className="job-details">
-                  <h3 className="job-title">
-                    <Link to={`/jobs/${job.id}`}>{job.title}</Link>
-                  </h3>
-                  
-                  <div className="job-meta">
-                    <span className="company-name">{job.company}</span>
-                    <span className="job-location">
-                      <i className="location-icon"></i>
-                      {job.location}
-                    </span>
-                    <span className="job-type">{job.type}</span>
-                  </div>
-                  
-                  <div className="job-salary">
-                    <i className="salary-icon"></i>
-                    <span>{job.salary}</span>
-                  </div>
+                <div className="job-meta">
+                  <span className="location">{job.location}</span>
+                  <span className="type">{job.type}</span>
+                  <span className="applications">
+                    {job.applicationsCount} applications
+                  </span>
                 </div>
-                
+
                 <div className="job-actions">
-                  <Link to={`/jobs/${job.id}`} className="view-job-btn">
-                    View Details
+                  <Link 
+                    to={`/recruiter/jobs/${job.id}/applications`}
+                    className="view-applications"
+                  >
+                    View Applications
+                  </Link>
+                  <Link 
+                    to={`/recruiter/jobs/${job.id}/edit`}
+                    className="edit-job"
+                  >
+                    Edit
                   </Link>
                 </div>
               </div>
             ))}
           </div>
         </div>
-        
-        <div className="dashboard-section">
+
+        <div className="recent-applications">
           <div className="section-header">
             <h2>Recent Applications</h2>
-            <Link to="/applicant/applications" className="view-all-link">View All</Link>
-          </div>
-          
-          <div className="recent-applications">
-            <ApplicationsList limit={3} showViewAll={false} />
-          </div>
-        </div>
-        
-        <div className="dashboard-section">
-          <div className="section-header">
-            <h2>Saved Jobs</h2>
-            <Link to="/applicant/saved-jobs" className="view-all-link">View All</Link>
-          </div>
-          
-          <div className="saved-jobs">
-            <SavedJobs limit={3} showViewAll={false} />
-          </div>
-        </div>
-      </div>
-      
-      <div className="dashboard-activity">
-        <div className="section-header">
-          <h2>Recent Activity</h2>
-        </div>
-        
-        {recentActivity.length === 0 ? (
-          <div className="empty-state">
-            <p>No recent activity to show.</p>
-            <Link to="/jobs" className="browse-jobs-btn">
-              Browse Jobs
+            <Link to="/recruiter/applications" className="view-all">
+              View All Applications
             </Link>
           </div>
-        ) : (
-          <div className="activity-timeline">
-            {recentActivity.map((activity, index) => (
-              <div key={index} className="activity-item">
-                <div className="activity-date">
-                  {formatDate(activity.date)}
+
+          <div className="applications-list">
+            {recentApplications.map(application => (
+              <div key={application.id} className="application-card">
+                <div className="applicant-info">
+                  <h3>{application.applicantName}</h3>
+                  <p className="job-title">
+                    Applied for: {application.jobTitle}
+                  </p>
                 </div>
-                <div className="activity-indicator"></div>
-                <div className="activity-content">
-                  {activity.type === 'application' && (
-                    <div className="activity-application">
-                      <p>
-                        You applied for <strong>{activity.jobTitle}</strong>
-                      </p>
-                      <span className={`status-badge ${activity.status.toLowerCase().replace(' ', '-')}`}>
-                        {activity.status}
-                      </span>
-                    </div>
-                  )}
+
+                <div className="application-meta">
+                  <span className="date">
+                    {new Date(application.appliedDate).toLocaleDateString()}
+                  </span>
+                  <span className={`status ${application.status.toLowerCase()}`}>
+                    {application.status}
+                  </span>
                 </div>
+
+                <Link 
+                  to={`/recruiter/applications/${application.id}`}
+                  className="view-details"
+                >
+                  View Details
+                </Link>
               </div>
             ))}
-          </div>
-        )}
-      </div>
-      
-      <div className="dashboard-tips">
-        <h2>Job Search Tips</h2>
-        <div className="tips-container">
-          <div className="tip-card">
-            <div className="tip-icon resume-icon"></div>
-            <h3>Update Your Resume</h3>
-            <p>Keep your resume current with your latest skills and experiences.</p>
-          </div>
-          
-          <div className="tip-card">
-            <div className="tip-icon interview-icon"></div>
-            <h3>Prepare for Interviews</h3>
-            <p>Research the company and practice answering common interview questions.</p>
-          </div>
-          
-          <div className="tip-card">
-            <div className="tip-icon network-icon"></div>
-            <h3>Network</h3>
-            <p>Connect with professionals in your field to discover new opportunities.</p>
           </div>
         </div>
       </div>
@@ -301,4 +202,4 @@ const Dashboard = () => {
   );
 };
 
-export default Dashboard;
+export default RecruiterDashboard;

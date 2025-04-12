@@ -1,5 +1,5 @@
 import React from 'react';
-import { Link, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { JobsProvider } from './contexts/JobsContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -36,9 +36,6 @@ import JobsPage from './pages/guest/JobsPage';
 import ContactPage from './pages/guest/ContactPage';
 import LoginPage from './pages/guest/LoginPage';
 import SignUpPage from './pages/guest/SignUpPage';
-import ForgotPasswordPage from './pages/guest/ForgotPasswordPage';
-import ResetPasswordPage from './pages/guest/ResetPasswordPage';
-import EmailVerificationPage from './pages/guest/EmailVerificationPage';
 
 // Applicant Pages
 import ApplicantDashboard from './pages/applicant/Dashboard';
@@ -46,7 +43,9 @@ import JobSearchPage from './pages/applicant/JobSearchPage';
 import JobDetailsPage from './pages/applicant/JobDetailsPage';
 import SavedJobsPage from './pages/applicant/SavedJobsPage';
 import ApplicationsPage from './pages/applicant/ApplicationsPage';
-import ProfilePage from './pages/applicant/ProfilePage';
+import ProfilePage from './pages/applicant/profile/ProfilePage';
+import InterviewDetailsPage from './pages/applicant/InterviewDetailsPage';
+import InterviewFeedbackPage from './pages/applicant/InterviewFeedbackPage';
 
 // Admin Pages
 import AdminDashboard from './pages/admin/Dashboard';
@@ -66,32 +65,27 @@ import './styles/animations.css';
 // 6. Fixes
 import './styles/fixes.css';
 
-// Auth Guards
-const GuestRoute = ({ children }) => {
-  const isAuthenticated = localStorage.getItem('user') !== null;
-  if (isAuthenticated) {
-    const user = JSON.parse(localStorage.getItem('user'));
-    return user.role === 'admin' ? <Navigate to="/admin/dashboard" /> : <Navigate to="/applicant/dashboard" />;
+// Guards
+const GuestGuard = ({ children }) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    return <Navigate to="/applicant/dashboard" />;
   }
   return children;
 };
 
-const ProtectedRoute = ({ children, requiredRole }) => {
-  const isAuthenticated = localStorage.getItem('user') !== null;
-  
-  if (!isAuthenticated) {
+const AuthGuard = ({ children, requiredRole }) => {
+  const token = localStorage.getItem('token');
+  const user = JSON.parse(localStorage.getItem('user'));
+
+  if (!token) {
     return <Navigate to="/login" />;
   }
-  
-  if (requiredRole) {
-    const user = JSON.parse(localStorage.getItem('user'));
-    if (user.role !== requiredRole) {
-      return user.role === 'admin' 
-        ? <Navigate to="/admin/dashboard" /> 
-        : <Navigate to="/applicant/dashboard" />;
-    }
+
+  if (requiredRole && user?.role !== requiredRole) {
+    return <Navigate to="/" />;
   }
-  
+
   return children;
 };
 
@@ -151,60 +145,79 @@ function App() {
       <CssBaseline />
       <AuthProvider>
         <JobsProvider>
-          <Routes>
-            {/* Guest Routes */}
-            <Route path="/" element={<GuestLayout />}>
-              <Route index element={<HomePage />} />
-              <Route path="about" element={<AboutPage />} />
-              <Route path="jobs" element={<JobsPage />} />
-              <Route path="jobs/:id" element={<JobDetailsPage />} />
-              <Route path="contact" element={<ContactPage />} />
-              <Route path="login" element={<GuestRoute><LoginPage /></GuestRoute>} />
-              <Route path="signup" element={<GuestRoute><SignUpPage /></GuestRoute>} />
-              <Route path="forgot-password" element={<GuestRoute><ForgotPasswordPage /></GuestRoute>} />
-              <Route path="reset-password" element={<GuestRoute><ResetPasswordPage /></GuestRoute>} />
-              <Route path="verify-email" element={<GuestRoute><EmailVerificationPage /></GuestRoute>} />
-            </Route>
-            
-            {/* Applicant Routes */}
-            <Route path="/applicant" element={
-              <ProtectedRoute requiredRole="applicant">
-                <ApplicantLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="dashboard" element={<ApplicantDashboard />} />
-              <Route path="jobs" element={<JobSearchPage />} />
-              <Route path="jobs/:id" element={<JobDetailsPage />} />
-              <Route path="saved-jobs" element={<SavedJobsPage />} />
-              <Route path="applications" element={<ApplicationsPage />} />
-              <Route path="profile" element={<ProfilePage />} />
-            </Route>
-            
-            {/* Admin Routes */}
-            <Route path="/admin" element={
-              <ProtectedRoute requiredRole="admin">
-                <AdminLayout />
-              </ProtectedRoute>
-            }>
-              <Route path="dashboard" element={<AdminDashboard />} />
-              <Route path="jobs" element={<JobManagement />} />
-              <Route path="applicants" element={<ApplicantsManagement />} />
-              <Route path="company-profile" element={<CompanyProfilePage />} />
-              <Route path="reports" element={<ReportsPage />} />
-            </Route>
-            
-            {/* 404 Route */}
-            <Route path="*" element={
-              <div className="not-found">
-                <div className="container">
-                  <h1>404</h1>
-                  <h2>Không tìm thấy trang</h2>
-                  <p>Trang bạn đang tìm kiếm không tồn tại hoặc đã bị xóa.</p>
-                  <Link to="/" className="btn btn-primary">Về trang chủ</Link>
+          <Router>
+            <Routes>
+              {/* Guest Routes */}
+              <Route path="/" element={<GuestLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="about" element={<AboutPage />} />
+                <Route path="jobs" element={<JobsPage />} />
+                <Route path="jobs/:id" element={<JobDetailsPage />} />
+                <Route path="contact" element={<ContactPage />} />
+                <Route 
+                  path="login" 
+                  element={
+                    <GuestGuard>
+                      <LoginPage />
+                    </GuestGuard>
+                  } 
+                />
+                <Route 
+                  path="signup" 
+                  element={
+                    <GuestGuard>
+                      <SignUpPage />
+                    </GuestGuard>
+                  } 
+                />
+              </Route>
+
+              {/* Applicant Routes */}
+              <Route 
+                path="/applicant" 
+                element={
+                  <AuthGuard requiredRole="applicant">
+                    <ApplicantLayout />
+                  </AuthGuard>
+                }
+              >
+                <Route path="dashboard" element={<ApplicantDashboard />} />
+                <Route path="jobs" element={<JobSearchPage />} />
+                <Route path="jobs/:id" element={<JobDetailsPage />} />
+                <Route path="saved-jobs" element={<SavedJobsPage />} />
+                <Route path="applications" element={<ApplicationsPage />} />
+                <Route path="applications/:id" element={<JobDetailsPage />} />
+                <Route path="applications/:id/interview" element={<InterviewDetailsPage />} />
+                <Route path="applications/:id/feedback" element={<InterviewFeedbackPage />} />
+                <Route path="profile" element={<ProfilePage />} />
+              </Route>
+
+              {/* Admin Routes */}
+              <Route
+                path="/admin"
+                element={
+                  <AuthGuard requiredRole="admin">
+                    <AdminLayout />
+                  </AuthGuard>
+                }
+              >
+                <Route path="dashboard" element={<AdminDashboard />} />
+                <Route path="jobs" element={<JobManagement />} />
+                <Route path="applicants" element={<ApplicantsManagement />} />
+                <Route path="company-profile" element={<CompanyProfilePage />} />
+                <Route path="reports" element={<ReportsPage />} />
+              </Route>
+
+              {/* 404 Route */}
+              <Route path="*" element={
+                <div className="not-found">
+                  <h1>404 - Page Not Found</h1>
+                  <p>The page you are looking for does not exist.</p>
+                  <Link to="/">Go Home</Link>
                 </div>
-              </div>
-            } />
-          </Routes>
+              } />
+            </Routes>
+          </Router>
         </JobsProvider>
       </AuthProvider>
     </ThemeProvider>

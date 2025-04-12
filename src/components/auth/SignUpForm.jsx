@@ -72,7 +72,7 @@ const SignUpForm = () => {
   return (
     <div className="signup-form-section">
       <div className="brand-logo">
-        <img src="/assets/images/logo.svg" alt="MyJob" />
+        <img src="/assets/images/logo.png" alt="MyJob" />
         <span>MyJob</span>
       </div>
       

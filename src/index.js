@@ -1,6 +1,5 @@
 import React from 'react';
 import { createRoot } from 'react-dom/client';
-import { BrowserRouter } from 'react-router-dom';
 import App from './App';
 // Import main styles
 import './styles/base/variables.css';
@@ -16,9 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     root.render(
       <React.StrictMode>
-        <BrowserRouter>
-          <App />
-        </BrowserRouter>
+        <App />
       </React.StrictMode>
     );
   } else {

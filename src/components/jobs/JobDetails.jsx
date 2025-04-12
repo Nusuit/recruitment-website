@@ -58,7 +58,7 @@ const JobDetails = ({ job, showApplyButton = true }) => {
       <div className="job-header">
         <div className="job-title-section">
           <div className="job-company-logo">
-            <img src="/assets/images/logo.svg" alt={job.company} />
+            <img src="/assets/images/logo.png" alt={job.company} />
           </div>
           <div className="job-title-info">
             <h1>{job.title}</h1>
@@ -197,7 +197,7 @@ const JobDetails = ({ job, showApplyButton = true }) => {
           <div className="company-overview">
             <h3>Company Info</h3>
             <div className="company-logo">
-              <img src="/assets/images/logo.svg" alt={job.company} />
+              <img src="/assets/images/logo.png" alt={job.company} />
             </div>
             <h4>{job.company}</h4>
             <p>MyaCorp is a leading fashion retailer specializing in high-quality apparel and accessories.</p>

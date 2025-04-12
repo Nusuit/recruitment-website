@@ -11,7 +11,7 @@ const Footer = () => {
         <div className="footer-content">
           <div className="footer-section">
             <div className="footer-logo">
-              <img src="/assets/images/logo.svg" alt="MyaCorp" />
+              <img src="/assets/images/logo.png" alt="MyaCorp" />
             </div>
             <p className="company-info">
               Connecting top talent with the best opportunities in the fashion industry. We're dedicated to helping passionate professionals find their dream careers.

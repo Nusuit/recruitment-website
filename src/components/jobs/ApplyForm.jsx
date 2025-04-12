@@ -1,251 +1,359 @@
-import React, { useState, useContext } from 'react';
-import AuthContext from '../../contexts/AuthContext';
+import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { candidateAPI } from '../../api/candidate';
 
-const ApplyForm = ({ jobId, jobTitle, onSubmit }) => {
-  const { user } = useContext(AuthContext);
-  
+const JobApplicationForm = ({ jobId, jobTitle }) => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    resume: null,
+    firstName: '',
+    lastName: '', 
+    email: '',
+    phone: '',
+    experience: '',
+    linkedin: '',
     coverLetter: '',
-    rating: 0
+    resume: null,
+    expectedSalary: '',
+    noticePeriod: '',
+    availableDate: '',
+    questions: {
+      workAuthorization: '',
+      relocate: '',
+      remoteWork: '',
+      salaryExpectations: ''
+    }
   });
-  
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  const handleChange = (e) => {
+
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [profile, setProfile] = useState(null);
+
+  // Fetch user profile to pre-fill form
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await candidateAPI.getProfile();
+        const userProfile = response.profile;
+
+        setProfile(userProfile);
+        setFormData(prev => ({
+          ...prev,
+          firstName: userProfile.firstName || '',
+          lastName: userProfile.lastName || '',
+          email: userProfile.email || '',
+          phone: userProfile.phone || '',
+          experience: userProfile.experience || '',
+          linkedin: userProfile.linkedin || ''
+        }));
+      } catch (err) {
+        console.error('Error fetching profile:', err);
+      }
+    };
+
+    fetchProfile();
+  }, []);
+
+  const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-    
-    // Clear error for this field when user changes it
-    if (errors[name]) {
-      setErrors({
-        ...errors,
-        [name]: ''
-      });
+    if (name.includes('questions.')) {
+      const questionKey = name.split('.')[1];
+      setFormData(prev => ({
+        ...prev,
+        questions: {
+          ...prev.questions,
+          [questionKey]: value
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
     }
   };
-  
+
   const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      setFormData({
-        ...formData,
-        resume: file
-      });
-      
-      // Clear error for this field
-      if (errors.resume) {
-        setErrors({
-          ...errors,
-          resume: ''
-        });
+      if (file.size > 5 * 1024 * 1024) { // 5MB limit
+        setError('Resume file size should not exceed 5MB');
+        return;
       }
+      setFormData(prev => ({
+        ...prev,
+        resume: file
+      }));
     }
   };
-  
-  const handleRatingChange = (rating) => {
-    setFormData({
-      ...formData,
-      rating
-    });
-  };
-  
+
   const validateForm = () => {
-    const newErrors = {};
+    const errors = {};
     
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = 'First name is required';
+    if (!formData.firstName) errors.firstName = 'First name is required';
+    if (!formData.lastName) errors.lastName = 'Last name is required';
+    if (!formData.email) errors.email = 'Email is required';
+    if (!formData.phone) errors.phone = 'Phone number is required';
+    if (!formData.resume) errors.resume = 'Resume is required';
+    
+    if (Object.keys(errors).length > 0) {
+      setError('Please fill in all required fields');
+      return false;
     }
     
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = 'Last name is required';
-    }
-    
-    if (!formData.email.trim()) {
-      newErrors.email = 'Email is required';
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
-    }
-    
-    if (!formData.phone.trim()) {
-      newErrors.phone = 'Phone number is required';
-    }
-    
-    if (!formData.resume) {
-      newErrors.resume = 'Resume is required';
-    }
-    
-    return newErrors;
+    return true;
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    const newErrors = validateForm();
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
+    if (!validateForm()) return;
+
     try {
-      // In a real app, you would upload the file and form data to an API
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
+      setLoading(true);
+      setError(null);
+
+      const applicationData = new FormData();
+
+      // Append text fields
+      Object.keys(formData).forEach(key => {
+        if (key !== 'resume' && key !== 'questions') {
+          applicationData.append(key, formData[key]);
+        }
+      });
+
+      // Append questions as JSON
+      applicationData.append('questions', JSON.stringify(formData.questions));
+
+      // Append resume file if exists
+      if (formData.resume) {
+        applicationData.append('resume', formData.resume);
+      }
+
+      await candidateAPI.applyJob(jobId, applicationData);
+
+      // Redirect to applications page with success message
+      navigate('/applications', { 
+        state: { 
+          success: true, 
+          message: 'Application submitted successfully!' 
+        }
+      });
       
-      onSubmit({
-        ...formData,
-        jobId,
-        jobTitle,
-        applicationDate: new Date().toISOString()
-      });
-    } catch (error) {
-      console.error('Error submitting application:', error);
-      setErrors({
-        submit: 'Failed to submit application. Please try again later.'
-      });
+    } catch (err) {
+      setError(err.message || 'Failed to submit application. Please try again.');
+      console.error('Error submitting application:', err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
+
   return (
-    <form className="apply-form" onSubmit={handleSubmit}>
-      {errors.submit && (
-        <div className="error-message">{errors.submit}</div>
+    <form onSubmit={handleSubmit} className="job-application-form">
+      <div className="form-header">
+        <h2>Apply for {jobTitle}</h2>
+        <p>Please fill out the form below to submit your application</p>
+      </div>
+
+      {error && (
+        <div className="error-message">
+          {error}
+        </div>
       )}
-      
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="firstName">First Name</label>
-          <input
-            type="text"
-            id="firstName"
-            name="firstName"
-            value={formData.firstName}
-            onChange={handleChange}
-            placeholder="Enter your first name"
-          />
-          {errors.firstName && (
-            <div className="field-error">{errors.firstName}</div>
-          )}
-        </div>
+
+      <div className="form-section">
+        <h3>Personal Information</h3>
         
-        <div className="form-group">
-          <label htmlFor="lastName">Last Name</label>
-          <input
-            type="text"
-            id="lastName"
-            name="lastName"
-            value={formData.lastName}
-            onChange={handleChange}
-            placeholder="Enter your last name"
-          />
-          {errors.lastName && (
-            <div className="field-error">{errors.lastName}</div>
-          )}
-        </div>
-      </div>
-      
-      <div className="form-row">
-        <div className="form-group">
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-          />
-          {errors.email && (
-            <div className="field-error">{errors.email}</div>
-          )}
-        </div>
-        
-        <div className="form-group">
-          <label htmlFor="phone">Phone Number</label>
-          <input
-            type="tel"
-            id="phone"
-            name="phone"
-            value={formData.phone}
-            onChange={handleChange}
-            placeholder="Enter your phone number"
-          />
-          {errors.phone && (
-            <div className="field-error">{errors.phone}</div>
-          )}
-        </div>
-      </div>
-      
-      <div className="form-group">
-        <label htmlFor="resume">Resume</label>
-        <div className="file-input-container">
-          <input
-            type="file"
-            id="resume"
-            name="resume"
-            onChange={handleFileChange}
-            accept=".pdf,.doc,.docx"
-          />
-          <div className="file-input-text">
-            {formData.resume ? formData.resume.name : 'Upload your resume (PDF, DOC, DOCX)'}
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="firstName">First Name*</label>
+            <input
+              type="text"
+              id="firstName"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleInputChange}
+              required
+            />
           </div>
-          <button type="button" className="file-input-btn">Browse</button>
+
+          <div className="form-group">
+            <label htmlFor="lastName">Last Name*</label>
+            <input
+              type="text"
+              id="lastName"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
         </div>
-        {errors.resume && (
-          <div className="field-error">{errors.resume}</div>
-        )}
-      </div>
-      
-      <div className="form-group">
-        <label htmlFor="coverLetter">Cover Letter (Optional)</label>
-        <textarea
-          id="coverLetter"
-          name="coverLetter"
-          value={formData.coverLetter}
-          onChange={handleChange}
-          rows={4}
-          placeholder="Tell us why you're a good fit for this position"
-        ></textarea>
-      </div>
-      
-      <div className="form-group">
-        <label>Rate your skills for this job</label>
-        <div className="rating-container">
-          {[1, 2, 3, 4, 5].map((star) => (
-            <button
-              key={star}
-              type="button"
-              className={`rating-star ${formData.rating >= star ? 'active' : ''}`}
-              onClick={() => handleRatingChange(star)}
-            >
-              ★
-            </button>
-          ))}
+
+        <div className="form-row">
+          <div className="form-group">
+            <label htmlFor="email">Email Address*</label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="phone">Phone Number*</label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleInputChange}
+              required
+            />
+          </div>
         </div>
       </div>
-      
+
+      <div className="form-section">
+        <h3>Professional Information</h3>
+        
+        <div className="form-group">
+          <label htmlFor="resume">Resume/CV*</label>
+          <div className="file-upload">
+            <input
+              type="file"
+              id="resume"
+              name="resume"
+              accept=".pdf,.doc,.docx"
+              onChange={handleFileChange}
+              required
+            />
+            <p className="file-info">
+              Accepted formats: PDF, DOC, DOCX (Max 5MB)
+            </p>
+          </div>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="experience">Years of Experience</label>
+          <input
+            type="text"
+            id="experience"
+            name="experience"
+            value={formData.experience}
+            onChange={handleInputChange}
+            placeholder="e.g. 3 years"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="linkedin">LinkedIn Profile</label>
+          <input
+            type="url"
+            id="linkedin"
+            name="linkedin"
+            value={formData.linkedin}
+            onChange={handleInputChange}
+            placeholder="https://linkedin.com/in/yourprofile"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="coverLetter">Cover Letter</label>
+          <textarea
+            id="coverLetter"
+            name="coverLetter"
+            value={formData.coverLetter}
+            onChange={handleInputChange}
+            rows={5}
+            placeholder="Tell us why you're interested in this position and what makes you a great candidate"
+          />
+        </div>
+      </div>
+
+      <div className="form-section">
+        <h3>Additional Questions</h3>
+        
+        <div className="form-group">
+          <label htmlFor="questions.workAuthorization">
+            Are you legally authorized to work in this country?*
+          </label>
+          <select
+            id="questions.workAuthorization"
+            name="questions.workAuthorization"
+            value={formData.questions.workAuthorization}
+            onChange={handleInputChange}
+            required
+          >
+            <option value="">Select an answer</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="questions.relocate">
+            Are you willing to relocate if necessary?
+          </label>
+          <select
+            id="questions.relocate"
+            name="questions.relocate"
+            value={formData.questions.relocate}
+            onChange={handleInputChange}
+          >
+            <option value="">Select an answer</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+            <option value="maybe">Maybe</option>
+          </select>
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="expectedSalary">Expected Salary</label>
+          <input
+            type="text"
+            id="expectedSalary"
+            name="expectedSalary"
+            value={formData.expectedSalary}
+            onChange={handleInputChange}
+            placeholder="e.g. $50,000/year"
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="availableDate">When can you start?</label>
+          <input
+            type="date"
+            id="availableDate"
+            name="availableDate"
+            value={formData.availableDate}
+            onChange={handleInputChange}
+            min={new Date().toISOString().split('T')[0]}
+          />
+        </div>
+      </div>
+
       <div className="form-actions">
-        <button
-          type="submit"
-          className="submit-application-btn"
-          disabled={isSubmitting}
+        <button 
+          type="button" 
+          className="cancel-btn"
+          onClick={() => navigate(-1)}
         >
-          {isSubmitting ? 'Applying...' : 'Apply Now'}
+          Cancel
+        </button>
+        
+        <button 
+          type="submit"
+          className="submit-btn"
+          disabled={loading}
+        >
+          {loading ? 'Submitting...' : 'Submit Application'}
         </button>
       </div>
     </form>
   );
 };
 
-export default ApplyForm;
+export default JobApplicationForm;

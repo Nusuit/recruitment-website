@@ -1,69 +1,64 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
+import React, { useState } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import authAPI from '../../api/auth';
 
 const LoginPage = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
     rememberMe: false
   });
   const [error, setError] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  
-  const { login } = useContext(AuthContext);
-  const navigate = useNavigate();
-  
+  const [loading, setLoading] = useState(false);
+
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({
-      ...formData,
+    setFormData(prev => ({
+      ...prev,
       [name]: type === 'checkbox' ? checked : value
-    });
+    }));
   };
-  
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError('');
-    
+
     try {
-      const { success, error, user } = await login(formData.email, formData.password);
+      const response = await authAPI.login(formData.email, formData.password);
+      const { user } = response;
+
+      // Redirect dựa vào role
+      const redirect = location.state?.from || 
+        (user.role === 'recruiter' ? '/recruiter/dashboard' : '/candidate/dashboard');
+      navigate(redirect, { replace: true });
       
-      if (success) {
-        // Redirect based on user role
-        if (user.role === 'admin') {
-          navigate('/admin/dashboard');
-        } else {
-          navigate('/applicant/dashboard');
-        }
-      } else {
-        setError(error || 'Login failed. Please check your credentials.');
-      }
     } catch (err) {
-      setError('An unexpected error occurred. Please try again later.');
+      setError(err.message || 'Login failed. Please try again.');
       console.error('Login error:', err);
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
-  
+
   return (
     <div className="login-page">
       <div className="login-container">
         <div className="login-form-section">
           <div className="brand-logo">
-            <img src="/assets/images/logo.svg" alt="MyJob" />
+            <img src="/assets/images/logo.png" alt="MyJob" />
             <span>MyJob</span>
           </div>
-          
+
           <div className="login-header">
             <h2>Log In</h2>
             <p>Don't have account? <Link to="/signup">Create Account</Link></p>
           </div>
-          
+
           {error && <div className="error-message">{error}</div>}
-          
+
           <form onSubmit={handleSubmit} className="login-form">
             <div className="form-group">
               <label htmlFor="email">Email address</label>
@@ -77,25 +72,20 @@ const LoginPage = () => {
                 placeholder="example@email.com"
               />
             </div>
-            
+
             <div className="form-group">
               <label htmlFor="password">Password</label>
-              <div className="password-input">
-                <input
-                  type="password"
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  placeholder="••••••••"
-                />
-                <button type="button" className="toggle-password">
-                  <span className="eye-icon">👁️</span>
-                </button>
-              </div>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleChange}
+                required
+                placeholder="••••••••"
+              />
             </div>
-            
+
             <div className="form-options">
               <div className="remember-me">
                 <input
@@ -107,46 +97,32 @@ const LoginPage = () => {
                 />
                 <label htmlFor="rememberMe">Remember me</label>
               </div>
-              <Link to="/forgot-password" className="forgot-password">
-                Forgot password?
-              </Link>
+              
+              <Link to="/forgot-password">Forgot password?</Link>
             </div>
-            
+
             <button 
               type="submit" 
               className="login-button"
-              disabled={isLoading}
+              disabled={loading}
             >
-              {isLoading ? 'Logging in...' : 'Log In'}
+              {loading ? 'Logging in...' : 'Log In'}
             </button>
-            
+
             <div className="social-login">
-              <p>or sign in with</p>
+              <p>Or sign in with</p>
               <div className="social-buttons">
-                <button type="button" className="facebook-login">
-                  <span className="facebook-icon">f</span>
-                  Sign in with Facebook
-                </button>
                 <button type="button" className="google-login">
-                  <span className="google-icon">G</span>
+                  <img src="/assets/icons/google.svg" alt="Google" />
                   Sign in with Google
                 </button>
               </div>
             </div>
           </form>
         </div>
-        
-        <div className="login-image-section">
-          <div className="quote">
-            <p>"Style is a way to say who you are without having to speak."</p>
-            <cite>- Rachel Zoe</cite>
-          </div>
-          <img 
-            src="/assets/images/illustrations/fashion-models.png" 
-            alt="Fashion models illustration" 
-            className="fashion-illustration"
-          />
-          <img src="/assets/images/login.png" alt="Login Illustration" className="login-image" />
+
+        <div className="login-image">
+          <img src="/assets/images/login.png" alt="Login" />
         </div>
       </div>
     </div>

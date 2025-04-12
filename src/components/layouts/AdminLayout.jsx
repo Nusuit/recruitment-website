@@ -41,7 +41,7 @@ const AdminLayout = ({ children }) => {
       <aside className={`admin-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
         <div className="sidebar-header">
           <div className="company-logo">
-            <img src="/assets/images/logo.svg" alt="MyaCorp Logo" />
+            <img src="/assets/images/logo.png" alt="MyaCorp Logo" />
             {!collapsed && <span className="company-name">MyaCorp</span>}
           </div>
           <button 

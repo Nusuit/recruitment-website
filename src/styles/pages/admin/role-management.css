@@ -1,0 +1,162 @@
+.role-management-page {
+  padding: var(--spacing-6);
+}
+
+.roles-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-6);
+}
+
+.role-card {
+  background: white;
+  border-radius: var(--border-radius);
+  padding: var(--spacing-4);
+  box-shadow: var(--shadow);
+}
+
+.role-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+}
+
+.role-header h3 {
+  font-size: var(--font-size-lg);
+  font-weight: 600;
+}
+
+.role-actions {
+  display: flex;
+  gap: var(--spacing-2);
+}
+
+.edit-btn,
+.delete-btn {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+}
+
+.edit-btn {
+  background-color: var(--primary-light);
+  color: var(--primary);
+}
+
+.delete-btn {
+  background-color: var(--error-light);
+  color: var(--error);
+}
+
+.role-description {
+  color: var(--text-secondary);
+  margin-bottom: var(--spacing-4);
+}
+
+.permissions-list {
+  border-top: 1px solid var(--border-color);
+  padding-top: var(--spacing-3);
+}
+
+.permissions-list h4 {
+  margin-bottom: var(--spacing-3);
+  font-weight: 600;
+}
+
+.permission-item {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+  margin-bottom: var(--spacing-2);
+}
+
+.permission-status {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  font-size: var(--font-size-sm);
+}
+
+.permission-status.enabled {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.permission-status.disabled {
+  background-color: var(--error-light);
+  color: var(--error);
+}
+
+.permission-name {
+  color: var(--text-secondary);
+}
+
+/* Modal Form Styles */
+.role-form {
+  padding: var(--spacing-4);
+}
+
+.form-group {
+  margin-bottom: var(--spacing-4);
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  font-weight: 500;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: var(--spacing-2);
+  border: 1px solid var(--border-color);
+  border-radius: var(--border-radius);
+}
+
+.permissions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--spacing-3);
+}
+
+.permission-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-2);
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--spacing-3);
+  margin-top: var(--spacing-4);
+}
+
+.cancel-btn,
+.create-btn,
+.save-btn {
+  padding: var(--spacing-2) var(--spacing-4);
+  border-radius: var(--border-radius);
+}
+
+.cancel-btn {
+  background-color: var(--gray-100);
+}
+
+.create-btn,
+.save-btn {
+  background-color: var(--primary);
+  color: white;
+}
+
+@media (max-width: 768px) {
+  .roles-grid {
+    grid-template-columns: 1fr;
+  }
+}

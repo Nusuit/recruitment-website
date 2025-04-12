@@ -68,7 +68,7 @@ const ResetPasswordForm = () => {
   return (
     <div className="password-form-section">
       <div className="brand-logo">
-        <img src="/assets/images/logo.svg" alt="MyJob" />
+        <img src="/assets/images/logo.png" alt="MyJob" />
         <span>MyJob</span>
       </div>
       

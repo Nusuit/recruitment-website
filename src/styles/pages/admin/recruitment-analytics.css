@@ -1,0 +1,134 @@
+.recruitment-analytics-page {
+  padding: var(--spacing-6);
+}
+
+.stages-analysis {
+  margin-top: var(--spacing-6);
+}
+
+.stages-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.stage-card {
+  background: white;
+  padding: var(--spacing-4);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.stage-card h3 {
+  margin-bottom: var(--spacing-3);
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.stage-metrics {
+  display: grid;
+  gap: var(--spacing-3);
+}
+
+.stage-metric {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-2);
+  background: var(--gray-50);
+  border-radius: var(--border-radius);
+}
+
+.metric-label {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.efficiency-insights {
+  margin-top: var(--spacing-6);
+}
+
+.insights-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+  gap: var(--spacing-4);
+  margin-top: var(--spacing-4);
+}
+
+.insight-card {
+  background: white;
+  padding: var(--spacing-4);
+  border-radius: var(--border-radius);
+  box-shadow: var(--shadow);
+}
+
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-3);
+}
+
+.insight-header h3 {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.impact-badge {
+  padding: var(--spacing-1) var(--spacing-2);
+  border-radius: var(--border-radius);
+  font-size: var(--font-size-sm);
+  font-weight: 500;
+}
+
+.impact-badge.high {
+  background-color: var(--error-light);
+  color: var(--error);
+}
+
+.impact-badge.medium {
+  background-color: var(--warning-light);
+  color: var(--warning);
+}
+
+.impact-badge.low {
+  background-color: var(--success-light);
+  color: var(--success);
+}
+
+.recommendation {
+  margin-top: var(--spacing-3);
+  padding-top: var(--spacing-3);
+  border-top: 1px solid var(--border-color);
+}
+
+.recommendation strong {
+  display: block;
+  margin-bottom: var(--spacing-2);
+  color: var(--text-color);
+}
+
+.recommendation p {
+  color: var(--text-secondary);
+  font-size: var(--font-size-sm);
+}
+
+.warning {
+  color: var(--warning);
+}
+
+.chart-container.full-width {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 768px) {
+  .recruitment-analytics-page {
+    padding: var(--spacing-4);
+  }
+
+  .stages-grid,
+  .insights-grid {
+    grid-template-columns: 1fr;
+  }
+}

@@ -5,9 +5,20 @@
   box-sizing: border-box;
 }
 
+/* Reset body và root */
+body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  background-color: #fff; /* Đặt màu trắng */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Base styles */
 body {
-  margin: 0;
   font-family: var(--font-sans, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

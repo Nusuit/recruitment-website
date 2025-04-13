@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { verifyEmail } from '../../api/auth';
+import { authAPI } from '../../api/auth';  // Thêm dòng này
 
 const EmailVerification = () => {
   const navigate = useNavigate();
@@ -11,6 +11,7 @@ const EmailVerification = () => {
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [timer, setTimer] = useState(0);
   const [canResend, setCanResend] = useState(false);
+  const [resendSuccess, setResendSuccess] = useState(false);
   
   // Email from location state or default
   const email = location.state?.email || 'your email';
@@ -93,26 +94,15 @@ const EmailVerification = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // Check if code is complete
-    if (verificationCode.some(digit => digit === '')) {
-      setSubmitError('Please enter the complete verification code');
-      return;
-    }
-    
     setIsSubmitting(true);
     setSubmitError('');
     
     try {
-      // Format code as string
       const code = verificationCode.join('');
-      
-      // Call API to verify
-      const result = await verifyEmail(code);
+      const result = await authAPI.verifyOTP(email, code);
       
       if (result.success) {
         setSubmitSuccess(true);
-        
-        // Redirect to login after 3 seconds
         setTimeout(() => {
           navigate('/login', {
             state: {
@@ -122,11 +112,11 @@ const EmailVerification = () => {
           });
         }, 3000);
       } else {
-        setSubmitError(result.error);
+        setSubmitError(result.message || 'Verification failed');
       }
     } catch (error) {
-      console.error('Email verification error:', error);
-      setSubmitError('An unexpected error occurred. Please try again.');
+      console.error('Verification error:', error);
+      setSubmitError('Failed to verify email. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -140,11 +130,23 @@ const EmailVerification = () => {
     setCanResend(false);
     setTimer(60); // Reset timer
     
-    // In a real app, you would call an API endpoint to resend the verification email
-    console.log('Resending verification code to:', email);
-    
-    // For demo purposes, just show a success message
-    alert('A new verification code has been sent to your email.');
+    try {
+      const result = await authAPI.resendOTP(email);
+      
+      if (result.success) {
+        setResendSuccess(true);
+        setTimeout(() => setResendSuccess(false), 3000);
+      } else {
+        setSubmitError(result.error);
+        setCanResend(true);
+        setTimer(0);
+      }
+    } catch (error) {
+      console.error('Resend OTP error:', error);
+      setSubmitError('Failed to resend verification code');
+      setCanResend(true);
+      setTimer(0);
+    }
   };
   
   return (
@@ -169,6 +171,11 @@ const EmailVerification = () => {
       ) : (
         <>
           {submitError && <div className="error-message">{submitError}</div>}
+          {resendSuccess && (
+            <div className="success-message">
+              New verification code has been sent to your email
+            </div>
+          )}
           
           <form onSubmit={handleSubmit} className="verification-form">
             <div className="verification-code">

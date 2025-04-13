@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import AuthContext from '../../contexts/AuthContext';
 import useForm from '../../hooks/useForm';
 import { validateLoginForm } from '../../utils/validators';
+import '../../styles/AuthForms.css';
 
 const LoginForm = () => {
   const { login } = useContext(AuthContext);
@@ -39,15 +40,21 @@ const LoginForm = () => {
     try {
       const result = await login(values.email, values.password);
       
-      if (result.success) {
-        // Redirect back to the page they were trying to access, or to dashboard
-        if (result.user.role === 'admin') {
-          navigate('/admin/dashboard');
+      if (result.success && result.user) {
+        // Kiểm tra role và chuyển hướng
+        const role = result.user.role?.toLowerCase();
+        
+        if (role === 'admin') {
+          navigate('/admin/HomePage');
+        } else if (role === 'candidate') {
+          navigate('/applicant/Dashboard');
         } else {
-          navigate('/applicant/dashboard');
+          // Fallback nếu role không xác định
+          navigate('/guest/HomePage');
+          console.warn('Unknown user role:', role);
         }
       } else {
-        setSubmitError(result.error);
+        setSubmitError(result.error || 'Invalid email or password');
       }
     } catch (error) {
       console.error('Login error:', error);
@@ -59,90 +66,95 @@ const LoginForm = () => {
   
   return (
     <div className="login-form-section">
-      <div className="brand-logo">
-        <img src="/assets/images/logo.png" alt="MyJob" />
-        <span>MyJob</span>
-      </div>
-      
-      <div className="login-header">
-        <h2>Log In</h2>
-        <p>Don't have account? <Link to="/signup">Create Account</Link></p>
-      </div>
-      
-      {submitError && <div className="error-message">{submitError}</div>}
-      
-      <form onSubmit={handleSubmit} className="login-form">
-        <div className="form-group">
-          <label htmlFor="email">Email address</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={values.email}
-            onChange={handleChange}
-            required
-            placeholder="example@email.com"
-          />
-          {errors.email && <div className="field-error">{errors.email}</div>}
+      <div className="form-container">
+        <div className="brand-logo">
+          <img src="/assets/images/logo.png" alt="MyJob" />
+          <span>MyJob</span>
         </div>
         
-        <div className="form-group">
-          <label htmlFor="password">Password</label>
-          <div className="password-input">
+        <div className="login-header">
+          <h2>Log In</h2>
+          <p>Don't have account? <Link to="/signup">Create Account</Link></p>
+        </div>
+        
+        {submitError && <div className="error-message">{submitError}</div>}
+        
+        <form onSubmit={handleSubmit} className="login-form">
+          <div className="form-group">
+            <label htmlFor="email">Email address</label>
             <input
-              type="password"
-              id="password"
-              name="password"
-              value={values.password}
+              type="email"
+              id="email"
+              name="email"
+              value={values.email}
               onChange={handleChange}
               required
-              placeholder="••••••••"
+              placeholder="example@email.com"
             />
-            <button type="button" className="toggle-password">
-              <span className="eye-icon">👁️</span>
-            </button>
+            {errors.email && <div className="field-error">{errors.email}</div>}
           </div>
-          {errors.password && <div className="field-error">{errors.password}</div>}
-        </div>
-        
-        <div className="form-options">
-          <div className="remember-me">
-            <input
-              type="checkbox"
-              id="rememberMe"
-              name="rememberMe"
-              checked={values.rememberMe}
-              onChange={handleChange}
-            />
-            <label htmlFor="rememberMe">Remember me</label>
+          
+          <div className="form-group">
+            <label htmlFor="password">Password</label>
+            <div className="password-input">
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={values.password}
+                onChange={handleChange}
+                required
+                placeholder="••••••••"
+              />
+              <button type="button" className="toggle-password">
+                <span className="eye-icon">👁️</span>
+              </button>
+            </div>
+            {errors.password && <div className="field-error">{errors.password}</div>}
           </div>
-          <Link to="/forgot-password" className="forgot-password">
-            Forgot password?
-          </Link>
-        </div>
-        
-        <button 
-          type="submit" 
-          className="login-button"
-          disabled={isSubmitting}
-        >
-          {isSubmitting ? 'Logging in...' : 'Log In'}
-        </button>
-        
-        <div className="social-login">
-          <p>or sign in with</p>
-          <div className="social-buttons">
-            <button type="button" className="facebook-login">
-              <span className="facebook-icon">f</span>
-              Sign in with Facebook
-            </button>
-            <button type="button" className="google-login">
-              <span className="google-icon">G</span>
-              Sign in with Google
-            </button>
+          
+          <div className="form-options">
+            <div className="remember-me">
+              <input
+                type="checkbox"
+                id="rememberMe"
+                name="rememberMe"
+                checked={values.rememberMe}
+                onChange={handleChange}
+              />
+              <label htmlFor="rememberMe">Remember me</label>
+            </div>
+            <Link to="/forgot-password" className="forgot-password">
+              Forgot password?
+            </Link>
           </div>
-        </div>
-      </form>
+          
+          <button 
+            type="submit" 
+            className="login-button"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Logging in...' : 'Log In'}
+          </button>
+          
+          <div className="social-login">
+            <p>or sign in with</p>
+            <div className="social-buttons">
+              <button type="button" className="facebook-login">
+                <span className="facebook-icon">f</span>
+                Sign in with Facebook
+              </button>
+              <button type="button" className="google-login">
+                <span className="google-icon">G</span>
+                Sign in with Google
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div className="image-container">
+        <img src="/assets/images/login.png" alt="Login illustration" />
+      </div>
     </div>
   );
 };

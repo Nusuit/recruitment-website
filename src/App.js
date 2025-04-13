@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, Link } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Link, Outlet } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
 import { JobsProvider } from './contexts/JobsContext';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
@@ -29,13 +29,16 @@ import './styles/pages/job-search.css';
 import './styles/pages/job-details.css';
 import './styles/pages/auth-pages.css';
 
+// Auth Pages
+import SignUpForm from './components/auth/SignUpForm';
+import LoginForm from './components/auth/LoginForm';
+import EmailVerification from './components/auth/EmailVerification';
+
 // Guest Pages
 import HomePage from './pages/guest/HomePage';
 import AboutPage from './pages/guest/AboutPage';
 import JobsPage from './pages/guest/JobsPage';
 import ContactPage from './pages/guest/ContactPage';
-import LoginPage from './pages/guest/LoginPage';
-import SignUpPage from './pages/guest/SignUpPage';
 
 // Applicant Pages
 import ApplicantDashboard from './pages/applicant/Dashboard';
@@ -139,6 +142,15 @@ const theme = createTheme({
   },
 });
 
+// Create AuthLayout for login/signup pages
+const AuthLayout = () => {
+  return (
+    <div className="auth-layout">
+      <Outlet />
+    </div>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider theme={theme}>
@@ -147,18 +159,13 @@ function App() {
         <JobsProvider>
           <Router>
             <Routes>
-              {/* Guest Routes */}
-              <Route path="/" element={<GuestLayout />}>
-                <Route index element={<HomePage />} />
-                <Route path="about" element={<AboutPage />} />
-                <Route path="jobs" element={<JobsPage />} />
-                <Route path="jobs/:id" element={<JobDetailsPage />} />
-                <Route path="contact" element={<ContactPage />} />
+              {/* Auth Routes - No Header/Footer */}
+              <Route element={<AuthLayout />}>
                 <Route 
                   path="login" 
                   element={
                     <GuestGuard>
-                      <LoginPage />
+                      <LoginForm />
                     </GuestGuard>
                   } 
                 />
@@ -166,10 +173,20 @@ function App() {
                   path="signup" 
                   element={
                     <GuestGuard>
-                      <SignUpPage />
+                      <SignUpForm />
                     </GuestGuard>
                   } 
                 />
+              <Route path="verify-email" element={<EmailVerification />} />
+              </Route>
+
+              {/* Guest Routes - With Header/Footer */}
+              <Route path="/" element={<GuestLayout />}>
+                <Route index element={<HomePage />} />
+                <Route path="about" element={<AboutPage />} />
+                <Route path="jobs" element={<JobsPage />} />
+                <Route path="jobs/:id" element={<JobDetailsPage />} />
+                <Route path="contact" element={<ContactPage />} />
               </Route>
 
               {/* Applicant Routes */}

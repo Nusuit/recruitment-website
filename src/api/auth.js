@@ -7,21 +7,49 @@ export const authAPI = {
         email,
         password
       });
-      const { token, user } = response.data;
-      localStorage.setItem('token', token);
-      localStorage.setItem('user', JSON.stringify(user));
-      return response.data;
+
+      // Kiểm tra và lấy data từ ApiResponse format
+      const { data, success, message } = response.data;
+
+      if (success) {
+        // Lưu token và user info
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
+        return {
+          success: true,
+          user: data.user,
+          token: data.token
+        };
+      } else {
+        return {
+          success: false,
+          error: message || 'Login failed'
+        };
+      }
     } catch (error) {
-      throw error.response?.data || error;
+      return {
+        success: false,
+        error: error.response?.data?.message || 'An error occurred during login'
+      };
     }
   },
 
   registerCandidate: async (userData) => {
     try {
       const response = await axiosInstance.post('/auth/signup/candidate', userData);
-      return response.data;
+      // Đảm bảo API trả về verificationUrl hoặc token
+      return {
+        success: true,
+        verificationUrl: response.data.verificationUrl,
+        // hoặc token: response.data.token
+        email: userData.email
+      };
     } catch (error) {
-      throw error.response?.data || error;
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Registration failed'
+      };
     }
   },
 
@@ -48,10 +76,28 @@ export const authAPI = {
 
   resendOTP: async (email) => {
     try {
-      const response = await axiosInstance.post('/auth/resend-otp', { email });
-      return response.data;
+      const response = await axiosInstance.post('/auth/resend-otp', {
+        email: email
+      });
+      
+      // Match với response format từ backend API
+      if (response.data.success) {
+        return {
+          success: true,
+          message: response.data.message || 'Resend OTP successful'
+        };
+      } else {
+        return {
+          success: false,
+          error: response.data.message || 'Failed to resend OTP'
+        };
+      }
     } catch (error) {
-      throw error.response?.data || error;
+      // Xử lý lỗi từ API và trả về format phù hợp
+      return {
+        success: false,
+        error: error.response?.data?.message || 'Failed to resend verification code'
+      };
     }
   },
 
@@ -83,6 +129,24 @@ export const authAPI = {
   getCurrentUser: () => {
     const user = localStorage.getItem('user');
     return user ? JSON.parse(user) : null;
+  }
+};
+
+export const verifyEmail = async (otp, email) => {
+  try {
+    const response = await axiosInstance.post('/auth/verify-email', {
+      otp,
+      email
+    });
+    return {
+      success: true,
+      data: response.data
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.response?.data?.message || 'Verification failed'
+    };
   }
 };
 

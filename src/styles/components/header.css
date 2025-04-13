@@ -65,6 +65,7 @@
 .nav-link:hover,
 .nav-link.active {
   color: var(--primary);
+  text-decoration: none;
 }
 
 /* Chỉ hiển thị gạch chân cho link active */

@@ -11,15 +11,15 @@ import { ThemeProvider, createMuiTheme } from "@mui/material/styles"; // Use cre
 import CssBaseline from "@mui/material/CssBaseline";
 import { withRouter } from "react-router-dom"; // Import withRouter
 
-// Import SCSS files (main.scss will handle all other imports)
-import "./styles/global.scss";
+// Import SCSS files (global.scss will handle all other imports)
+import "./styles/global.scss"; // Đảm bảo không có import 'postcss-loader' ở đây
 
 // Auth Pages
 import SignUpForm from "./components/auth/SignUpForm";
 import LoginForm from "./components/auth/LoginForm";
 import EmailVerification from "./components/auth/EmailVerification";
-import ForgotPasswordPage from "./pages/guest/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/guest/ResetPasswordPage";
+import ForgotPasswordPage from "./pages/guest/ForgotPasswordPage"; // Add ForgotPasswordPage
+import ResetPasswordPage from "./pages/guest/ResetPasswordPage"; // Add ResetPasswordPage
 
 // Guest Pages
 import HomePage from "./pages/guest/HomePage";
@@ -43,15 +43,15 @@ import JobManagement from "./pages/admin/JobManagement";
 import ApplicantsManagement from "./pages/admin/ApplicantsManagement";
 import CompanyProfilePage from "./pages/admin/CompanyProfilePage";
 import ReportsPage from "./pages/admin/ReportsPage";
-import SettingsPage from "./pages/admin/SettingsPage";
-import UserManagement from "./pages/admin/users/UserManagement";
-import RoleManagement from "./pages/admin/users/RoleManagement";
-import CreateJobPage from "./pages/admin/jobs/CreateJobPage";
-import AdminJobDetailsPage from "./pages/admin/jobs/JobDetailsPage";
-import ApplicationDetailPage from "./pages/admin/ApplicationDetailPage";
-import JobAnalytics from "./pages/admin/analytics/JobAnalytics";
-import ApplicantAnalytics from "./pages/admin/analytics/ApplicantAnalytics";
-import RecruitmentAnalytics from "./pages/admin/analytics/RecruitmentAnalytics";
+import SettingsPage from "./pages/admin/SettingsPage"; // Add SettingsPage
+import UserManagement from "./pages/admin/users/UserManagement"; // Add UserManagement
+import RoleManagement from "./pages/admin/users/RoleManagement"; // Add RoleManagement
+import CreateJobPage from "./pages/admin/jobs/CreateJobPage"; // Add CreateJobPage
+import AdminJobDetailsPage from "./pages/admin/jobs/JobDetailsPage"; // Admin's Job Details Page
+import ApplicationDetailPage from "./pages/admin/ApplicationDetailPage"; // Admin's Application Detail Page
+import JobAnalytics from "./pages/admin/analytics/JobAnalytics"; // Add JobAnalytics
+import ApplicantAnalytics from "./pages/admin/analytics/ApplicantAnalytics"; // Add ApplicantAnalytics
+import RecruitmentAnalytics from "./pages/admin/analytics/RecruitmentAnalytics"; // Add RecruitmentAnalytics
 
 // Layouts
 import GuestLayout from "./components/layouts/GuestLayout";
@@ -240,6 +240,8 @@ class App extends Component {
                   ]}
                 >
                   <AuthGuard requiredRole="candidate">
+                    {" "}
+                    {/* Role is 'candidate' for applicants */}
                     <ApplicantLayout>
                       <Switch>
                         <Route
@@ -268,7 +270,7 @@ class App extends Component {
                           path="/applicant/applications/:id"
                           component={ApplicationDetailPage}
                         />{" "}
-                        {/* Changed to ApplicationDetailPage */}
+                        {/* This might need to be ApplicationDetailsPage */}
                         <Route
                           path="/applicant/applications/:id/interview"
                           component={InterviewDetailsPage}

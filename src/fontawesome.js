@@ -1,7 +1,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
+// Import các icon từ free-solid-svg-icons.
+// Đảm bảo chỉ import các icon có sẵn trong Font Awesome 5.x.x và sử dụng tên chính xác.
 import {
-  faMagnifyingGlass,
-  faLocationDot,
   faBriefcase,
   faEye,
   faHandshake,
@@ -10,42 +10,42 @@ import {
   faGift,
   faFileAlt,
   faCheckCircle,
-  faSackDollar,
   faSignOutAlt,
   faIndustry,
   faGraduationCap,
-  faDollarSign,
-  faCalendarTimes,
-  faGaugeHigh,
   faUser,
-  faFileAlt as faSolidFileAlt,
-  faBookmark as faSolidBookmark,
+  faSearch, // Thay thế faMagnifyingGlass
+  faMapMarkerAlt, // Thay thế faLocationDot
+  faDollarSign, // Thay thế faSackDollar
+  faTachometerAlt, // Thay thế faGaugeHigh
+  faBookmark as faSolidBookmark, // faBookmark solid
 } from "@fortawesome/free-solid-svg-icons";
+
+// Import icon regular
 import { faBookmark as farBookmark } from "@fortawesome/free-regular-svg-icons";
+
+// Import icon brands
 import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons";
 
 // Thêm các icon bạn muốn sử dụng vào thư viện
 library.add(
-  faMagnifyingGlass,
-  faLocationDot,
+  faSearch, // Sử dụng faSearch
+  faMapMarkerAlt, // Sử dụng faMapMarkerAlt
   faBriefcase,
   faEye,
   faHandshake,
   faChartLine,
   faLightbulb,
   faGift,
-  faFileAlt, // Changed from faFileArrowUp to faFileAlt for solid icon
+  faFileAlt,
   faCheckCircle,
-  faSackDollar,
+  faDollarSign,
   faSignOutAlt,
   faIndustry,
   faGraduationCap,
-  faDollarSign,
-  faCalendarTimes,
-  faGaugeHigh,
+  faTachometerAlt,
   faUser,
-  faSolidFileAlt, // Alias if you need faFileAlt from solid explicitly
-  faSolidBookmark, // Alias if you need faBookmark from solid explicitly
+  faSolidBookmark, // Icon bookmark solid
   farBookmark, // Icon bookmark regular
   faGoogle,
   faFacebook

@@ -1,7 +1,7 @@
 import React from "react";
 import ReactDOM from "react-dom"; // Import ReactDOM directly
 import App from "./App";
-import "./styles/main.scss"; // Import the new main SCSS file
+import "./styles/global.scss"; // Import the new main SCSS file
 import "./fontawesome"; // Import Font Awesome configuration
 
 document.addEventListener("DOMContentLoaded", () => {

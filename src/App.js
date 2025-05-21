@@ -12,7 +12,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { withRouter } from "react-router-dom"; // Import withRouter
 
 // Import SCSS files (main.scss will handle all other imports)
-import "./styles/main.scss";
+import "./styles/global.scss";
 
 // Auth Pages
 import SignUpForm from "./components/auth/SignUpForm";

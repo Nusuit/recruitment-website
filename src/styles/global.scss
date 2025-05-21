@@ -1,0 +1,233 @@
+/* Reset and base styles */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom base styles / overriding Tailwind defaults */
+body,
+html {
+  @apply m-0 p-0 w-full min-h-screen;
+}
+
+#root {
+  @apply flex flex-col min-h-screen w-full;
+}
+
+/* Import Inter font (already present in public/index.html but good to define here too) */
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap");
+
+/* Typography - can be configured in tailwind.config.js or overridden here */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-semibold leading-tight text-gray-900;
+}
+
+h1 {
+  @apply text-4xl;
+}
+h2 {
+  @apply text-3xl;
+}
+h3 {
+  @apply text-2xl;
+}
+h4 {
+  @apply text-xl;
+}
+h5 {
+  @apply text-lg;
+}
+h6 {
+  @apply text-base;
+}
+
+p {
+  @apply mb-4;
+}
+
+a {
+  @apply text-blue-600 no-underline transition-colors duration-200;
+  &:hover {
+    @apply text-blue-800 underline;
+  }
+}
+
+/* Container */
+.container {
+  @apply w-full max-w-screen-xl mx-auto px-4; // Adjusted to match common Tailwind container pattern
+}
+
+/* Section styles */
+.section {
+  @apply py-16;
+}
+
+.section-title {
+  @apply text-center mb-10;
+}
+
+/* Button styles - now mostly handled by Tailwind classes in JSX */
+// Keeping these classes for general custom buttons not directly mapped to Tailwind
+.btn {
+  @apply inline-flex items-center justify-center py-3 px-6 font-medium rounded-lg transition-all duration-200 cursor-pointer border border-transparent;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white border-blue-600;
+  &:hover {
+    @apply bg-blue-700 border-blue-700 transform -translate-y-px shadow-md;
+  }
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 border-gray-200;
+  &:hover {
+    @apply bg-gray-300 border-gray-300;
+  }
+}
+
+.btn-success {
+  @apply bg-green-500 text-white border-green-500;
+}
+
+.btn-danger {
+  @apply bg-red-500 text-white border-red-500;
+}
+
+/* Loading spinner */
+.loading {
+  @apply flex justify-center items-center h-screen w-full;
+}
+
+/* Page not found */
+.not-found {
+  @apply flex flex-col justify-center items-center text-center bg-gray-50 min-h-screen;
+  h1 {
+    @apply text-6xl mb-0 text-blue-600;
+  }
+  h2 {
+    @apply text-3xl mt-0;
+  }
+  p {
+    @apply mb-8 text-lg;
+  }
+}
+
+/* Pagination container */
+.pagination-container {
+  @apply my-10 flex justify-center;
+}
+
+/* Job cards */
+.job-card {
+  @apply bg-white rounded-xl shadow-sm p-6 mb-5 transition-all duration-200;
+  &:hover {
+    @apply transform -translate-y-1 shadow-md;
+  }
+}
+
+/* Card improvements */
+.card {
+  @apply bg-white rounded-xl shadow-sm p-6 transition-all duration-200;
+  &:hover {
+    @apply transform -translate-y-0.5 shadow-md;
+  }
+}
+
+/* Footer Styles - these are already integrated with header.scss and home-page.scss.
+   If there are general footer styles, they can go here.
+   Otherwise, keep them in their respective layout/page specific scss.
+*/
+
+/* Content Typography */
+.content-title {
+  @apply text-3xl font-bold text-gray-900 mb-4;
+}
+
+.content-subtitle {
+  @apply text-lg text-gray-600 mb-6;
+}
+
+.content-text {
+  @apply text-base leading-relaxed text-gray-800 mb-4;
+}
+
+.content-highlight {
+  @apply text-lg font-medium text-blue-600 p-4 bg-blue-50 rounded mb-4;
+}
+
+/* Content Lists */
+.content-list {
+  @apply list-none m-0 p-0;
+  li {
+    @apply relative pl-6 mb-3;
+    &::before {
+      content: "";
+      @apply absolute left-0 top-2 w-1.5 h-1.5 rounded-full bg-blue-600;
+    }
+  }
+}
+
+/* Content Grid */
+.content-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6;
+}
+
+@media (max-width: 768px) {
+  .content-title {
+    @apply text-2xl;
+  }
+
+  .content-subtitle {
+    @apply text-base;
+  }
+
+  .content-grid {
+    @apply grid-cols-1;
+  }
+}
+
+// Import other SCSS files here
+@import "base/variables";
+@import "base/reset"; // Already included in base, but ensure order if needed
+@import "animations";
+@import "fixes";
+
+// Layouts
+@import "layouts/admin-layout";
+@import "layouts/footer";
+@import "layouts"; // This might contain general layout rules
+
+// Components
+@import "components/alerts";
+@import "components/buttons";
+@import "components/cards";
+@import "components/forms";
+@import "components/header";
+@import "components/footer";
+@import "components/modals";
+
+// Pages
+@import "pages/home-page";
+@import "pages/job-search";
+@import "pages/job-details";
+@import "pages/auth-pages";
+@import "pages/applicant-pages";
+@import "pages/admin-dashboard";
+@import "pages/admin-home";
+@import "pages/admin/applicant-analytics";
+@import "pages/admin/job-analytics";
+@import "pages/admin/profile";
+@import "pages/admin/recruitment-analytics";
+@import "pages/admin/role-management";
+@import "pages/admin/settings";
+@import "pages/admin/user-management";
+@import "pages/applicant-dashboard";
+@import "pages/job-management";
+@import "pages/email-verification";
+
+@import "utilities"; // Your custom utility classes might still be useful initially

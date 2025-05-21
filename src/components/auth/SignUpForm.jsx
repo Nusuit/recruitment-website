@@ -1,204 +1,310 @@
-import React, { useState, useContext } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
-import useForm from '../../hooks/useForm';
-import { validateSignupForm } from '../../utils/validators';
-import authAPI from '../../api/auth';
-import '../../styles/AuthForms.css';
+import React, { Component } from "react";
+import { Link, withRouter } from "react-router-dom"; // Import withRouter
+import AuthContext from "../../contexts/AuthContext";
+import { validateSignupForm } from "../../utils/validators";
+import authAPI from "../../api/auth";
+import "../../styles/AuthForms.scss";
 
-const SignUpForm = () => {
-  const { register } = useContext(AuthContext);
-  const navigate = useNavigate();
-  
-  const initialValues = {
-    email: '',
-    password: '',
-    confirmPassword: '',
-    role: 'candidate',
-    agreeTerms: false
-  };
-  
-  const { values, errors, handleChange, validateForm, setErrors } = useForm(
-    initialValues,
-    validateSignupForm
-  );
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  
-  const handleSubmit = async (e) => {
+class SignUpForm extends Component {
+  static contextType = AuthContext;
+
+  constructor(props) {
+    super(props);
+    this.state = {
+      values: {
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "candidate",
+        agreeTerms: false,
+      },
+      errors: {},
+      isSubmitting: false,
+      submitError: "",
+    };
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+    this.validateForm = this.validateForm.bind(this);
+  }
+
+  handleChange(e) {
+    const { name, value, type, checked } = e.target;
+    this.setState((prevState) => ({
+      values: {
+        ...prevState.values,
+        [name]: type === "checkbox" ? checked : value,
+      },
+      errors: {
+        ...prevState.errors,
+        [name]: "",
+      },
+    }));
+  }
+
+  validateForm() {
+    const errors = validateSignupForm(this.state.values);
+    this.setState({ errors });
+    return Object.keys(errors).length === 0;
+  }
+
+  async handleSubmit(e) {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!this.validateForm()) {
       return;
     }
 
-    setIsSubmitting(true);
-    setSubmitError('');
+    this.setState({ isSubmitting: true, submitError: "" });
 
     try {
       const userData = {
-        email: values.email,
-        password: values.password,
-        role: values.role
+        email: this.state.values.email,
+        password: this.state.values.password,
+        role: this.state.values.role,
       };
 
-      const result = values.role === 'candidate'
-        ? await authAPI.registerCandidate(userData)
-        : await authAPI.registerRecruiter(userData);
+      const result = await this.context.signup(userData); // Use signup from context
 
       if (result.success) {
-        navigate('/check-email', {
+        this.props.history.push("/verify-email", {
           state: {
-            email: values.email,
-            message: 'Please check your email to verify your account'
-          }
+            email: this.state.values.email,
+            message: "Vui lòng kiểm tra email của bạn để xác minh tài khoản",
+          },
         });
       } else {
-        setSubmitError(result.error || 'Registration failed');
+        this.setState({ submitError: result.error || "Đăng ký thất bại" });
       }
     } catch (error) {
-      setSubmitError('An unexpected error occurred. Please try again later.');
+      console.error("Lỗi đăng ký:", error);
+      this.setState({
+        submitError: "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.",
+      });
     } finally {
-      setIsSubmitting(false);
+      this.setState({ isSubmitting: false });
     }
-  };
-  
-  return (
-    <div className="signup-form-section">
-      <div className="form-container">
-        <div className="brand-logo">
-          <img src="/assets/images/logo.png" alt="MyJob" />
-          <span>MyJob</span>
-        </div>
-        
-        <div className="signup-header">
-          <div>
-            <h2>Create Account</h2>
-            <p>Already have an account? <Link to="/login">Log In</Link></p>
+  }
+
+  render() {
+    const { values, errors, isSubmitting, submitError } = this.state;
+
+    return (
+      <div className="signup-form-section">
+        <div className="form-container">
+          <div className="brand-logo">
+            <img
+              src="/assets/images/logo.png"
+              alt="MyJob"
+              className="h-10 w-auto"
+            />
+            <span className="text-2xl font-bold text-blue-600">MyJob</span>
           </div>
-          
-          <div className="role-select">
-            <select
-              id="role"
-              name="role"
-              value={values.role}
-              onChange={handleChange}
-              required
-            >
-              <option value="candidate">Find a Job</option>
-              <option value="recruiter">Post Jobs</option>
-            </select>
+
+          <div className="signup-header">
+            <div>
+              <h2 className="text-3xl font-bold text-gray-800 mb-2">
+                Tạo tài khoản
+              </h2>
+              <p className="text-gray-600">
+                Đã có tài khoản?{" "}
+                <Link
+                  to="/login"
+                  className="text-blue-600 font-medium hover:underline"
+                >
+                  Đăng nhập
+                </Link>
+              </p>
+            </div>
+
+            <div className="role-select">
+              <select
+                id="role"
+                name="role"
+                value={values.role}
+                onChange={this.handleChange}
+                required
+                className="w-36 p-2 border border-gray-300 rounded text-sm bg-white cursor-pointer"
+              >
+                <option value="candidate">Tìm việc</option>
+                <option value="recruiter">Đăng tuyển</option>
+              </select>
+            </div>
           </div>
-        </div>
-        
-        {submitError && <div className="error-message">{submitError}</div>}
-        
-        <form onSubmit={handleSubmit} className="signup-form">         
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="email">Email address</label>
+
+          {submitError && (
+            <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
+              {submitError}
+            </div>
+          )}
+
+          <form onSubmit={this.handleSubmit} className="flex flex-col">
+            <div className="mb-4">
+              <label
+                htmlFor="email"
+                className="block text-gray-800 font-medium mb-1"
+              >
+                Địa chỉ Email
+              </label>
               <input
                 type="email"
                 id="email"
                 name="email"
                 value={values.email}
-                onChange={handleChange}
+                onChange={this.handleChange}
                 required
                 placeholder="example@email.com"
+                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
               />
-              {errors.email && <div className="field-error">{errors.email}</div>}
+              {errors.email && (
+                <div className="text-red-600 text-sm mt-1">{errors.email}</div>
+              )}
             </div>
-          </div>
-          
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="password">Password</label>
-              <div className="password-input">
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+              <div className="relative">
+                <label
+                  htmlFor="password"
+                  className="block text-gray-800 font-medium mb-1"
+                >
+                  Mật khẩu
+                </label>
                 <input
                   type="password"
                   id="password"
                   name="password"
                   value={values.password}
-                  onChange={handleChange}
+                  onChange={this.handleChange}
                   required
                   placeholder="••••••••"
+                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                 />
-                <button type="button" className="toggle-password">
-                  <span className="eye-icon">👁️</span>
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
+                >
+                  <i className="fa-solid fa-eye text-lg"></i>
                 </button>
+                {errors.password && (
+                  <div className="text-red-600 text-sm mt-1">
+                    {errors.password}
+                  </div>
+                )}
+                <div className="text-gray-600 text-xs mt-1 bg-gray-50 p-2 rounded border-l-2 border-blue-600">
+                  Mật khẩu phải có ít nhất 8 ký tự và bao gồm chữ cái và số
+                </div>
               </div>
-              {errors.password && <div className="field-error">{errors.password}</div>}
-              <div className="password-hint">
-                Password must be at least 8 characters and include letters and numbers
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="confirmPassword">Confirm Password</label>
-              <div className="password-input">
+
+              <div className="relative">
+                <label
+                  htmlFor="confirmPassword"
+                  className="block text-gray-800 font-medium mb-1"
+                >
+                  Xác nhận mật khẩu
+                </label>
                 <input
                   type="password"
                   id="confirmPassword"
                   name="confirmPassword"
                   value={values.confirmPassword}
-                  onChange={handleChange}
+                  onChange={this.handleChange}
                   required
                   placeholder="••••••••"
+                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                 />
-                <button type="button" className="toggle-password">
-                  <span className="eye-icon">👁️</span>
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
+                >
+                  <i className="fa-solid fa-eye text-lg"></i>
                 </button>
+                {errors.confirmPassword && (
+                  <div className="text-red-600 text-sm mt-1">
+                    {errors.confirmPassword}
+                  </div>
+                )}
               </div>
-              {errors.confirmPassword && <div className="field-error">{errors.confirmPassword}</div>}
             </div>
-          </div>
-          
-          <div className="form-group">
-            <div className="checkbox-group">
+
+            <div className="mb-4 flex items-center space-x-2">
               <input
                 type="checkbox"
                 id="agreeTerms"
                 name="agreeTerms"
                 checked={values.agreeTerms}
-                onChange={handleChange}
+                onChange={this.handleChange}
                 required
+                className="rounded text-blue-600 focus:ring-blue-500"
               />
-              <label htmlFor="agreeTerms">
-                I agree to the <a href="/terms" target="_blank">Terms of Service</a> and <a href="/privacy" target="_blank">Privacy Policy</a>
+              <label htmlFor="agreeTerms" className="text-gray-600 text-sm">
+                Tôi đồng ý với{" "}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  className="text-blue-600 hover:underline"
+                >
+                  Điều khoản dịch vụ
+                </a>{" "}
+                và{" "}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  className="text-blue-600 hover:underline"
+                >
+                  Chính sách bảo mật
+                </a>
               </label>
+              {errors.agreeTerms && (
+                <div className="text-red-600 text-sm mt-1">
+                  {errors.agreeTerms}
+                </div>
+              )}
             </div>
-            {errors.agreeTerms && <div className="field-error">{errors.agreeTerms}</div>}
-          </div>
-          
-          <button 
-            type="submit" 
-            className="signup-button"
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? 'Creating Account...' : 'Create Account'}
-          </button>
-          
-          <div className="social-login">
-            <p>or sign up with</p>
-            <div className="social-buttons">
-              <button type="button" className="facebook-login">
-                <img src="assets/images/facebook.png" alt="Facebook" />
-                Sign up with Facebook
-              </button>
-              <button type="button" className="google-login">
-                <img src="assets/images/google.png" alt="Google" />
-                Sign up with Google
-              </button>
+
+            <button
+              type="submit"
+              className="w-full py-3 bg-blue-600 text-white border-none rounded text-base font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Đang tạo tài khoản..." : "Tạo tài khoản"}
+            </button>
+
+            <div className="mt-6 text-center">
+              <p className="text-gray-600 mb-4 relative before:content-[''] before:absolute before:top-1/2 before:w-1/4 before:h-px before:bg-gray-300 before:left-0 after:content-[''] after:absolute after:top-1/2 after:w-1/4 after:h-px after:bg-gray-300 after:right-0">
+                hoặc đăng ký bằng
+              </p>
+              <div className="flex gap-2 justify-center">
+                <button
+                  type="button"
+                  className="flex-1 flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white text-blue-700 hover:bg-gray-100"
+                >
+                  <i className="fa-brands fa-facebook text-lg"></i>
+                  Đăng ký bằng Facebook
+                </button>
+                <button
+                  type="button"
+                  className="flex-1 flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white text-red-600 hover:bg-gray-100"
+                >
+                  <i className="fa-brands fa-google text-lg"></i>
+                  Đăng ký bằng Google
+                </button>
+              </div>
             </div>
-          </div>
-        </form>
+          </form>
+        </div>
+        <div className="hidden md:flex flex-1 justify-center items-center p-8 bg-blue-600">
+          <img
+            src="/assets/images/register.png"
+            alt="Register illustration"
+            className="max-w-full h-auto"
+          />
+        </div>
       </div>
-      <div className="image-container">
-        <img src="/assets/images/register.png" alt="Register illustration" />
-      </div>
-    </div>
-  );
+    );
+  }
+}
+
+SignUpForm.propTypes = {
+  history: PropTypes.object.isRequired, // Injected by withRouter
 };
 
-export default SignUpForm;
+export default withRouter(SignUpForm);

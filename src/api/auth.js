@@ -1,153 +1,207 @@
-import axiosInstance from './config/axiosConfig';
+import axiosInstance from "./config/axiosConfig";
 
 export const authAPI = {
   login: async (email, password) => {
     try {
-      const response = await axiosInstance.post('/auth/login', {
+      const response = await axiosInstance.post("/auth/login", {
         email,
-        password
+        password,
       });
 
-      // Kiểm tra và lấy data từ ApiResponse format
       const { data, success, message } = response.data;
 
       if (success) {
-        // Lưu token và user info
-        localStorage.setItem('token', data.token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
         return {
           success: true,
           user: data.user,
-          token: data.token
+          token: data.token,
         };
       } else {
         return {
           success: false,
-          error: message || 'Login failed'
+          error: message || "Đăng nhập thất bại",
         };
       }
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'An error occurred during login'
+        error:
+          error.response?.data?.message ||
+          "Đã xảy ra lỗi trong quá trình đăng nhập",
       };
     }
   },
 
   registerCandidate: async (userData) => {
     try {
-      const response = await axiosInstance.post('/auth/signup/candidate', userData);
-      // Đảm bảo API trả về verificationUrl hoặc token
+      const response = await axiosInstance.post(
+        "/auth/signup/candidate",
+        userData
+      );
       return {
         success: true,
-        verificationUrl: response.data.verificationUrl,
-        // hoặc token: response.data.token
-        email: userData.email
+        message: response.data.message || "Đăng ký ứng viên thành công",
+        email: userData.email,
       };
     } catch (error) {
       return {
         success: false,
-        error: error.response?.data?.message || 'Registration failed'
+        error: error.response?.data?.message || "Đăng ký ứng viên thất bại",
       };
     }
   },
 
   registerRecruiter: async (userData) => {
     try {
-      const response = await axiosInstance.post('/auth/signup/recruiter', userData);
-      return response.data;
+      const response = await axiosInstance.post(
+        "/auth/signup/recruiter",
+        userData
+      );
+      return {
+        success: true,
+        message: response.data.message || "Đăng ký nhà tuyển dụng thành công",
+        email: userData.email,
+      };
     } catch (error) {
-      throw error.response?.data || error;
+      return {
+        success: false,
+        error:
+          error.response?.data?.message || "Đăng ký nhà tuyển dụng thất bại",
+      };
     }
   },
 
   verifyOTP: async (email, otp) => {
     try {
-      const response = await axiosInstance.post('/auth/signup/verify', {
+      const response = await axiosInstance.post("/auth/signup/verify", {
         email,
-        otp
+        otp,
       });
-      return response.data;
+      return {
+        success: true,
+        message: response.data.message || "Xác thực OTP thành công",
+      };
     } catch (error) {
-      throw error.response?.data || error;
+      return {
+        success: false,
+        error: error.response?.data?.message || "Xác thực OTP thất bại",
+      };
     }
   },
 
   resendOTP: async (email) => {
     try {
-      const response = await axiosInstance.post('/auth/resend-otp', {
-        email: email
+      const response = await axiosInstance.post("/auth/resend-otp", {
+        email: email,
       });
-      
-      // Match với response format từ backend API
       if (response.data.success) {
         return {
           success: true,
-          message: response.data.message || 'Resend OTP successful'
+          message: response.data.message || "Gửi lại OTP thành công",
         };
       } else {
         return {
           success: false,
-          error: response.data.message || 'Failed to resend OTP'
+          error: response.data.message || "Gửi lại OTP thất bại",
         };
       }
     } catch (error) {
-      // Xử lý lỗi từ API và trả về format phù hợp
       return {
         success: false,
-        error: error.response?.data?.message || 'Failed to resend verification code'
+        error: error.response?.data?.message || "Không thể gửi lại mã xác minh",
       };
     }
   },
 
-  refreshToken: async () => {
+  forgotPassword: async (email) => {
     try {
-      const response = await axiosInstance.post('/auth/refresh');
-      const { token } = response.data;
-      localStorage.setItem('token', token);
-      return response.data;
+      const response = await axiosInstance.post("/auth/forgot-password", {
+        email,
+      });
+      return {
+        success: true,
+        message: response.data.message || "Email đặt lại mật khẩu đã được gửi",
+      };
     } catch (error) {
-      throw error.response?.data || error;
+      return {
+        success: false,
+        error:
+          error.response?.data?.message || "Yêu cầu đặt lại mật khẩu thất bại",
+      };
+    }
+  },
+
+  resetPassword: async (token, newPassword) => {
+    try {
+      const response = await axiosInstance.post("/auth/reset-password", {
+        token,
+        newPassword,
+      });
+      return {
+        success: true,
+        message: response.data.message || "Mật khẩu đã được đặt lại thành công",
+      };
+    } catch (error) {
+      return {
+        success: false,
+        error: error.response?.data?.message || "Đặt lại mật khẩu thất bại",
+      };
+    }
+  },
+
+  // New OAuth2 related API call
+  loginWithGoogleOAuth: async (code) => {
+    try {
+      const response = await axiosInstance.get(
+        `/auth/candidate/login/oauth2?code=${code}`
+      );
+      const { data, success, message } = response.data;
+
+      if (success) {
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+        return {
+          success: true,
+          user: data.user,
+          token: data.token,
+        };
+      } else {
+        return {
+          success: false,
+          error: message || "Đăng nhập Google OAuth thất bại",
+        };
+      }
+    } catch (error) {
+      return {
+        success: false,
+        error:
+          error.response?.data?.message ||
+          "Đã xảy ra lỗi trong quá trình đăng nhập Google OAuth",
+      };
     }
   },
 
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/login';
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    // Optionally, call a backend logout endpoint if needed
+    // axiosInstance.post('/auth/logout');
+    window.location.href = "/login"; // Redirect to login page
   },
 
-  // Function to check if user is authenticated
   isAuthenticated: () => {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
+    const token = localStorage.getItem("token");
+    const user = localStorage.getItem("user");
     return !!(token && user);
   },
 
-  // Function to get current user
   getCurrentUser: () => {
-    const user = localStorage.getItem('user');
+    const user = localStorage.getItem("user");
     return user ? JSON.parse(user) : null;
-  }
-};
-
-export const verifyEmail = async (otp, email) => {
-  try {
-    const response = await axiosInstance.post('/auth/verify-email', {
-      otp,
-      email
-    });
-    return {
-      success: true,
-      data: response.data
-    };
-  } catch (error) {
-    return {
-      success: false,
-      error: error.response?.data?.message || 'Verification failed'
-    };
-  }
+  },
 };
 
 export default authAPI;

@@ -1,136 +1,289 @@
-import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import React, { Component } from "react";
+import { Link, withRouter } from "react-router-dom"; // Import withRouter
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Import FontAwesomeIcon
+import PropTypes from "prop-types";
 
-// Import CSS module nếu bạn dùng CSS Modules, hoặc CSS thường như hiện tại
-// import styles from './Header.module.css'; // Ví dụ nếu dùng CSS Modules
-import '../../styles/components/header.css'; // Đường dẫn tới file CSS
-import searchIcon from '../../../public/assets/images/icons/search.svg'; // Ví dụ nếu cần icon search
-import chevronIcon from '../../../public/assets/images/icons/chevron.svg'; // Ví dụ nếu cần icon chevron
-
-const Header = ({ userType = 'guest' }) => { // Mặc định là guest nếu không truyền prop
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const location = useLocation();
-
-  // Đóng mobile menu khi chuyển trang
-  useEffect(() => {
-    setMobileMenuOpen(false);
-  }, [location]);
-
-  // Toggle mobile menu
-  const toggleMobileMenu = () => {
-    setMobileMenuOpen(prevOpen => !prevOpen); // Dùng callback để đảm bảo state mới nhất
-  };
-
-  // Ngăn cuộn trang khi mobile menu mở
-  useEffect(() => {
-    if (mobileMenuOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = ''; // Reset về mặc định của trình duyệt
-    }
-
-    // Cleanup function để đảm bảo overflow được reset khi component unmount
-    return () => {
-      document.body.style.overflow = '';
+class Header extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      mobileMenuOpen: false,
     };
-  }, [mobileMenuOpen]);
+    this.handleLogout = this.handleLogout.bind(this);
+    this.toggleMobileMenu = this.toggleMobileMenu.bind(this);
+    this.handleMobileLinkClick = this.handleMobileLinkClick.bind(this);
+    this.isNavLinkActive = this.isNavLinkActive.bind(this);
+  }
 
-  // Hàm xử lý đóng menu khi click link trên mobile
-  const handleMobileLinkClick = () => {
-    setMobileMenuOpen(false);
-  };
+  componentDidUpdate(prevProps, prevState) {
+    if (this.state.mobileMenuOpen !== prevState.mobileMenuOpen) {
+      document.body.style.overflow = this.state.mobileMenuOpen ? "hidden" : "";
+    }
+    // Close mobile menu when route changes
+    if (
+      this.props.location.pathname !== prevProps.location.pathname &&
+      this.state.mobileMenuOpen
+    ) {
+      this.setState({ mobileMenuOpen: false });
+    }
+  }
 
-  // Hàm xử lý logout (bạn cần tự định nghĩa logic logout thực tế)
-  const handleLogout = () => {
+  componentWillUnmount() {
+    document.body.style.overflow = ""; // Reset overflow on unmount
+  }
+
+  toggleMobileMenu() {
+    this.setState((prevState) => ({
+      mobileMenuOpen: !prevState.mobileMenuOpen,
+    }));
+  }
+
+  handleMobileLinkClick() {
+    this.setState({ mobileMenuOpen: false });
+  }
+
+  handleLogout() {
     console.log("Logging out...");
-    // Thêm logic logout ở đây (xóa token, gọi API, redirect, ...)
-    setMobileMenuOpen(false); // Đóng menu nếu đang mở
-  };
+    // Replace with actual logout logic (e.g., calling AuthContext.logout)
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    this.props.history.push("/login");
+    this.setState({ mobileMenuOpen: false });
+  }
 
-  // Helper function để kiểm tra active link
-  const isNavLinkActive = (path) => {
-    if (path === '/jobs') {
-      // Chỉ active khi đúng là /jobs hoặc bắt đầu bằng /jobs/ (tùy yêu cầu)
-      return location.pathname === path || location.pathname.startsWith(path + '/');
-      // Hoặc chỉ active khi đúng là /jobs: return location.pathname === path;
+  isNavLinkActive(path) {
+    const { location } = this.props;
+    if (path === "/jobs") {
+      return (
+        location.pathname === path || location.pathname.startsWith(path + "/")
+      );
     }
     return location.pathname === path;
-  };
+  }
 
-  return (
-    // Sử dụng class từ CSS (hoặc styles.headerContainer nếu dùng CSS Modules)
-    <header className="header-container">
-      <div className="header-wrapper">
-        <div className="logo">
-          <Link to="/">
-            {/* Nhớ thay đổi src và alt phù hợp */}
-            <img src="/assets/images/logo.png" alt="Your Logo" />
-          </Link>
+  render() {
+    const { userType } = this.props;
+    const { mobileMenuOpen } = this.state;
+    const user = JSON.parse(localStorage.getItem("user") || '{"name": "User"}'); // Placeholder user
+
+    return (
+      <header className="bg-white shadow-md sticky top-0 z-50 h-16">
+        <div className="container mx-auto px-4 flex justify-between items-center h-full">
+          <div className="flex-shrink-0">
+            <Link to="/">
+              <img
+                src="/assets/images/logo.png"
+                alt="Your Logo"
+                className="h-10 w-auto"
+              />
+            </Link>
+          </div>
+
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center ml-auto mr-6">
+            <ul className="flex space-x-6 list-none m-0 p-0">
+              <li>
+                <Link
+                  to="/"
+                  className={`relative py-2 text-gray-800 font-medium no-underline transition-colors duration-200 ${
+                    this.isNavLinkActive("/")
+                      ? "text-blue-600 after:absolute after:bottom-0 after:left-1/2 after:w-4/5 after:h-0.5 after:bg-blue-600 after:-translate-x-1/2"
+                      : "hover:text-blue-600 hover:after:w-4/5 after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-blue-600 after:transition-all after:duration-300 after:-translate-x-1/2"
+                  }`}
+                >
+                  Trang chủ
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/jobs"
+                  className={`relative py-2 text-gray-800 font-medium no-underline transition-colors duration-200 ${
+                    this.isNavLinkActive("/jobs")
+                      ? "text-blue-600 after:absolute after:bottom-0 after:left-1/2 after:w-4/5 after:h-0.5 after:bg-blue-600 after:-translate-x-1/2"
+                      : "hover:text-blue-600 hover:after:w-4/5 after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-blue-600 after:transition-all after:duration-300 after:-translate-x-1/2"
+                  }`}
+                >
+                  Cơ hội việc làm
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  className={`relative py-2 text-gray-800 font-medium no-underline transition-colors duration-200 ${
+                    this.isNavLinkActive("/about")
+                      ? "text-blue-600 after:absolute after:bottom-0 after:left-1/2 after:w-4/5 after:h-0.5 after:bg-blue-600 after:-translate-x-1/2"
+                      : "hover:text-blue-600 hover:after:w-4/5 after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-blue-600 after:transition-all after:duration-300 after:-translate-x-1/2"
+                  }`}
+                >
+                  Về chúng tôi
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/contact"
+                  className={`relative py-2 text-gray-800 font-medium no-underline transition-colors duration-200 ${
+                    this.isNavLinkActive("/contact")
+                      ? "text-blue-600 after:absolute after:bottom-0 after:left-1/2 after:w-4/5 after:h-0.5 after:bg-blue-600 after:-translate-x-1/2"
+                      : "hover:text-blue-600 hover:after:w-4/5 after:absolute after:bottom-0 after:left-1/2 after:w-0 after:h-0.5 after:bg-blue-600 after:transition-all after:duration-300 after:-translate-x-1/2"
+                  }`}
+                >
+                  Liên hệ
+                </Link>
+              </li>
+            </ul>
+          </nav>
+
+          {/* Desktop Auth Buttons / User Menu */}
+          <div className="hidden md:flex items-center space-x-4 flex-shrink-0">
+            {userType === "guest" ? (
+              <>
+                <Link
+                  to="/login"
+                  className="px-4 py-2 text-blue-600 border border-blue-600 rounded font-medium transition-colors duration-200 hover:bg-blue-50"
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-4 py-2 bg-blue-600 text-white border border-blue-600 rounded font-medium transition-colors duration-200 hover:bg-blue-700 hover:border-blue-700"
+                >
+                  Đăng ký
+                </Link>
+              </>
+            ) : (
+              <div className="flex items-center space-x-3">
+                <span className="font-medium text-gray-800">{user.name}</span>
+                <button
+                  onClick={this.handleLogout}
+                  className="px-3 py-1 text-gray-600 bg-gray-100 rounded font-medium transition-colors duration-200 hover:bg-gray-200"
+                >
+                  <FontAwesomeIcon
+                    icon="sign-out-alt"
+                    className="inline-block mr-1"
+                  />{" "}
+                  Đăng xuất
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Mobile Menu Button */}
+          <button
+            className="md:hidden flex items-center justify-center w-8 h-8 p-0 relative z-50 bg-none border-none cursor-pointer"
+            onClick={this.toggleMobileMenu}
+            aria-label="Toggle mobile menu"
+            aria-expanded={mobileMenuOpen}
+          >
+            <span
+              className={`block w-6 h-0.5 bg-gray-800 absolute transition-all duration-300 ${
+                mobileMenuOpen ? "bg-transparent" : ""
+              }`}
+            ></span>
+            <span
+              className={`block w-6 h-0.5 bg-gray-800 absolute transition-all duration-300 ${
+                mobileMenuOpen ? "rotate-45 top-1/2 -translate-y-1/2" : "-top-2"
+              }`}
+            ></span>
+            <span
+              className={`block w-6 h-0.5 bg-gray-800 absolute transition-all duration-300 ${
+                mobileMenuOpen
+                  ? "-rotate-45 top-1/2 -translate-y-1/2"
+                  : "-bottom-2"
+              }`}
+            ></span>
+          </button>
         </div>
 
-        {/* Desktop Navigation */}
-        <nav className="main-nav">
-          <ul className="nav-links">
-            <li><Link to="/" className={`nav-link ${isNavLinkActive('/') ? 'active' : ''}`}>Home</Link></li>
-            <li><Link to="/jobs" className={`nav-link ${isNavLinkActive('/jobs') ? 'active' : ''}`}>Job Openings</Link></li>
-            <li><Link to="/about" className={`nav-link ${isNavLinkActive('/about') ? 'active' : ''}`}>About Us</Link></li>
-            <li><Link to="/contact" className={`nav-link ${isNavLinkActive('/contact') ? 'active' : ''}`}>Contact</Link></li>
-          </ul>
-        </nav>
-
-        {/* Desktop Auth Buttons / User Menu */}
-        <div className="auth-actions">
-          {userType === 'guest' ? (
-            <>
-              {/* Sử dụng class chung và class riêng */}
-              <Link to="/login" className="header-btn login-btn">Login</Link>
-              <Link to="/signup" className="header-btn signup-btn">Sign Up</Link>
-            </>
-          ) : (
-            <div className="user-menu">
-              {/* Hiển thị tên user hoặc avatar */}
-              <span className="username">{userType}</span>
-              {/* Nút logout */}
-              <button onClick={handleLogout} className="logout-btn">Logout</button>
-            </div>
-          )}
-        </div>
-
-        {/* Mobile Menu Button */}
-        <button
-          className={`mobile-menu-btn ${mobileMenuOpen ? 'mobile-menu-open' : ''}`}
-          onClick={toggleMobileMenu}
-          aria-label="Toggle mobile menu"
-          aria-expanded={mobileMenuOpen} // Thêm aria-expanded cho accessibility
+        {/* Mobile Menu Panel */}
+        <div
+          className={`fixed top-16 left-0 right-0 bottom-0 bg-white p-6 shadow-xl z-40 transform transition-transform duration-300 ease-in-out ${
+            mobileMenuOpen ? "translate-x-0" : "translate-x-full"
+          } md:hidden overflow-y-auto`}
         >
-          <span className="hamburger-icon"></span>
-        </button>
-      </div>
+          <ul className="list-none m-0 p-0 mb-6">
+            <li>
+              <Link
+                to="/"
+                onClick={this.handleMobileLinkClick}
+                className="block py-3 text-gray-800 font-medium text-lg no-underline border-b border-gray-200"
+              >
+                Trang chủ
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/jobs"
+                onClick={this.handleMobileLinkClick}
+                className="block py-3 text-gray-800 font-medium text-lg no-underline border-b border-gray-200"
+              >
+                Cơ hội việc làm
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/about"
+                onClick={this.handleMobileLinkClick}
+                className="block py-3 text-gray-800 font-medium text-lg no-underline border-b border-gray-200"
+              >
+                Về chúng tôi
+              </Link>
+            </li>
+            <li>
+              <Link
+                to="/contact"
+                onClick={this.handleMobileLinkClick}
+                className="block py-3 text-gray-800 font-medium text-lg no-underline border-b border-gray-200"
+              >
+                Liên hệ
+              </Link>
+            </li>
+          </ul>
 
-      {/* Mobile Menu Panel */}
-      <div className={`mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
-        <ul className="mobile-nav-links">
-          {/* Thêm onClick để đóng menu khi click link */}
-          <li><Link to="/" onClick={handleMobileLinkClick}>Home</Link></li>
-          <li><Link to="/jobs" onClick={handleMobileLinkClick}>Job Openings</Link></li>
-          <li><Link to="/about" onClick={handleMobileLinkClick}>About Us</Link></li>
-          <li><Link to="/contact" onClick={handleMobileLinkClick}>Contact</Link></li>
-        </ul>
-
-        <div className="mobile-auth-buttons">
-          {userType === 'guest' ? (
-            <>
-              <Link to="/login" className="header-btn login-btn" onClick={handleMobileLinkClick}>Login</Link>
-              <Link to="/signup" className="header-btn signup-btn" onClick={handleMobileLinkClick}>Sign Up</Link>
-            </>
-          ) : (
-            // Sử dụng button thay vì Link cho logout
-            <button onClick={handleLogout} className="logout-btn">Logout</button>
-          )}
+          <div className="flex flex-col space-y-4 mt-6">
+            {userType === "guest" ? (
+              <>
+                <Link
+                  to="/login"
+                  className="px-4 py-3 text-blue-600 border border-blue-600 rounded font-medium text-center no-underline transition-colors duration-200 hover:bg-blue-50"
+                  onClick={this.handleMobileLinkClick}
+                >
+                  Đăng nhập
+                </Link>
+                <Link
+                  to="/signup"
+                  className="px-4 py-3 bg-blue-600 text-white border border-blue-600 rounded font-medium text-center no-underline transition-colors duration-200 hover:bg-blue-700 hover:border-blue-700"
+                  onClick={this.handleMobileLinkClick}
+                >
+                  Đăng ký
+                </Link>
+              </>
+            ) : (
+              <button
+                onClick={this.handleLogout}
+                className="px-4 py-3 bg-gray-100 text-gray-600 rounded font-medium text-center transition-colors duration-200 hover:bg-gray-200"
+              >
+                <FontAwesomeIcon
+                  icon="sign-out-alt"
+                  className="inline-block mr-2"
+                />{" "}
+                Đăng xuất
+              </button>
+            )}
+          </div>
         </div>
-      </div>
-    </header>
-  );
+      </header>
+    );
+  }
+}
+
+Header.propTypes = {
+  userType: PropTypes.string,
+  location: PropTypes.object.isRequired, // Injected by withRouter
+  history: PropTypes.object.isRequired, // Injected by withRouter
 };
 
-export default Header;
+Header.defaultProps = {
+  userType: "guest",
+};
+
+export default withRouter(Header);

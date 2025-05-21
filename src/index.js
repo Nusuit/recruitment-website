@@ -1,24 +1,23 @@
-import React from 'react';
-import { createRoot } from 'react-dom/client';
-import App from './App';
-// Import main styles
-import './styles/base/variables.css';
-import './styles/global.css';
-import './styles/layouts.css';
-import './styles/App.css';
+import React from "react";
+import ReactDOM from "react-dom"; // Import ReactDOM directly
+import App from "./App";
+import "./styles/main.scss"; // Import the new main SCSS file
+import "./fontawesome"; // Import Font Awesome configuration
 
-document.addEventListener('DOMContentLoaded', () => {
-  const container = document.getElementById('root');
-  
+document.addEventListener("DOMContentLoaded", () => {
+  const container = document.getElementById("root");
+
   if (container) {
-    const root = createRoot(container);
-    
-    root.render(
+    // Use ReactDOM.render for React 17
+    ReactDOM.render(
       <React.StrictMode>
         <App />
-      </React.StrictMode>
+      </React.StrictMode>,
+      container
     );
   } else {
-    console.error('Không tìm thấy phần tử có id="root". Không thể render ứng dụng React.');
+    console.error(
+      'Không tìm thấy phần tử có id="root". Không thể render ứng dụng React.'
+    );
   }
 });

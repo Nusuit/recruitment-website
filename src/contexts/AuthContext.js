@@ -1,103 +1,169 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { Component, createContext } from "react";
+import authAPI from "../api/auth"; // Import authAPI from your existing setup
+import candidateAPI from "../api/candidate"; // Import candidateAPI for profile fetching if needed
 
 export const AuthContext = createContext();
 
-export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-  
-  useEffect(() => {
-    // Check if user is logged in when the app loads
-    const checkAuth = async () => {
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          setUser(JSON.parse(storedUser));
-        }
-      } catch (error) {
-        console.error('Authentication error:', error);
-      } finally {
-        setLoading(false);
-      }
+export class AuthProvider extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      user: null,
+      loading: true,
+      isAuthenticated: false,
     };
-    
-    checkAuth();
-  }, []);
-  
-  // Login function
-  const login = async (email, password) => {
+    this.login = this.login.bind(this);
+    this.signup = this.signup.bind(this);
+    this.logout = this.logout.bind(this);
+    this.resetPassword = this.resetPassword.bind(this);
+    this.loginWithGoogle = this.loginWithGoogle.bind(this);
+    this.handleGoogleOAuthCallback = this.handleGoogleOAuthCallback.bind(this);
+  }
+
+  // Lifecycle method to check authentication status when component mounts
+  async componentDidMount() {
     try {
-      // In a real app, this would make an API call
-      // For now, we'll simulate a successful login
-      const userData = {
-        id: 'user123',
-        name: 'John Doe',
-        email,
-        role: email.includes('admin') ? 'admin' : 'applicant'
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+
+      if (token && storedUser) {
+        // Optionally, verify token with backend to ensure it's still valid
+        // For now, assume if token and user exist, they are authenticated
+        this.setState({
+          user: JSON.parse(storedUser),
+          isAuthenticated: true,
+          loading: false,
+        });
+      } else {
+        this.setState({ loading: false });
+      }
+    } catch (error) {
+      console.error("Lỗi kiểm tra xác thực:", error);
+      this.setState({ loading: false });
+    }
+  }
+
+  // Method to handle user login
+  async login(email, password) {
+    try {
+      const result = await authAPI.login(email, password);
+      if (result.success) {
+        this.setState({
+          user: result.user,
+          isAuthenticated: true,
+        });
+        return { success: true, user: result.user };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error("Lỗi đăng nhập:", error);
+      return { success: false, error: error.message || "Đăng nhập thất bại." };
+    }
+  }
+
+  // Method to handle user signup
+  async signup(userData) {
+    try {
+      // Assuming registerCandidate and registerRecruiter are in authAPI
+      const result =
+        userData.role === "candidate"
+          ? await authAPI.registerCandidate(userData)
+          : await authAPI.registerRecruiter(userData);
+
+      if (result.success) {
+        // For signup, we might not immediately set user, but redirect to verification
+        return {
+          success: true,
+          message: result.message || "Đăng ký thành công.",
+        };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error("Lỗi đăng ký:", error);
+      return { success: false, error: error.message || "Đăng ký thất bại." };
+    }
+  }
+
+  // Method to handle user logout
+  logout() {
+    authAPI.logout(); // This should clear local storage and redirect
+    this.setState({ user: null, isAuthenticated: false });
+  }
+
+  // Method to handle password reset request
+  async resetPassword(email) {
+    try {
+      const result = await authAPI.forgotPassword(email); // Assuming forgotPassword is in authAPI
+      if (result.success) {
+        return { success: true, message: result.message };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error("Lỗi đặt lại mật khẩu:", error);
+      return {
+        success: false,
+        error: error.message || "Yêu cầu đặt lại mật khẩu thất bại.",
       };
-      
-      setUser(userData);
-      localStorage.setItem('user', JSON.stringify(userData));
-      return { success: true, user: userData };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false, error: error.message };
     }
-  };
-  
-  // Signup function
-  const signup = async (userData) => {
+  }
+
+  // Method to initiate Google OAuth2 login
+  loginWithGoogle() {
+    // Construct the redirect URL for the frontend after backend authentication
+    const frontUrl = `${window.location.origin}/oauth2/callback`; // Frontend callback URL
+    const backendOAuthUrl = `/api/oauth2/authorize?redirect_uri=${encodeURIComponent(
+      frontUrl
+    )}`;
+    window.location.href = backendOAuthUrl; // Redirect to backend OAuth2 endpoint
+  }
+
+  // Method to handle the Google OAuth2 callback and exchange code for token
+  async handleGoogleOAuthCallback(code) {
     try {
-      // In a real app, this would make an API call
-      // For now, we'll simulate a successful signup
-      const newUser = {
-        id: 'user' + Math.floor(Math.random() * 1000),
-        ...userData,
-        role: 'applicant'
+      const result = await authAPI.loginWithGoogleOAuth(code); // Assuming this API call exists
+      if (result.success) {
+        this.setState({
+          user: result.user,
+          isAuthenticated: true,
+        });
+        return { success: true, user: result.user };
+      } else {
+        return { success: false, error: result.error };
+      }
+    } catch (error) {
+      console.error("Lỗi xác thực Google OAuth:", error);
+      return {
+        success: false,
+        error: error.message || "Xác thực Google OAuth thất bại.",
       };
-      
-      setUser(newUser);
-      localStorage.setItem('user', JSON.stringify(newUser));
-      return { success: true, user: newUser };
-    } catch (error) {
-      console.error('Signup error:', error);
-      return { success: false, error: error.message };
     }
-  };
-  
-  // Logout function
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
-  };
-  
-  // Reset password function
-  const resetPassword = async (email) => {
-    try {
-      // In a real app, this would make an API call
-      // For now, we'll just return success
-      return { success: true };
-    } catch (error) {
-      console.error('Reset password error:', error);
-      return { success: false, error: error.message };
-    }
-  };
-  
-  return (
-    <AuthContext.Provider 
-      value={{ 
-        user, 
-        loading,
-        login,
-        signup,
-        logout,
-        resetPassword,
-        isAuthenticated: !!user
-      }}
-    >
-      {children}
-    </AuthContext.Provider>
-  );
-};
+  }
+
+  render() {
+    const { user, loading, isAuthenticated } = this.state;
+    const { children } = this.props;
+
+    return (
+      <AuthContext.Provider
+        value={{
+          user,
+          loading,
+          isAuthenticated,
+          login: this.login,
+          signup: this.signup,
+          logout: this.logout,
+          resetPassword: this.resetPassword,
+          loginWithGoogle: this.loginWithGoogle,
+          handleGoogleOAuthCallback: this.handleGoogleOAuthCallback,
+        }}
+      >
+        {children}
+      </AuthContext.Provider>
+    );
+  }
+}
 
 export default AuthContext;

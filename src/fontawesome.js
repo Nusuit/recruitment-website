@@ -14,10 +14,10 @@ import {
   faIndustry,
   faGraduationCap,
   faUser,
-  faSearch, // Thay thế faMagnifyingGlass
-  faMapMarkerAlt, // Thay thế faLocationDot
-  faDollarSign, // Thay thế faSackDollar
-  faTachometerAlt, // Thay thế faGaugeHigh
+  faSearch, // Sử dụng faSearch
+  faMapMarkerAlt, // Sử dụng faMapMarkerAlt
+  faDollarSign, // Sử dụng faDollarSign
+  faTachometerAlt, // Sử dụng faTachometerAlt
   faBookmark as faSolidBookmark, // faBookmark solid
 } from "@fortawesome/free-solid-svg-icons";
 

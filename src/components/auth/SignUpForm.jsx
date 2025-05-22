@@ -2,8 +2,9 @@ import React, { Component } from "react";
 import { Link, withRouter } from "react-router-dom"; // Import withRouter
 import AuthContext from "../../contexts/AuthContext";
 import { validateSignupForm } from "../../utils/validators";
-import authAPI from "../../api/auth";
-import "../../styles/AuthForms.scss";
+import "../../styles/AuthForms.scss"; // Use SCSS
+import PropTypes from "prop-types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Import FontAwesomeIcon
 
 class SignUpForm extends Component {
   static contextType = AuthContext;
@@ -182,7 +183,7 @@ class SignUpForm extends Component {
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
                 >
-                  <i className="fa-solid fa-eye text-lg"></i>
+                  <FontAwesomeIcon icon="eye" className="text-lg" />
                 </button>
                 {errors.password && (
                   <div className="text-red-600 text-sm mt-1">
@@ -215,7 +216,7 @@ class SignUpForm extends Component {
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
                 >
-                  <i className="fa-solid fa-eye text-lg"></i>
+                  <FontAwesomeIcon icon="eye" className="text-lg" />
                 </button>
                 {errors.confirmPassword && (
                   <div className="text-red-600 text-sm mt-1">
@@ -277,14 +278,20 @@ class SignUpForm extends Component {
                   type="button"
                   className="flex-1 flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white text-blue-700 hover:bg-gray-100"
                 >
-                  <i className="fa-brands fa-facebook text-lg"></i>
+                  <FontAwesomeIcon
+                    icon={["fab", "facebook"]}
+                    className="text-lg"
+                  />
                   Đăng ký bằng Facebook
                 </button>
                 <button
                   type="button"
                   className="flex-1 flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white text-red-600 hover:bg-gray-100"
                 >
-                  <i className="fa-brands fa-google text-lg"></i>
+                  <FontAwesomeIcon
+                    icon={["fab", "google"]}
+                    className="text-lg"
+                  />
                   Đăng ký bằng Google
                 </button>
               </div>

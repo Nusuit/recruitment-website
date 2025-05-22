@@ -3,6 +3,8 @@ import { Link, withRouter } from "react-router-dom";
 import AuthContext from "../../contexts/AuthContext"; // Import AuthContext
 import { validateLoginForm } from "../../utils/validators";
 import "../../styles/AuthForms.scss"; // Use SCSS
+import PropTypes from "prop-types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // Import FontAwesomeIcon
 
 class LoginForm extends Component {
   static contextType = AuthContext; // Access context in class component
@@ -171,7 +173,7 @@ class LoginForm extends Component {
                   type="button"
                   className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
                 >
-                  <i className="fa-solid fa-eye text-lg"></i>{" "}
+                  <FontAwesomeIcon icon="eye" className="text-lg" />{" "}
                   {/* Font Awesome eye icon */}
                 </button>
               </div>
@@ -222,7 +224,10 @@ class LoginForm extends Component {
                   onClick={this.handleGoogleLogin}
                   className="flex-1 flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white text-red-600 hover:bg-gray-100"
                 >
-                  <i className="fa-brands fa-google text-lg"></i>{" "}
+                  <FontAwesomeIcon
+                    icon={["fab", "google"]}
+                    className="text-lg"
+                  />{" "}
                   {/* Font Awesome Google icon */}
                   Đăng nhập bằng Google
                 </button>

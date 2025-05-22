@@ -12,7 +12,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { withRouter } from "react-router-dom"; // Import withRouter
 
 // Import SCSS files (global.scss will handle all other imports)
-import "./styles/global.scss"; // Đảm bảo không có import 'postcss-loader' ở đây
+import "./styles/global.scss"; // Đảm bảo KHÔNG CÓ import 'postcss-loader' ở đây
 
 // Auth Pages
 import SignUpForm from "./components/auth/SignUpForm";

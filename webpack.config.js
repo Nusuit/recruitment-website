@@ -1,57 +1,96 @@
+// webpack.config.js
 const path = require("path");
-const HtmlWebpackPlugin = require("html-webpack-plugin");
+// Nếu bạn muốn tách CSS ra file riêng thay vì inject vào <style>
+// const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 
 module.exports = {
-  entry: "./src/index.js",
+  // ... (entry, output, devServer, etc. của bạn)
+  entry: "./src/index.js", // Điểm bắt đầu của ứng dụng
   output: {
-    path: path.resolve(__dirname, "dist"),
     filename: "bundle.js",
-    publicPath: "/",
+    path: path.resolve(__dirname, "dist"), // Thư mục output
+    publicPath: "/", // Quan trọng cho devServer và routing
+  },
+  devServer: {
+    static: {
+      directory: path.join(__dirname, "public"), // Phục vụ file tĩnh từ thư mục public
+    },
+    compress: true,
+    port: 3000,
+    hot: true, // Bật Hot Module Replacement
+    historyApiFallback: true, // Quan trọng cho Single Page Applications
   },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/,
+        test: /\.(js|jsx)$/, // Xử lý các file .js và .jsx
         exclude: /node_modules/,
-        use: ["babel-loader"],
+        use: {
+          loader: "babel-loader", // Sử dụng Babel để biên dịch JavaScript hiện đại
+          options: {
+            presets: ["@babel/preset-env", "@babel/preset-react"], // Preset cho React và ES6+
+          },
+        },
       },
       {
-        // Rule để xử lý các tệp SCSS
-        test: /\.s[ac]ss$/i, // Matches .scss and .sass files
+        test: /\.(scss|css)$/, // Xử lý cả file .scss và .css
         use: [
-          "style-loader", // 1. Injects CSS into the DOM
-          "css-loader", // 2. Interprets @import and url() like import/require() and resolves them
+          // MiniCssExtractPlugin.loader, // Sử dụng thay cho 'style-loader' nếu muốn tách CSS
+          "style-loader", // 3. Inject CSS vào DOM (thông qua thẻ <style>)
+
           {
-            loader: "postcss-loader", // 3. Processes CSS with PostCSS (where TailwindCSS runs)
+            loader: "css-loader", // 2. Phiên dịch @import và url() thành require/import
             options: {
-              postcssOptions: {
-                plugins: [require("tailwindcss"), require("autoprefixer")],
-              },
+              importLoaders: 2, // Số lượng loader được áp dụng trước css-loader trên @imported resources
+              // (postcss-loader, sass-loader)
+              sourceMap: true, // Bật source map cho CSS để dễ debug
             },
           },
-          "sass-loader", // 4. Compiles Sass to CSS
+          {
+            loader: "postcss-loader", // 1.b. Xử lý CSS với PostCSS (bao gồm Tailwind)
+            options: {
+              postcssOptions: {
+                // Không cần khai báo plugins ở đây nữa nếu đã có postcss.config.js
+                // config: path.resolve(__dirname, 'postcss.config.js'), // Hoặc chỉ định đường dẫn tường minh
+              },
+              sourceMap: true,
+            },
+          },
+          {
+            loader: "sass-loader", // 1.a. Biên dịch SCSS sang CSS
+            options: {
+              implementation: require("sass"), // Ưu tiên dùng Dart Sass
+              sourceMap: true,
+              // sassOptions: {
+              //   includePaths: [path.resolve(__dirname, 'src/styles/some-other-path')], // Thêm đường dẫn tìm kiếm cho @import
+              // },
+            },
+          },
         ],
       },
       {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i,
+        test: /\.(png|svg|jpg|jpeg|gif)$/i, // Xử lý các file hình ảnh
+        type: "asset/resource",
+      },
+      {
+        test: /\.(woff|woff2|eot|ttf|otf)$/i, // Xử lý các file font
         type: "asset/resource",
       },
     ],
   },
+  // plugins: [
+  //   new MiniCssExtractPlugin({ // Nếu bạn dùng MiniCssExtractPlugin
+  //     filename: 'styles/[name].[contenthash].css',
+  //   }),
+  //   // ... (các plugin khác như HtmlWebpackPlugin)
+  // ],
   resolve: {
-    extensions: [".js", ".jsx"],
+    extensions: [".js", ".jsx", ".scss", ".css"], // Cho phép import không cần ghi phần mở rộng
+    // alias: { // Tạo alias cho đường dẫn import dễ dàng hơn
+    //   '@components': path.resolve(__dirname, 'src/components'),
+    //   '@styles': path.resolve(__dirname, 'src/styles'),
+    // }
   },
-  plugins: [
-    new HtmlWebpackPlugin({
-      template: "./public/index.html",
-    }),
-  ],
-  devServer: {
-    historyApiFallback: true,
-    static: {
-      directory: path.join(__dirname, "public"),
-    },
-    port: 3000,
-    open: true,
-  },
+  // ... (các cấu hình khác như optimization, devtool)
+  devtool: "eval-source-map", // Hoặc 'source-map' cho production
 };

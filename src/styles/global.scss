@@ -228,6 +228,6 @@ a {
 @import "pages/admin/user-management";
 @import "pages/applicant-dashboard";
 @import "pages/job-management";
-@import "pages/email-verification";
+@import "./email-verification";
 
 @import "utilities"; // Your custom utility classes might still be useful initially

@@ -63,6 +63,7 @@ class GuestGuard extends Component {
   static contextType = AuthContext;
   render() {
     const { isAuthenticated, loading } = this.context;
+    console.log("Guard đang tải:", loading, "context:", this.context);
     if (loading) return null; // Or a loading spinner
     return isAuthenticated ? (
       <Redirect to="/applicant/dashboard" />
@@ -78,7 +79,8 @@ class AuthGuard extends Component {
     const { isAuthenticated, loading, user } = this.context;
     const { requiredRole, children } = this.props;
 
-    if (loading) return null; // Or a loading spinner
+    console.log("Guard đang tải:", loading, "context:", this.context);
+    if (loading) return null;
 
     if (!isAuthenticated) {
       return <Redirect to="/login" />;

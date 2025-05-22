@@ -29,13 +29,25 @@ export class AuthProvider extends Component {
       if (token && storedUser) {
         // Optionally, verify token with backend to ensure it's still valid
         // For now, assume if token and user exist, they are authenticated
-        this.setState({
-          user: JSON.parse(storedUser),
-          isAuthenticated: true,
-          loading: false,
-        });
+        this.setState(
+          {
+            user: JSON.parse(storedUser),
+            isAuthenticated: true,
+            loading: false,
+          },
+          () =>
+            console.log(
+              "AuthContext đã tải, isAuthenticated: true, state:",
+              this.state
+            )
+        );
       } else {
-        this.setState({ loading: false });
+        this.setState({ loading: false }, () =>
+          console.log(
+            "AuthContext đã tải, isAuthenticated: false, state:",
+            this.state
+          )
+        );
       }
     } catch (error) {
       console.error("Lỗi kiểm tra xác thực:", error);

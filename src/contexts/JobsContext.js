@@ -6,220 +6,255 @@ import React, {
   useCallback,
   useContext,
 } from "react";
-import { candidateAPI } from "../api/candidate"; // Giả sử API calls nằm ở đây
-import { AuthContext } from "./AuthContext"; // Để kiểm tra user đã login chưa
+import { jobAPI, candidateAPI } from "../api"; // Assuming API modules
+import { AuthContext } from "./AuthContext";
 
 export const JobsContext = createContext();
 
 export const JobsProvider = ({ children }) => {
-  const { isAuthenticated } = useContext(AuthContext); // Lấy trạng thái xác thực
+  const { isAuthenticated, user } = useContext(AuthContext);
 
-  const [jobs, setJobs] = useState([]);
-  const [savedJobIds, setSavedJobIds] = useState(() => {
-    const localData = localStorage.getItem("savedJobs");
-    return localData ? JSON.parse(localData) : [];
-  });
-  const [applications, setApplications] = useState(() => {
-    const localData = localStorage.getItem("applications");
-    return localData ? JSON.parse(localData) : [];
-  });
-  const [loading, setLoading] = useState(true);
+  const [jobs, setJobs] = useState([]); // All public/searchable jobs
+  const [savedJobIds, setSavedJobIds] = useState([]);
+  const [applications, setApplications] = useState([]);
+
+  const [loading, setLoading] = useState(true); // General loading for initial data
   const [error, setError] = useState(null);
+  const [operationLoading, setOperationLoading] = useState(false); // For specific operations like save/apply
 
-  // Tạm thời giữ lại sampleJobs nếu chưa có API
-  const sampleJobs = [
-    {
-      id: 1,
-      title: "Sales Manager",
-      company: "MyaCorp",
-      location: "HCM, Vietnam",
-      type: "Full Time",
-      salary: "$2500 - $3000",
-      experience: "3-5 Years",
-      education: "Bachelor Degree",
-      postedDate: "2025-03-15",
-      deadline: "2025-04-15",
-      description: "Mô tả công việc Sales Manager...",
-      responsibilities: "Trách nhiệm 1\nTrách nhiệm 2",
-      requirements: "Yêu cầu 1\nYêu cầu 2",
-      benefits: "Phúc lợi 1\nPhúc lợi 2",
-      skills: "Sales, Management, Communication",
-    },
-    {
-      id: 2,
-      title: "Sales Coordinator",
-      company: "MyaCorp",
-      location: "Hanoi, Vietnam",
-      type: "Full Time",
-      salary: "$1800 - $2200",
-      experience: "1-3 Years",
-      education: "Bachelor Degree",
-      postedDate: "2025-03-20",
-      deadline: "2025-04-20",
-      description: "Mô tả công việc Sales Coordinator...",
-      responsibilities: "Hỗ trợ team sales\nLàm báo cáo",
-      requirements: "Kỹ năng tổ chức tốt\nTiếng Anh giao tiếp",
-      benefits: "Bảo hiểm\nDu lịch",
-      skills: "Coordination, Reporting",
-    },
-    // Thêm các jobs khác nếu cần
-  ];
-
-  // Fetch jobs từ API (hoặc dùng sample data)
-  useEffect(() => {
-    const fetchJobsData = async () => {
-      setLoading(true);
-      try {
-        // **TODO: Thay thế bằng lời gọi API thật khi backend sẵn sàng**
-        // const response = await candidateAPI.getJobs(); // Ví dụ: candidateAPI.getAllJobs()
-        // setJobs(response.jobs || []);
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate API delay
-        setJobs(sampleJobs); // Tạm thời dùng sample data
-        setError(null);
-      } catch (err) {
-        console.error("Error fetching jobs:", err);
-        setError("Failed to load jobs. Please try again later.");
-      } finally {
-        setLoading(false);
+  // Fetch all public jobs
+  const fetchAllJobs = useCallback(async (filters = {}) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await jobAPI.getAllPublicJobs(filters); // Pass filters to API
+      if (response.success && Array.isArray(response.data)) {
+        setJobs(response.data);
+      } else {
+        throw new Error(response.error || "Failed to fetch jobs");
       }
-    };
-    fetchJobsData();
+    } catch (err) {
+      console.error("Error fetching all jobs:", err);
+      setError(err.message || "Could not load job listings.");
+      setJobs([]);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
-  // Fetch saved jobs và applications của user nếu đã login
   useEffect(() => {
-    if (isAuthenticated) {
-      const fetchUserSpecificData = async () => {
-        // TODO: Gọi API để lấy saved jobs và applications của user hiện tại
-        // Ví dụ:
-        // const savedJobsResponse = await candidateAPI.getSavedJobs();
-        // setSavedJobIds(savedJobsResponse.map(job => job.id));
-        // const applicationsResponse = await candidateAPI.getApplications();
-        // setApplications(applicationsResponse.applications);
+    fetchAllJobs(); // Initial fetch without filters
+  }, [fetchAllJobs]);
 
-        // Tạm thời vẫn dùng localStorage nếu chưa có API
-        const localSaved = localStorage.getItem("savedJobs");
-        if (localSaved) setSavedJobIds(JSON.parse(localSaved));
+  // Fetch user-specific data (saved jobs, applications)
+  const fetchUserSpecificData = useCallback(async () => {
+    if (isAuthenticated && user) {
+      setOperationLoading(true); // Use operationLoading or a specific loading state
+      setError(null);
+      try {
+        const [savedJobsResponse, appsResponse] = await Promise.all([
+          candidateAPI.getMySavedJobs(),
+          candidateAPI.getMyApplications(),
+        ]);
 
-        const localApps = localStorage.getItem("applications");
-        if (localApps) setApplications(JSON.parse(localApps));
-      };
-      fetchUserSpecificData();
+        if (
+          savedJobsResponse.success &&
+          Array.isArray(savedJobsResponse.data)
+        ) {
+          setSavedJobIds(
+            savedJobsResponse.data.map((job) => job.id.toString())
+          ); // Store only IDs
+        } else {
+          console.warn(
+            "Failed to fetch saved jobs or no saved jobs found:",
+            savedJobsResponse.error
+          );
+          setSavedJobIds([]); // Reset if fetch fails or no data
+        }
+
+        if (appsResponse.success && Array.isArray(appsResponse.data)) {
+          setApplications(appsResponse.data);
+        } else {
+          console.warn(
+            "Failed to fetch applications or no applications found:",
+            appsResponse.error
+          );
+          setApplications([]); // Reset if fetch fails or no data
+        }
+      } catch (err) {
+        console.error("Error fetching user-specific job data:", err);
+        setError(
+          err.message || "Could not load your saved jobs or applications."
+        );
+        // Keep existing data on error or clear them? Depends on desired UX.
+        // setSavedJobIds([]);
+        // setApplications([]);
+      } finally {
+        setOperationLoading(false);
+      }
     } else {
-      // Nếu user logout, xóa dữ liệu này khỏi state (localStorage sẽ được xử lý ở AuthContext)
       setSavedJobIds([]);
       setApplications([]);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, user]);
 
-  // Lưu savedJobIds vào localStorage khi nó thay đổi
   useEffect(() => {
-    localStorage.setItem("savedJobs", JSON.stringify(savedJobIds));
-  }, [savedJobIds]);
-
-  // Lưu applications vào localStorage khi nó thay đổi
-  useEffect(() => {
-    localStorage.setItem("applications", JSON.stringify(applications));
-  }, [applications]);
-
-  const toggleSaveJob = useCallback(
-    (jobId) => {
-      if (!isAuthenticated) {
-        // Có thể redirect tới login hoặc hiển thị thông báo
-        alert("Bạn cần đăng nhập để lưu việc làm.");
-        return;
-      }
-      setSavedJobIds((prevIds) =>
-        prevIds.includes(jobId)
-          ? prevIds.filter((id) => id !== jobId)
-          : [...prevIds, jobId]
-      );
-      // TODO: Gọi API để lưu/bỏ lưu job trên server
-    },
-    [isAuthenticated]
-  );
-
-  const isJobSaved = useCallback(
-    (jobId) => {
-      return savedJobIds.includes(jobId);
-    },
-    [savedJobIds]
-  );
+    fetchUserSpecificData();
+  }, [fetchUserSpecificData]); // Runs when isAuthenticated or user changes
 
   const getJobById = useCallback(
-    (jobId) => {
-      return jobs.find((job) => job.id === parseInt(jobId)) || null;
+    async (jobId) => {
+      // First, check if job is already in the local 'jobs' state
+      const localJob = jobs.find(
+        (job) => job.id.toString() === jobId.toString()
+      );
+      if (localJob) return localJob;
+
+      // If not found locally, fetch from API
+      setOperationLoading(true);
+      try {
+        const response = await jobAPI.getJobDetails(jobId);
+        if (response.success && response.data) {
+          // Optionally add/update this job in the main 'jobs' list if it's not there
+          // or if you want to ensure it's the most up-to-date version.
+          // For simplicity, just returning it here.
+          return response.data;
+        } else {
+          throw new Error(
+            response.error || `Job with ID ${jobId} not found via API.`
+          );
+        }
+      } catch (err) {
+        console.error(`Error fetching job ${jobId}:`, err);
+        setError(`Could not load details for job ${jobId}.`); // Set context error
+        return null;
+      } finally {
+        setOperationLoading(false);
+      }
     },
     [jobs]
   );
 
+  const toggleSaveJob = useCallback(
+    async (jobId) => {
+      if (!isAuthenticated) {
+        // Consider navigating to login or showing a modal
+        alert("Please log in to save jobs.");
+        return { success: false, error: "Not authenticated" };
+      }
+      setOperationLoading(true);
+      const currentlySaved = savedJobIds.includes(jobId.toString());
+      try {
+        let response;
+        if (currentlySaved) {
+          response = await candidateAPI.unsaveJob(jobId);
+        } else {
+          response = await candidateAPI.saveJob(jobId);
+        }
+
+        if (response.success) {
+          // Re-fetch saved jobs to ensure consistency or update local state optimistically
+          // For optimistic update:
+          setSavedJobIds((prevIds) =>
+            currentlySaved
+              ? prevIds.filter((id) => id !== jobId.toString())
+              : [...prevIds, jobId.toString()]
+          );
+          // Or fetchUserSpecificData(); // To get the latest from server
+        } else {
+          throw new Error(
+            response.error ||
+              `Failed to ${currentlySaved ? "unsave" : "save"} job.`
+          );
+        }
+        return { success: true, isSaved: !currentlySaved };
+      } catch (err) {
+        console.error("Error toggling save job:", err);
+        alert(err.message);
+        return { success: false, error: err.message };
+      } finally {
+        setOperationLoading(false);
+      }
+    },
+    [isAuthenticated, savedJobIds /*, fetchUserSpecificData (if using) */]
+  );
+
+  const isJobSaved = useCallback(
+    (jobId) => {
+      return savedJobIds.includes(jobId.toString());
+    },
+    [savedJobIds]
+  );
+
   const getSavedJobs = useCallback(() => {
-    // Trả về danh sách các object job đầy đủ
-    return jobs.filter((job) => savedJobIds.includes(job.id));
+    // This returns full job objects by filtering the main `jobs` list
+    return jobs.filter((job) => savedJobIds.includes(job.id.toString()));
   }, [jobs, savedJobIds]);
 
   const submitApplication = useCallback(
     async (jobId, applicationData) => {
       if (!isAuthenticated) {
-        alert("Bạn cần đăng nhập để ứng tuyển.");
-        return { success: false, error: "User not authenticated" };
+        alert("Please log in to apply for jobs.");
+        return { success: false, error: "Not authenticated" };
       }
-      // TODO: Gọi API để submit application
-      // try {
-      //   const response = await candidateAPI.applyJob(jobId, applicationData);
-      //   if (response.success) {
-      //     setApplications(prev => [...prev, response.application]);
-      //     return { success: true, application: response.application };
-      //   } else {
-      //     return { success: false, error: response.error };
-      //   }
-      // } catch (error) {
-      //   return { success: false, error: error.message || "Failed to submit application" };
-      // }
+      setOperationLoading(true);
+      try {
+        // API call to submit application.
+        // If `applicationData.resume` is a File object, candidateAPI.submitApplication needs to handle FormData.
+        const response = await candidateAPI.submitApplication(
+          jobId,
+          applicationData
+        );
 
-      // Mock logic
-      const newApplication = {
-        id: Date.now(), // Unique ID
-        jobId: parseInt(jobId),
-        ...applicationData, // Dữ liệu từ form
-        status: "Pending Review",
-        appliedDate: new Date().toISOString(),
-        // Thêm các trường khác nếu cần, ví dụ jobTitle, company từ `jobs` state
-        jobTitle: jobs.find((j) => j.id === parseInt(jobId))?.title || "N/A",
-        company: jobs.find((j) => j.id === parseInt(jobId))?.company || "N/A",
-        location: jobs.find((j) => j.id === parseInt(jobId))?.location || "N/A",
-        jobType: jobs.find((j) => j.id === parseInt(jobId))?.type || "N/A",
-      };
-      setApplications((prev) => [...prev, newApplication]);
-      return { success: true, application: newApplication };
+        if (response.success && response.application) {
+          setApplications((prev) => [...prev, response.application]); // Add new application to local state
+          return { success: true, application: response.application };
+        } else {
+          throw new Error(response.error || "Application submission failed");
+        }
+      } catch (err) {
+        console.error("Error submitting application:", err);
+        return {
+          success: false,
+          error: err.message || "Failed to submit application.",
+        };
+      } finally {
+        setOperationLoading(false);
+      }
     },
-    [isAuthenticated, jobs]
-  ); // Thêm jobs vào dependencies
+    [isAuthenticated]
+  );
 
   const getUserApplications = useCallback(() => {
+    // Returns applications from local state. fetchUserSpecificData populates this.
     return applications;
   }, [applications]);
 
   const hasAppliedToJob = useCallback(
     (jobId) => {
-      return applications.some((app) => app.jobId === parseInt(jobId));
+      return applications.some(
+        (app) => app.jobId.toString() === jobId.toString()
+      );
     },
     [applications]
   );
 
   const contextValue = {
     jobs,
-    loading,
+    loading, // For initial job list load
     error,
+    operationLoading, // For actions like save, apply
+    setLoading, // Expose if needed by pages for custom loading states
+    setError,
+    fetchAllJobs, // To allow re-fetching with filters from pages
+    fetchUserSpecificData,
+    getJobById,
     toggleSaveJob,
     isJobSaved,
-    getJobById,
     getSavedJobs,
     submitApplication,
     getUserApplications,
     hasAppliedToJob,
-    setJobs, // Cung cấp setJobs nếu cần thiết từ bên ngoài (ví dụ: khi filter)
-    setLoading, // Cung cấp setLoading nếu cần
   };
 
   return (

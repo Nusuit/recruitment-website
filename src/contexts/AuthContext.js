@@ -1,53 +1,58 @@
 // src/contexts/AuthContext.js
 import React, { createContext, useState, useEffect, useCallback } from "react";
-import authAPI from "../api/auth"; // Đảm bảo đường dẫn này đúng
+import { authAPI } from "../api"; // Assuming authAPI is exported from src/api/index.js
+import axiosInstance from "../api/config/axiosConfig"; // Import for direct header manipulation if needed
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true); // For initial auth check and critical operations
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authError, setAuthError] = useState(null);
 
-  // Hàm kiểm tra trạng thái xác thực
+  const clearAuthData = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    delete axiosInstance.defaults.headers.common["Authorization"]; // Remove token from future requests
+    setUser(null);
+    setIsAuthenticated(false);
+  };
+
   const checkAuthStatus = useCallback(async () => {
     setLoading(true);
-    try {
-      const token = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+    setAuthError(null);
+    const token = localStorage.getItem("token");
 
-      if (token && storedUser) {
-        // TODO: Trong ứng dụng thực tế, bạn nên xác thực token với backend ở đây.
-        // Ví dụ: gọi một API endpoint như /auth/me để lấy thông tin người dùng hiện tại.
-        // Nếu token hợp lệ, backend sẽ trả về thông tin user.
-        // Nếu không, xóa token và user khỏi localStorage.
-        // const profileResponse = await authAPI.getCurrentUserProfile(); // Giả sử có API này
-        // if (profileResponse.success) {
-        //   setUser(profileResponse.user);
-        //   setIsAuthenticated(true);
-        // } else {
-        //   localStorage.removeItem("token");
-        //   localStorage.removeItem("user");
-        //   setUser(null);
-        //   setIsAuthenticated(false);
-        // }
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setIsAuthenticated(false);
+    if (token) {
+      axiosInstance.defaults.headers.common[
+        "Authorization"
+      ] = `Bearer ${token}`;
+      try {
+        // API call to validate token and fetch user profile
+        const response = await authAPI.getCurrentUserProfile(); // Example: GET /api/auth/me
+        if (response.success && response.user) {
+          setUser(response.user);
+          setIsAuthenticated(true);
+          localStorage.setItem("user", JSON.stringify(response.user)); // Update user in localStorage
+        } else {
+          throw new Error(
+            response.error || "Token validation failed or user not found"
+          );
+        }
+      } catch (error) {
+        console.error(
+          "Auth status check error (token validation failed):",
+          error
+        );
+        clearAuthData();
+        // Optionally set an error message for the user, e.g., "Session expired."
       }
-    } catch (error) {
-      console.error("Lỗi kiểm tra xác thực:", error);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      setUser(null);
-      setIsAuthenticated(false);
-    } finally {
-      setLoading(false);
-      // console.log("AuthContext loaded, loading:", false, "isAuthenticated:", isAuthenticated, "user:", user);
+    } else {
+      clearAuthData(); // Ensure no lingering auth state if no token
     }
-  }, []); // Bỏ isAuthenticated và user khỏi dependency array để tránh loop
+    setLoading(false);
+  }, []);
 
   useEffect(() => {
     checkAuthStatus();
@@ -55,117 +60,190 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     setLoading(true);
+    setAuthError(null);
     try {
-      const result = await authAPI.login(email, password);
-      if (result.success && result.user) {
-        // authAPI.login đã lưu token và user vào localStorage
+      const result = await authAPI.login(email, password); // authAPI.login handles localStorage for token & user
+      if (result.success && result.user && result.token) {
+        axiosInstance.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${result.token}`;
         setUser(result.user);
         setIsAuthenticated(true);
-        setLoading(false);
         return { success: true, user: result.user };
       } else {
-        setLoading(false);
-        return { success: false, error: result.error || "Đăng nhập thất bại" };
+        throw new Error(result.error || "Login failed");
       }
     } catch (error) {
-      console.error("Lỗi đăng nhập context:", error);
+      console.error("Login context error:", error);
+      setAuthError(error.message || "Login failed. Please check credentials.");
+      clearAuthData(); // Clear any partial auth state
+      return { success: false, error: error.message || "Login failed." };
+    } finally {
       setLoading(false);
-      return { success: false, error: error.message || "Đăng nhập thất bại." };
     }
   };
 
   const signup = async (userData) => {
-    // Logic signup không thay đổi nhiều, chỉ là gọi API
+    setLoading(true);
+    setAuthError(null);
     try {
-      const result =
+      const apiFunction =
         userData.role === "candidate"
-          ? await authAPI.registerCandidate(userData)
-          : await authAPI.registerRecruiter(userData);
-      return result; // Trả về kết quả từ authAPI
+          ? authAPI.registerCandidate
+          : authAPI.registerRecruiter;
+      const result = await apiFunction(userData);
+      if (result.success) {
+        // After signup, user might need to verify email or could be auto-logged in.
+        // If auto-login: handle token and user data similar to login().
+        // For now, assume it returns a success message.
+        return {
+          success: true,
+          message: result.message,
+          user: result.user /* if returned */,
+        };
+      } else {
+        throw new Error(result.error || "Signup failed");
+      }
     } catch (error) {
-      console.error("Lỗi đăng ký context:", error);
-      return { success: false, error: error.message || "Đăng ký thất bại." };
+      console.error("Signup context error:", error);
+      setAuthError(error.message || "Signup failed. Please try again.");
+      return { success: false, error: error.message || "Signup failed." };
+    } finally {
+      setLoading(false);
     }
   };
 
-  const logout = () => {
-    authAPI.logout(); // Hàm này sẽ xóa localStorage và điều hướng
-    setUser(null);
-    setIsAuthenticated(false);
-    // Điều hướng đã được xử lý trong authAPI.logout() hoặc component gọi hàm này
-  };
-
-  const resetPassword = async (email) => {
+  const logout = async () => {
+    setLoading(true);
+    setAuthError(null);
     try {
-      return await authAPI.forgotPassword(email);
+      // Optional: Call backend logout endpoint to invalidate session/token on server-side
+      // await authAPI.logoutApiCall(); // Assuming authAPI.logoutApiCall() exists
     } catch (error) {
-      console.error("Lỗi đặt lại mật khẩu context:", error);
-      return {
-        success: false,
-        error: error.message || "Yêu cầu đặt lại mật khẩu thất bại.",
-      };
+      console.error("API logout error:", error);
+      // Proceed with client-side logout even if API call fails
+    } finally {
+      clearAuthData();
+      setLoading(false);
+      // Navigation should be handled by the component calling logout, e.g., navigate('/login');
     }
   };
+
+  const forgotPassword = async (email) => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const result = await authAPI.forgotPassword(email); // Sends reset link
+      if (result.success) {
+        return { success: true, message: result.message };
+      } else {
+        throw new Error(result.error || "Failed to send password reset link.");
+      }
+    } catch (error) {
+      setAuthError(error.message);
+      return { success: false, error: error.message };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Note: The actual password reset (with token) is typically handled on ResetPasswordPage directly via authAPI.resetPassword
 
   const loginWithGoogle = () => {
-    // Endpoint backend để bắt đầu OAuth2 flow
+    // Redirects to backend OAuth2 endpoint.
+    // Ensure REACT_APP_API_URL is set in your .env file.
     const backendOAuthUrl = `${
       process.env.REACT_APP_API_URL || "http://localhost:8080/api"
-    }/oauth2/authorize`;
-    // URL callback của frontend mà backend sẽ redirect về
+    }/oauth2/authorize`; // Adjust endpoint as needed
     const frontendCallbackUrl = `${window.location.origin}/oauth2/callback`;
-    // Tạo URL đầy đủ cho backend
-    const authorizeUrl = `${backendOAuthUrl}?redirect_uri=${encodeURIComponent(
+    const authorizeUrl = `${backendOAuthUrl}?provider=google&redirect_uri=${encodeURIComponent(
       frontendCallbackUrl
-    )}`;
+    )}`; // Assuming provider query param
     window.location.href = authorizeUrl;
   };
 
   const handleGoogleOAuthCallback = async (code) => {
     setLoading(true);
+    setAuthError(null);
     try {
-      const result = await authAPI.loginWithGoogleOAuth(code);
-      if (result.success && result.user) {
-        // authAPI.loginWithGoogleOAuth đã lưu token và user
+      const result = await authAPI.loginWithGoogleOAuth(code); // Sends code to backend, gets token/user
+      if (result.success && result.user && result.token) {
+        localStorage.setItem("token", result.token); // Handled by authAPI.loginWithGoogleOAuth if designed so
+        localStorage.setItem("user", JSON.stringify(result.user));
+        axiosInstance.defaults.headers.common[
+          "Authorization"
+        ] = `Bearer ${result.token}`;
         setUser(result.user);
         setIsAuthenticated(true);
-        setLoading(false);
         return { success: true, user: result.user };
       } else {
-        setLoading(false);
-        return {
-          success: false,
-          error: result.error || "Xác thực Google OAuth thất bại.",
-        };
+        throw new Error(result.error || "Google OAuth login failed.");
       }
     } catch (error) {
-      console.error("Lỗi xác thực Google OAuth context:", error);
+      setAuthError(error.message);
+      clearAuthData();
+      return { success: false, error: error.message };
+    } finally {
       setLoading(false);
-      return {
-        success: false,
-        error: error.message || "Xác thực Google OAuth thất bại.",
-      };
     }
   };
 
-  // Cung cấp hàm để cập nhật user từ bên ngoài (ví dụ sau khi cập nhật profile)
-  const updateUserContext = (updatedUser) => {
-    setUser(updatedUser);
-    localStorage.setItem("user", JSON.stringify(updatedUser)); // Cập nhật cả localStorage
+  const verifyOTP = async (email, otp) => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const result = await authAPI.verifyOTP(email, otp);
+      return result; // { success: true/false, message: ..., error: ... }
+    } catch (error) {
+      setAuthError(error.message || "OTP verification failed.");
+      return {
+        success: false,
+        error: error.message || "OTP verification failed.",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resendOTP = async (email) => {
+    setLoading(true);
+    setAuthError(null);
+    try {
+      const result = await authAPI.resendOTP(email);
+      return result;
+    } catch (error) {
+      setAuthError(error.message || "Failed to resend OTP.");
+      return {
+        success: false,
+        error: error.message || "Failed to resend OTP.",
+      };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateUserContext = (updatedUserData) => {
+    // Called after profile update to refresh context user
+    const newUser = { ...user, ...updatedUserData };
+    setUser(newUser);
+    localStorage.setItem("user", JSON.stringify(newUser));
   };
 
   const contextValue = {
     user,
-    loading,
+    loading, // Global loading for initial auth check & critical ops
     isAuthenticated,
+    authError,
     login,
     signup,
     logout,
-    resetPassword,
+    forgotPassword,
     loginWithGoogle,
     handleGoogleOAuthCallback,
-    updateUserContext, // Thêm hàm này
-    checkAuthStatus, // Có thể cần gọi lại từ bên ngoài
+    verifyOTP,
+    resendOTP,
+    updateUserContext,
+    checkAuthStatus,
   };
 
   return (

@@ -1,358 +1,643 @@
-import React, { useState, useEffect } from 'react';
-import { candidateAPI } from '../../../api/candidate';
+// src/pages/applicant/profile/ProfilePage.jsx
+import React, { useState, useEffect, useContext } from "react";
+import { AuthContext } from "../../../contexts/AuthContext";
+import { candidateAPI } from "../../../api/candidate"; // Assuming candidateAPI for profile actions
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const ProfilePage = () => {
-  const [profile, setProfile] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    address: '',
-    avatar: null,
-    cv: null,
-    gender: '',
-    education: '',
-    experience: '',
-    skills: []
+  const {
+    user,
+    updateUserContext,
+    loading: authLoading,
+  } = useContext(AuthContext); // Get user and updateUserContext
+  const [profileData, setProfileData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "", // Usually not editable or handled differently
+    phone: "",
+    address: "",
+    avatarUrl: "", // URL of the avatar
+    cvUrl: "", // URL of the CV
+    gender: "",
+    education: "",
+    experience: "",
+    skills: [], // Array of strings or objects
+    linkedin: "",
+    portfolio: "",
+    bio: "",
   });
+  const [genders, setGenders] = useState([]); // To store gender options if fetched from API
+  const [availableSkills, setAvailableSkills] = useState([]); // All possible skills
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [submitError, setSubmitError] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [genders, setGenders] = useState([]);
+  const [avatarFile, setAvatarFile] = useState(null); // For new avatar upload
+  const [cvFile, setCvFile] = useState(null); // For new CV upload
+  const [avatarPreview, setAvatarPreview] = useState("");
+  const [cvFileName, setCvFileName] = useState("");
 
+  // Fetch profile data and other necessary data (genders, skills)
   useEffect(() => {
     const fetchData = async () => {
+      if (!user && !authLoading) {
+        // If user is not loaded and auth is not loading, redirect or show error
+        setLoading(false);
+        setSubmitError("User not authenticated.");
+        return;
+      }
+      if (authLoading) return; // Wait for auth context to load
+
+      setLoading(true);
+      setSubmitError(null);
       try {
-        setLoading(true);
         // Fetch profile data
-        const profileResponse = await candidateAPI.getProfile();
-        setProfile(profileResponse.profile);
+        const profileResponse = await candidateAPI.getProfile(); // API to get candidate's own profile
+        const currentProfile = profileResponse.profile || {};
+        setProfileData({
+          firstName: currentProfile.firstName || user?.firstName || "",
+          lastName: currentProfile.lastName || user?.lastName || "",
+          email: currentProfile.email || user?.email || "",
+          phone: currentProfile.phone || "",
+          address: currentProfile.address || "",
+          avatarUrl: currentProfile.avatarUrl || user?.avatarUrl || "",
+          cvUrl: currentProfile.cvUrl || "",
+          gender: currentProfile.gender || "",
+          education: currentProfile.education || "",
+          experience: currentProfile.experience || "",
+          skills: currentProfile.skills || [], // Assuming skills is an array of strings/ids
+          linkedin: currentProfile.linkedin || "",
+          portfolio: currentProfile.portfolio || "",
+          bio: currentProfile.bio || "",
+        });
+        setAvatarPreview(currentProfile.avatarUrl || user?.avatarUrl || "");
+        setCvFileName(
+          currentProfile.cvUrl ? currentProfile.cvUrl.split("/").pop() : ""
+        );
 
-        // Fetch gender options
-        const gendersResponse = await candidateAPI.getGenders();
-        setGenders(gendersResponse.genders);
+        // Fetch gender options (example, replace with actual API if needed)
+        // const gendersResponse = await candidateAPI.getGenders();
+        // setGenders(gendersResponse.genders || []);
+        setGenders(["Male", "Female", "Other", "Prefer not to say"]); // Mock genders
 
-        setError(null);
+        // Fetch available skills (example)
+        // const skillsResponse = await candidateAPI.getAllSkills();
+        // setAvailableSkills(skillsResponse.skills || []);
+        setAvailableSkills([
+          { id: "react", name: "React" },
+          { id: "node", name: "Node.js" },
+          { id: "css", name: "CSS" },
+          { id: "html", name: "HTML" },
+          { id: "javascript", name: "JavaScript" },
+          { id: "python", name: "Python" },
+        ]); // Mock skills
       } catch (err) {
-        setError('Failed to load profile data. Please try again.');
-        console.error('Error loading profile:', err);
+        console.error("Error fetching profile data:", err);
+        setSubmitError("Failed to load profile data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-
     fetchData();
-  }, []);
+  }, [user, authLoading]); // Re-fetch if user changes (e.g., after login)
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProfile(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    setProfileData((prev) => ({ ...prev, [name]: value }));
+    if (submitError) setSubmitError(null);
   };
 
-  const handleAvatarUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleSkillChange = (skillIdOrName) => {
+    setProfileData((prev) => {
+      const newSkills = prev.skills.includes(skillIdOrName)
+        ? prev.skills.filter((s) => s !== skillIdOrName)
+        : [...prev.skills, skillIdOrName];
+      return { ...prev, skills: newSkills };
+    });
+  };
 
-    try {
-      const response = await candidateAPI.uploadProfilePicture(file);
-      setProfile(prev => ({
-        ...prev,
-        avatar: response.avatarUrl
-      }));
-      setSubmitSuccess(true);
-    } catch (err) {
-      setError('Failed to upload avatar. Please try again.');
-      console.error('Error uploading avatar:', err);
+  const handleAvatarChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 2 * 1024 * 1024) {
+        // 2MB limit for avatar
+        setSubmitError("Avatar file size should not exceed 2MB.");
+        return;
+      }
+      setAvatarFile(file);
+      setAvatarPreview(URL.createObjectURL(file));
+      setSubmitError(null);
     }
   };
 
-  const handleCVUpload = async (e) => {
+  const handleCvChange = (e) => {
     const file = e.target.files[0];
-    if (!file) return;
-
-    try {
-      const response = await candidateAPI.uploadCV(file);
-      setProfile(prev => ({
-        ...prev,
-        cv: response.cvUrl
-      }));
-      setSubmitSuccess(true);
-    } catch (err) {
-      setError('Failed to upload CV. Please try again.');
-      console.error('Error uploading CV:', err);
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        // 5MB limit for CV
+        setSubmitError("CV file size should not exceed 5MB.");
+        return;
+      }
+      setCvFile(file);
+      setCvFileName(file.name);
+      setSubmitError(null);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    try {
-      setLoading(true);
-      await candidateAPI.updateProfile(profile);
-      setIsEditing(false);
-      setSubmitSuccess(true);
-      setError(null);
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    setIsEditing(true); // Keep in editing mode while submitting
 
-      // Reset success message after 3 seconds
-      setTimeout(() => {
-        setSubmitSuccess(false);
-      }, 3000);
+    // Basic Validation (can be expanded)
+    if (!profileData.firstName || !profileData.lastName) {
+      setSubmitError("First name and last name are required.");
+      return;
+    }
+
+    setLoading(true); // Use general loading for submission process
+
+    try {
+      // 1. Upload avatar if changed
+      let newAvatarUrl = profileData.avatarUrl;
+      if (avatarFile) {
+        const avatarFormData = new FormData();
+        avatarFormData.append("image", avatarFile); // Match backend field name
+        const avatarUploadResponse = await candidateAPI.uploadProfilePicture(
+          avatarFormData
+        );
+        newAvatarUrl = avatarUploadResponse.avatarUrl; // Get new URL from response
+      }
+
+      // 2. Upload CV if changed
+      let newCvUrl = profileData.cvUrl;
+      if (cvFile) {
+        const cvFormData = new FormData();
+        cvFormData.append("cv", cvFile); // Match backend field name
+        const cvUploadResponse = await candidateAPI.uploadCV(cvFormData);
+        newCvUrl = cvUploadResponse.cvUrl;
+      }
+
+      // 3. Update profile text data
+      const profilePayload = {
+        ...profileData,
+        avatarUrl: newAvatarUrl,
+        cvUrl: newCvUrl,
+        // skills: profileData.skills, // Ensure skills are in the correct format for API (e.g., array of strings/IDs)
+      };
+      // Remove file objects before sending to updateProfile API if it expects only URLs
+      delete profilePayload.avatarFile;
+      delete profilePayload.cvFile;
+
+      const updateResponse = await candidateAPI.updateProfile(profilePayload);
+
+      // Update AuthContext user if update was successful
+      if (updateResponse.profile) {
+        // Assuming API returns the updated profile
+        const updatedUserForContext = {
+          ...user,
+          ...updateResponse.profile, // Merge with existing user data
+          avatarUrl: newAvatarUrl, // Ensure avatarUrl is updated in context
+        };
+        updateUserContext(updatedUserForContext); // Update user in AuthContext
+        setProfileData((prev) => ({
+          ...prev,
+          avatarUrl: newAvatarUrl,
+          cvUrl: newCvUrl,
+        })); // Update local state with new URLs
+      }
+
+      setSubmitSuccess(true);
+      setIsEditing(false); // Exit editing mode on success
+      setAvatarFile(null); // Clear staged files
+      setCvFile(null);
+
+      setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (err) {
-      setError('Failed to update profile. Please try again.');
-      console.error('Error updating profile:', err);
+      console.error("Error updating profile:", err);
+      setSubmitError(
+        err.message || "Failed to update profile. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) {
-    return <div className="loading-indicator">Loading profile...</div>;
+  if (authLoading || (loading && !profileData.email)) {
+    // Show loading if auth is loading or profile data isn't ready
+    return <LoadingSpinner fullPage message="Loading profile..." />;
+  }
+  if (!user && !authLoading) {
+    return (
+      <div className="p-8 text-center">
+        <p className="text-red-600 text-lg">
+          Please log in to view your profile.
+        </p>
+        <Link
+          to="/login"
+          className="mt-4 inline-block px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+          Go to Login
+        </Link>
+      </div>
+    );
   }
 
   return (
-    <div className="profile-page">
-      <div className="profile-header">
-        <h1>My Profile</h1>
-        <div className="header-actions">
+    <div className="profile-page p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-5xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 pb-4 border-b border-gray-200">
+          <h1 className="text-3xl font-bold text-gray-800">My Profile</h1>
           {!isEditing ? (
-            <button 
-              className="edit-button"
+            <button
               onClick={() => setIsEditing(true)}
+              className="mt-4 md:mt-0 px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors shadow-sm flex items-center gap-2"
             >
-              Edit Profile
+              <FontAwesomeIcon icon="pen" /> Edit Profile
             </button>
           ) : (
-            <div className="edit-actions">
-              <button 
-                className="cancel-button"
-                onClick={() => setIsEditing(false)}
+            <div className="mt-4 md:mt-0 flex gap-3">
+              <button
+                onClick={() => {
+                  setIsEditing(false);
+                  setSubmitError(null);
+                  // Reset form to original data (re-fetch or use initial user data)
+                  setProfileData({
+                    /* ... reset to original profile data ... */
+                  });
+                  setAvatarPreview(profileData.avatarUrl);
+                  setCvFileName(
+                    profileData.cvUrl ? profileData.cvUrl.split("/").pop() : ""
+                  );
+                  setAvatarFile(null);
+                  setCvFile(null);
+                }}
+                className="px-5 py-2.5 bg-gray-200 text-gray-700 font-semibold rounded-lg hover:bg-gray-300 transition-colors"
               >
                 Cancel
               </button>
-              <button 
-                className="save-button"
+              <button
                 onClick={handleSubmit}
                 disabled={loading}
+                className="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-400"
               >
-                {loading ? 'Saving...' : 'Save Changes'}
+                {loading ? <LoadingSpinner size="small" /> : "Save Changes"}
               </button>
             </div>
           )}
         </div>
-      </div>
 
-      {error && (
-        <div className="error-message">{error}</div>
-      )}
+        {submitError && (
+          <div
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md"
+            role="alert"
+          >
+            <p className="font-bold">Error</p>
+            <p>{submitError}</p>
+          </div>
+        )}
+        {submitSuccess && (
+          <div
+            className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 mb-6 rounded-md"
+            role="alert"
+          >
+            <p className="font-bold">Success!</p>
+            <p>Profile updated successfully.</p>
+          </div>
+        )}
 
-      {submitSuccess && (
-        <div className="success-message">Profile updated successfully!</div>
-      )}
-
-      <div className="profile-content">
-        <div className="profile-section">
-          <div className="avatar-section">
-            <div className="avatar-container">
-              <img 
-                src={profile.avatar || '/default-avatar.png'} 
-                alt="Profile"
-                className="profile-avatar"
+        <form
+          onSubmit={handleSubmit}
+          className="bg-white p-6 md:p-8 rounded-xl shadow-lg space-y-8"
+        >
+          {/* Avatar Section */}
+          <section className="text-center">
+            <div className="relative inline-block mb-4">
+              <img
+                src={avatarPreview || "/assets/images/default-avatar.png"}
+                alt="Profile Avatar"
+                className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-gray-200 shadow-md"
               />
               {isEditing && (
-                <div className="avatar-upload">
+                <label
+                  htmlFor="avatar-upload"
+                  className="absolute -bottom-2 -right-2 bg-blue-600 text-white p-2.5 rounded-full cursor-pointer hover:bg-blue-700 transition-colors shadow-md"
+                >
+                  <FontAwesomeIcon icon="camera" />
                   <input
                     type="file"
-                    id="avatar"
+                    id="avatar-upload"
                     accept="image/*"
-                    onChange={handleAvatarUpload}
-                    hidden
+                    onChange={handleAvatarChange}
+                    className="hidden"
                   />
-                  <label htmlFor="avatar" className="upload-button">
-                    Change Photo
-                  </label>
-                </div>
+                </label>
               )}
             </div>
-          </div>
-
-          <div className="form-grid">
-            <div className="form-group">
-              <label htmlFor="firstName">First Name</label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={profile.firstName}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="lastName">Last Name</label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={profile.lastName}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="email">Email</label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={profile.email}
-                disabled={true} // Email should not be editable
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="phone">Phone</label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={profile.phone}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="gender">Gender</label>
-              <select
-                id="gender"
-                name="gender"
-                value={profile.gender}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              >
-                <option value="">Select Gender</option>
-                {genders.map(gender => (
-                  <option key={gender} value={gender}>
-                    {gender}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="form-group">
-              <label htmlFor="address">Address</label>
-              <input
-                type="text"
-                id="address"
-                name="address"
-                value={profile.address}
-                onChange={handleInputChange}
-                disabled={!isEditing}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="profile-section">
-          <h2>Resume/CV</h2>
-          <div className="cv-section">
-            {profile.cv ? (
-              <div className="current-cv">
-                <a href={profile.cv} target="_blank" rel="noopener noreferrer">
-                  View Current CV
-                </a>
-                {isEditing && (
-                  <div className="cv-upload">
-                    <input
-                      type="file"
-                      id="cv"
-                      accept=".pdf,.doc,.docx"
-                      onChange={handleCVUpload}
-                      hidden
-                    />
-                    <label htmlFor="cv" className="upload-button">
-                      Upload New CV
-                    </label>
-                  </div>
-                )}
-              </div>
-            ) : (
-              isEditing && (
-                <div className="cv-upload">
-                  <input
-                    type="file"
-                    id="cv"
-                    accept=".pdf,.doc,.docx"
-                    onChange={handleCVUpload}
-                    hidden
-                  />
-                  <label htmlFor="cv" className="upload-button">
-                    Upload CV
-                  </label>
-                </div>
-              )
+            {!isEditing && (
+              <h2 className="text-2xl font-semibold text-gray-800">
+                {profileData.firstName} {profileData.lastName}
+              </h2>
             )}
-          </div>
-        </div>
+            {!isEditing && <p className="text-gray-600">{profileData.email}</p>}
+          </section>
 
-        <div className="profile-section">
-          <h2>Professional Information</h2>
-          <div className="form-group">
-            <label htmlFor="education">Education</label>
-            <textarea
-              id="education"
-              name="education"
-              value={profile.education}
-              onChange={handleInputChange}
-              disabled={!isEditing}
-              rows={3}
-            />
-          </div>
+          {/* Personal Information */}
+          <FormSection title="Personal Information">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                label="First Name*"
+                name="firstName"
+                value={profileData.firstName}
+                onChange={handleChange}
+                disabled={!isEditing}
+                error={errors.firstName}
+              />
+              <InputField
+                label="Last Name*"
+                name="lastName"
+                value={profileData.lastName}
+                onChange={handleChange}
+                disabled={!isEditing}
+                error={errors.lastName}
+              />
+              <InputField
+                label="Email Address"
+                name="email"
+                type="email"
+                value={profileData.email}
+                disabled={true}
+              />{" "}
+              {/* Email usually not editable */}
+              <InputField
+                label="Phone Number"
+                name="phone"
+                type="tel"
+                value={profileData.phone}
+                onChange={handleChange}
+                disabled={!isEditing}
+                error={errors.phone}
+              />
+              <InputField
+                label="Address"
+                name="address"
+                value={profileData.address}
+                onChange={handleChange}
+                disabled={!isEditing}
+              />
+              <div>
+                <label
+                  htmlFor="gender"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Gender
+                </label>
+                <select
+                  id="gender"
+                  name="gender"
+                  value={profileData.gender}
+                  onChange={handleChange}
+                  disabled={!isEditing}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="">Select Gender</option>
+                  {genders.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            <div className="mt-6">
+              <label
+                htmlFor="bio"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Bio / Summary
+              </label>
+              <textarea
+                id="bio"
+                name="bio"
+                value={profileData.bio}
+                onChange={handleChange}
+                disabled={!isEditing}
+                rows="4"
+                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="Tell us a bit about yourself..."
+              />
+            </div>
+          </FormSection>
 
-          <div className="form-group">
-            <label htmlFor="experience">Work Experience</label>
-            <textarea
-              id="experience"
-              name="experience"
-              value={profile.experience}
-              onChange={handleInputChange}
-              disabled={!isEditing}
-              rows={3}
-            />
-          </div>
+          {/* Professional Information */}
+          <FormSection title="Professional Information">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                label="Current Position / Title"
+                name="title"
+                value={profileData.title || ""}
+                onChange={handleChange}
+                disabled={!isEditing}
+              />
+              <InputField
+                label="Years of Experience"
+                name="experience"
+                type="number"
+                value={profileData.experience}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="e.g., 5"
+              />
+            </div>
+            <div className="mt-6">
+              <label
+                htmlFor="education"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Education
+              </label>
+              <textarea
+                id="education"
+                name="education"
+                value={profileData.education}
+                onChange={handleChange}
+                disabled={!isEditing}
+                rows="3"
+                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="e.g., Bachelor's in Fashion Design - University Name (Year)"
+              />
+            </div>
+            <div className="mt-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Skills
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {availableSkills.map((skill) => (
+                  <label
+                    key={skill.id}
+                    className={`flex items-center space-x-2 text-sm p-2 border rounded-md cursor-pointer transition-colors ${
+                      profileData.skills.includes(skill.id)
+                        ? "bg-blue-100 border-blue-300 text-blue-700"
+                        : "border-gray-200 hover:bg-gray-50"
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      value={skill.id}
+                      checked={profileData.skills.includes(skill.id)}
+                      onChange={() => handleSkillChange(skill.id)}
+                      disabled={!isEditing}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 disabled:opacity-50"
+                    />
+                    <span>{skill.name}</span>
+                  </label>
+                ))}
+              </div>
+              {/* Add new skill input if editing */}
+            </div>
+          </FormSection>
 
-          <div className="form-group">
-            <label htmlFor="skills">Skills</label>
-            <textarea
-              id="skills"
-              name="skills"
-              value={profile.skills.join(', ')}
-              onChange={(e) => {
-                const skillsArray = e.target.value
-                  .split(',')
-                  .map(skill => skill.trim())
-                  .filter(skill => skill.length > 0);
-                setProfile(prev => ({
-                  ...prev,
-                  skills: skillsArray
-                }));
-              }}
-              disabled={!isEditing}
-              rows={3}
-              placeholder="Enter skills separated by commas"
-            />
-          </div>
-        </div>
+          {/* Documents */}
+          <FormSection title="Documents">
+            <div>
+              <label
+                htmlFor="cv-upload"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Resume/CV
+              </label>
+              {isEditing ? (
+                <div
+                  className={`mt-1 flex items-center justify-center px-6 pt-5 pb-6 border-2 ${
+                    errors.cvFile ? "border-red-500" : "border-gray-300"
+                  } border-dashed rounded-md`}
+                >
+                  <div className="space-y-1 text-center">
+                    <FontAwesomeIcon
+                      icon="file-arrow-up"
+                      className="mx-auto h-10 w-10 text-gray-400"
+                    />
+                    <div className="flex text-sm text-gray-600">
+                      <label
+                        htmlFor="cv-file-input"
+                        className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                      >
+                        <span>{cvFileName ? "Change CV" : "Upload CV"}</span>
+                        <input
+                          id="cv-file-input"
+                          name="cvFile"
+                          type="file"
+                          className="sr-only"
+                          onChange={handleCvChange}
+                          accept=".pdf,.doc,.docx"
+                        />
+                      </label>
+                      <p className="pl-1">or drag and drop</p>
+                    </div>
+                    {cvFileName && (
+                      <p className="text-xs text-gray-500 mt-1">
+                        Current: {cvFileName}
+                      </p>
+                    )}
+                    {!cvFileName && (
+                      <p className="text-xs text-gray-500">
+                        PDF, DOC, DOCX up to 5MB
+                      </p>
+                    )}
+                  </div>
+                </div>
+              ) : profileData.cvUrl ? (
+                <a
+                  href={profileData.cvUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-600 hover:underline inline-flex items-center gap-2"
+                >
+                  <FontAwesomeIcon icon="file-pdf" /> View Current CV
+                </a>
+              ) : (
+                <p className="text-sm text-gray-500">No CV uploaded.</p>
+              )}
+              {errors.cvFile && (
+                <p className="text-xs text-red-600 mt-1">{errors.cvFile}</p>
+              )}
+            </div>
+          </FormSection>
+
+          {/* Online Presence */}
+          <FormSection title="Online Presence">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <InputField
+                label="LinkedIn Profile URL"
+                name="linkedin"
+                value={profileData.linkedin}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="linkedin.com/in/yourprofile"
+              />
+              <InputField
+                label="Portfolio/Website URL"
+                name="portfolio"
+                value={profileData.portfolio}
+                onChange={handleChange}
+                disabled={!isEditing}
+                placeholder="yourportfolio.com"
+              />
+            </div>
+          </FormSection>
+        </form>
       </div>
     </div>
   );
 };
+
+// Helper component for form sections
+const FormSection = ({ title, children }) => (
+  <section className="pb-8 mb-8 border-b border-gray-200 last:border-b-0 last:mb-0 last:pb-0">
+    <h2 className="text-xl font-semibold text-gray-700 mb-6">{title}</h2>
+    <div className="space-y-6">{children}</div>
+  </section>
+);
+
+// Helper component for input fields
+const InputField = ({
+  label,
+  name,
+  type = "text",
+  value,
+  onChange,
+  disabled,
+  error,
+  placeholder,
+  required = false,
+}) => (
+  <div>
+    <label
+      htmlFor={name}
+      className="block text-sm font-medium text-gray-700 mb-1"
+    >
+      {label}
+      {required && <span className="text-red-500">*</span>}
+    </label>
+    <input
+      type={type}
+      id={name}
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+        error
+          ? "border-red-500 ring-red-200"
+          : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+      } ${disabled ? "bg-gray-100 cursor-not-allowed" : "bg-white"}`}
+    />
+    {error && <p className="text-xs text-red-600 mt-1">{error}</p>}
+  </div>
+);
 
 export default ProfilePage;

@@ -1,121 +1,96 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import JobsContext from '../../contexts/JobsContext';
-import { formatDate } from '../../utils/formatters';
+// src/components/jobs/SavedJobs.jsx
+// This component displays a list of saved jobs, possibly on a dashboard.
+// It's different from SavedJobsPage.jsx which is a full page.
 
-const SavedJobs = ({ limit, showViewAll = true }) => {
-  const { getSavedJobs, toggleSaveJob, loading } = useContext(JobsContext);
-  const [savedJobs, setSavedJobs] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
+import React, { useContext } from "react";
+import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
+import { JobsContext } from "../../contexts/JobsContext";
+import JobCard from "./JobCard"; // Assuming JobCard is updated
+import EmptyState from "../common/EmptyState";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-  useEffect(() => {
-    const fetchSavedJobs = async () => {
-      setIsLoading(true);
-      // Get saved jobs from context
-      const jobs = getSavedJobs();
-      
-      // If limit is provided, slice the array
-      const limitedJobs = limit ? jobs.slice(0, limit) : jobs;
-      
-      setSavedJobs(limitedJobs);
-      setIsLoading(false);
-    };
+const SavedJobsComponent = ({
+  limit,
+  showViewAllLink = true,
+  listTitle = "Your Saved Jobs",
+}) => {
+  const {
+    getSavedJobs,
+    loading: jobsContextLoading,
+    error: jobsContextError,
+  } = useContext(JobsContext);
 
-    // Wait for the jobs context to load before fetching saved jobs
-    if (!loading) {
-      fetchSavedJobs();
-    }
-  }, [loading, getSavedJobs, limit]);
+  // getSavedJobs from context should already return the job objects
+  const savedJobs = getSavedJobs();
 
-  // Handle unsave job
-  const handleUnsaveJob = (jobId) => {
-    toggleSaveJob(jobId);
-    setSavedJobs(prev => prev.filter(job => job.id !== jobId));
-  };
-
-  if (isLoading) {
-    return <div className="loading-container">Loading saved jobs...</div>;
-  }
-
-  if (savedJobs.length === 0) {
+  if (jobsContextLoading) {
     return (
-      <div className="empty-state">
-        <div className="empty-state-icon">📋</div>
-        <h3>No saved jobs yet</h3>
-        <p>
-          Jobs you save will appear here. Save jobs that interest you to apply to them later.
-        </p>
-        <Link to="/jobs" className="browse-jobs-btn">
-          Browse Jobs
-        </Link>
+      <div className="p-4 text-center">
+        <LoadingSpinner message="Loading saved jobs..." />
       </div>
     );
   }
 
+  if (jobsContextError) {
+    return (
+      <p className="text-red-500 p-4 bg-red-50 rounded-md">
+        {jobsContextError}
+      </p>
+    );
+  }
+
+  const jobsToDisplay = limit ? savedJobs.slice(0, limit) : savedJobs;
+
   return (
-    <div className="saved-jobs-component">
-      <div className="saved-jobs-list">
-        {savedJobs.map(job => (
-          <div key={job.id} className="saved-job-card">
-            <div className="job-card-content">
-              <div className="job-card-header">
-                <h3 className="job-title">
-                  <Link to={`/jobs/${job.id}`}>{job.title}</Link>
-                </h3>
-                <button 
-                  className="unsave-btn"
-                  onClick={() => handleUnsaveJob(job.id)}
-                  aria-label="Remove from saved jobs"
-                >
-                  <i className="bookmark-filled-icon"></i>
-                </button>
-              </div>
-              
-              <div className="job-info">
-                <span className="company-name">{job.company}</span>
-                <span className="job-location">
-                  <i className="location-icon"></i>
-                  {job.location}
-                </span>
-                <span className="job-type">{job.type}</span>
-              </div>
-              
-              <div className="job-salary">
-                <i className="salary-icon"></i>
-                <span>{job.salary}</span>
-              </div>
-              
-              <div className="job-dates">
-                <div className="posted-date">
-                  <span className="date-label">Posted:</span>
-                  <span className="date-value">{formatDate(job.postedDate)}</span>
-                </div>
-                <div className="deadline">
-                  <span className="date-label">Deadline:</span>
-                  <span className="date-value">{formatDate(job.deadline)}</span>
-                </div>
-              </div>
-            </div>
-            
-            <div className="job-card-actions">
-              <Link to={`/jobs/${job.id}`} className="view-details-btn">
-                View Details
-              </Link>
-              <Link to={`/jobs/${job.id}/apply`} className="apply-now-btn">
-                Apply Now
-              </Link>
-            </div>
-          </div>
-        ))}
+    <div className="saved-jobs-component bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+      <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-800">{listTitle}</h3>
+        {showViewAllLink && savedJobs.length > (limit || 0) && (
+          <Link
+            to="/applicant/saved-jobs"
+            className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
+          >
+            View All <FontAwesomeIcon icon="arrow-right" size="xs" />
+          </Link>
+        )}
       </div>
-      
-      {showViewAll && savedJobs.length > 0 && (
-        <div className="view-all-link">
-          <Link to="/applicant/saved-jobs">View All Saved Jobs</Link>
+
+      {jobsToDisplay.length === 0 ? (
+        <EmptyState
+          icon="bookmark"
+          title="No Saved Jobs"
+          description="You haven't saved any jobs yet. Start exploring and save opportunities that interest you!"
+          action={
+            <Link
+              to="/applicant/jobs"
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600"
+            >
+              <FontAwesomeIcon icon="search" className="mr-2" />
+              Find Jobs
+            </Link>
+          }
+        />
+      ) : (
+        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+          {" "}
+          {/* Added max-height and scroll */}
+          {jobsToDisplay.map((job) => (
+            <JobCard key={job.id} job={job} />
+            // Note: JobCard now handles its own save/unsave logic via context.
+            // If you need a specific "Unsave" button here, you'd add it and call toggleSaveJob from context.
+          ))}
         </div>
       )}
     </div>
   );
 };
 
-export default SavedJobs;
+SavedJobsComponent.propTypes = {
+  limit: PropTypes.number,
+  showViewAllLink: PropTypes.bool,
+  listTitle: PropTypes.string,
+};
+
+export default SavedJobsComponent;

@@ -1,471 +1,471 @@
-import React, { Component } from "react";
-import { withRouter } from "react-router-dom"; // Import withRouter
-import { candidateAPI } from "../../api/candidate";
+// src/components/jobs/ApplyForm.jsx
+import React, { useState, useEffect, useContext } from "react";
+import {
+  useNavigate, // No longer using withRouter, so history is not available via props
+} from "react-router-dom";
 import PropTypes from "prop-types";
+import { candidateAPI } from "../../api/candidate"; // Assuming API calls
+import { AuthContext } from "../../contexts/AuthContext"; // To prefill user data
+import { JobsContext } from "../../contexts/JobsContext"; // To mark as applied
+import LoadingSpinner from "../common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-class JobApplicationForm extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      formData: {
-        firstName: "",
-        lastName: "",
-        email: "",
-        phone: "",
-        experience: "",
-        linkedin: "",
-        coverLetter: "",
-        resume: null,
-        expectedSalary: "",
-        noticePeriod: "",
-        availableDate: "",
-        questions: {
-          workAuthorization: "",
-          relocate: "",
-          remoteWork: "",
-          salaryExpectations: "",
-        },
-      },
-      loading: false,
-      error: null,
-      profile: null,
-    };
-    this.handleInputChange = this.handleInputChange.bind(this);
-    this.handleFileChange = this.handleFileChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.validateForm = this.validateForm.bind(this);
-  }
+const ApplyForm = ({ jobId, jobTitle, onSubmitSuccess }) => {
+  const { user } = useContext(AuthContext);
+  const { submitApplication } = useContext(JobsContext); // Get submitApplication from context
+  const navigate = useNavigate();
 
-  componentDidMount() {
-    this.fetchProfile();
-  }
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    resume: null, // Store File object
+    coverLetter: "",
+    linkedIn: "",
+    portfolio: "",
+    expectedSalary: "",
+    availableDate: "",
+    // Additional questions can be added here or fetched dynamically
+    questions: {
+      workAuthorization: "", // Example question
+    },
+  });
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [fileName, setFileName] = useState("");
 
-  async fetchProfile() {
-    try {
-      const response = await candidateAPI.getProfile();
-      const userProfile = response.profile;
-
-      this.setState((prevState) => ({
-        profile: userProfile,
-        formData: {
-          ...prevState.formData,
-          firstName: userProfile.firstName || "",
-          lastName: userProfile.lastName || "",
-          email: userProfile.email || "",
-          phone: userProfile.phone || "",
-          experience: userProfile.experience || "",
-          linkedin: userProfile.linkedin || "",
-        },
+  // Prefill form with user data from AuthContext
+  useEffect(() => {
+    if (user) {
+      setFormData((prev) => ({
+        ...prev,
+        firstName: user.firstName || "",
+        lastName: user.lastName || "",
+        email: user.email || "",
+        phone: user.phone || "",
+        // Potentially prefill other fields if available in user object
       }));
-    } catch (err) {
-      console.error("Lỗi khi lấy hồ sơ:", err);
     }
-  }
+  }, [user]);
 
-  handleInputChange(e) {
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    if (name.includes("questions.")) {
+    if (name.startsWith("questions.")) {
       const questionKey = name.split(".")[1];
-      this.setState((prevState) => ({
-        formData: {
-          ...prevState.formData,
-          questions: {
-            ...prevState.formData.questions,
-            [questionKey]: value,
-          },
-        },
+      setFormData((prev) => ({
+        ...prev,
+        questions: { ...prev.questions, [questionKey]: value },
       }));
     } else {
-      this.setState((prevState) => ({
-        formData: {
-          ...prevState.formData,
-          [name]: value,
-        },
-      }));
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
-  }
+    // Clear specific error on change
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    setSubmitError("");
+  };
 
-  handleFileChange(e) {
+  const handleFileChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         // 5MB limit
-        this.setState({
-          error: "Kích thước tệp sơ yếu lý lịch không được vượt quá 5MB",
-        });
+        setErrors((prev) => ({
+          ...prev,
+          resume: "File size should not exceed 5MB.",
+        }));
+        setFileName("");
+        setFormData((prev) => ({ ...prev, resume: null }));
+        e.target.value = null; // Reset file input
         return;
       }
-      this.setState((prevState) => ({
-        formData: {
-          ...prevState.formData,
-          resume: file,
-        },
-        error: null, // Clear previous file error
-      }));
+      setFormData((prev) => ({ ...prev, resume: file }));
+      setFileName(file.name);
+      setErrors((prev) => ({ ...prev, resume: "" }));
+    } else {
+      setFormData((prev) => ({ ...prev, resume: null }));
+      setFileName("");
     }
-  }
+  };
 
-  validateForm() {
-    const { formData } = this.state;
-    const errors = {};
+  const validateForm = () => {
+    const newErrors = {};
+    if (!formData.firstName.trim())
+      newErrors.firstName = "First name is required.";
+    if (!formData.lastName.trim())
+      newErrors.lastName = "Last name is required.";
+    if (!formData.email.trim()) newErrors.email = "Email is required.";
+    else if (!/\S+@\S+\.\S+/.test(formData.email))
+      newErrors.email = "Email is invalid.";
+    if (!formData.phone.trim()) newErrors.phone = "Phone number is required.";
+    if (!formData.resume) newErrors.resume = "Resume/CV is required.";
+    // Add more validations as needed
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
-    if (!formData.firstName) errors.firstName = "Tên là bắt buộc";
-    if (!formData.lastName) errors.lastName = "Họ là bắt buộc";
-    if (!formData.email) errors.email = "Email là bắt buộc";
-    if (!formData.phone) errors.phone = "Số điện thoại là bắt buộc";
-    if (!formData.resume) errors.resume = "Sơ yếu lý lịch là bắt buộc";
-
-    if (Object.keys(errors).length > 0) {
-      this.setState({ error: "Vui lòng điền đầy đủ các trường bắt buộc" });
-      return false;
-    }
-
-    return true;
-  }
-
-  async handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!this.validateForm()) {
+    if (!validateForm()) {
+      setSubmitError("Please correct the errors in the form.");
       return;
     }
-
-    this.setState({ loading: true, error: null });
+    setIsSubmitting(true);
+    setSubmitError("");
 
     try {
-      const { jobId } = this.props;
-      const { formData } = this.state;
-      const applicationData = new FormData();
+      // Use the submitApplication from JobsContext which handles local state/localStorage
+      const applicationPayload = { ...formData };
+      // The resume File object is already in formData.resume
+      // If your API expects a FormData object, you'd construct it here.
+      // For now, JobsContext's submitApplication will handle it.
 
-      Object.keys(formData).forEach((key) => {
-        if (key !== "resume" && key !== "questions") {
-          applicationData.append(key, formData[key]);
+      const result = await submitApplication(jobId, applicationPayload);
+
+      if (result.success) {
+        if (onSubmitSuccess) {
+          onSubmitSuccess(result.application); // Pass application data to parent
+        } else {
+          // Default behavior if onSubmitSuccess is not provided
+          alert("Application submitted successfully!");
+          navigate("/applicant/applications"); // Navigate to applications page
         }
-      });
-
-      applicationData.append("questions", JSON.stringify(formData.questions));
-
-      if (formData.resume) {
-        applicationData.append("resume", formData.resume);
+      } else {
+        setSubmitError(
+          result.error || "Failed to submit application. Please try again."
+        );
       }
-
-      await candidateAPI.applyJob(jobId, applicationData);
-
-      this.props.history.push("/applications", {
-        state: {
-          success: true,
-          message: "Đơn đăng ký đã được gửi thành công!",
-        },
-      });
     } catch (err) {
-      this.setState({
-        error: err.message || "Không thể gửi đơn đăng ký. Vui lòng thử lại.",
-      });
-      console.error("Lỗi khi gửi đơn đăng ký:", err);
+      console.error("Error submitting application:", err);
+      setSubmitError(
+        err.message || "An unexpected error occurred. Please try again."
+      );
     } finally {
-      this.setState({ loading: false });
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  render() {
-    const { formData, loading, error } = this.state;
-    const { jobTitle } = this.props;
-
-    return (
-      <form
-        onSubmit={this.handleSubmit}
-        className="job-application-form p-6 bg-white rounded-lg shadow-md"
-      >
-        <div className="mb-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Ứng tuyển cho {jobTitle}
-          </h2>
-          <p className="text-gray-600">
-            Vui lòng điền vào biểu mẫu dưới đây để gửi đơn đăng ký của bạn
-          </p>
+  return (
+    <form onSubmit={handleSubmit} className="apply-form space-y-6 p-1">
+      {" "}
+      {/* Removed p-6 for modal usage */}
+      {submitError && (
+        <div
+          className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
+          role="alert"
+        >
+          <strong className="font-bold">Error: </strong>
+          <span className="block sm:inline">{submitError}</span>
         </div>
-
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {error}
-          </div>
-        )}
-
-        <div className="mb-6 pb-4 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">
-            Thông tin cá nhân
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            <div>
-              <label
-                htmlFor="firstName"
-                className="block text-gray-800 font-medium mb-1"
-              >
-                Tên*
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={this.handleInputChange}
-                required
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="lastName"
-                className="block text-gray-800 font-medium mb-1"
-              >
-                Họ*
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={this.handleInputChange}
-                required
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label
-                htmlFor="email"
-                className="block text-gray-800 font-medium mb-1"
-              >
-                Địa chỉ Email*
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={this.handleInputChange}
-                required
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-
-            <div>
-              <label
-                htmlFor="phone"
-                className="block text-gray-800 font-medium mb-1"
-              >
-                Số điện thoại*
-              </label>
-              <input
-                type="tel"
-                id="phone"
-                name="phone"
-                value={formData.phone}
-                onChange={this.handleInputChange}
-                required
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-6 pb-4 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">
-            Thông tin nghề nghiệp
-          </h3>
-
-          <div className="mb-4">
+      )}
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+          Personal Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <label
-              htmlFor="resume"
-              className="block text-gray-800 font-medium mb-1"
+              htmlFor="firstName"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Sơ yếu lý lịch/CV*
-            </label>
-            <div className="file-upload border border-gray-300 rounded p-3">
-              <input
-                type="file"
-                id="resume"
-                name="resume"
-                accept=".pdf,.doc,.docx"
-                onChange={this.handleFileChange}
-                required
-                className="w-full"
-              />
-              <p className="text-gray-600 text-sm mt-1">
-                Định dạng chấp nhận: PDF, DOC, hoặc DOCX (Tối đa 5MB)
-              </p>
-            </div>
-          </div>
-
-          <div className="mb-4">
-            <label
-              htmlFor="experience"
-              className="block text-gray-800 font-medium mb-1"
-            >
-              Số năm kinh nghiệm
+              First Name*
             </label>
             <input
               type="text"
-              id="experience"
-              name="experience"
-              value={formData.experience}
-              onChange={this.handleInputChange}
-              placeholder="Ví dụ: 3 năm"
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              id="firstName"
+              name="firstName"
+              value={formData.firstName}
+              onChange={handleChange}
+              required
+              className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                errors.firstName
+                  ? "border-red-500 ring-red-200"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+              }`}
             />
+            {errors.firstName && (
+              <p className="text-xs text-red-600 mt-1">{errors.firstName}</p>
+            )}
           </div>
-
-          <div className="mb-4">
+          <div>
             <label
-              htmlFor="linkedin"
-              className="block text-gray-800 font-medium mb-1"
+              htmlFor="lastName"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Hồ sơ LinkedIn
+              Last Name*
             </label>
             <input
-              type="url"
-              id="linkedin"
-              name="linkedin"
-              value={formData.linkedin}
-              onChange={this.handleInputChange}
-              placeholder="https://linkedin.com/in/yourprofile"
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              type="text"
+              id="lastName"
+              name="lastName"
+              value={formData.lastName}
+              onChange={handleChange}
+              required
+              className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                errors.lastName
+                  ? "border-red-500 ring-red-200"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+              }`}
             />
+            {errors.lastName && (
+              <p className="text-xs text-red-600 mt-1">{errors.lastName}</p>
+            )}
           </div>
-
-          <div className="mb-4">
+          <div>
+            <label
+              htmlFor="email"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Email*
+            </label>
+            <input
+              type="email"
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                errors.email
+                  ? "border-red-500 ring-red-200"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+              }`}
+            />
+            {errors.email && (
+              <p className="text-xs text-red-600 mt-1">{errors.email}</p>
+            )}
+          </div>
+          <div>
+            <label
+              htmlFor="phone"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Phone*
+            </label>
+            <input
+              type="tel"
+              id="phone"
+              name="phone"
+              value={formData.phone}
+              onChange={handleChange}
+              required
+              className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                errors.phone
+                  ? "border-red-500 ring-red-200"
+                  : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+              }`}
+            />
+            {errors.phone && (
+              <p className="text-xs text-red-600 mt-1">{errors.phone}</p>
+            )}
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+          Professional Information
+        </h3>
+        <div className="space-y-4">
+          <div>
+            <label
+              htmlFor="resume"
+              className="block text-sm font-medium text-gray-700 mb-1"
+            >
+              Resume/CV*
+            </label>
+            <div
+              className={`mt-1 flex justify-center px-6 pt-5 pb-6 border-2 ${
+                errors.resume ? "border-red-500" : "border-gray-300"
+              } border-dashed rounded-md`}
+            >
+              <div className="space-y-1 text-center">
+                <FontAwesomeIcon
+                  icon="file-arrow-up"
+                  className="mx-auto h-10 w-10 text-gray-400"
+                />
+                <div className="flex text-sm text-gray-600">
+                  <label
+                    htmlFor="resume-upload"
+                    className="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none focus-within:ring-2 focus-within:ring-offset-2 focus-within:ring-blue-500"
+                  >
+                    <span>Upload a file</span>
+                    <input
+                      id="resume-upload"
+                      name="resume"
+                      type="file"
+                      className="sr-only"
+                      onChange={handleFileChange}
+                      accept=".pdf,.doc,.docx"
+                      required
+                    />
+                  </label>
+                  <p className="pl-1">or drag and drop</p>
+                </div>
+                {fileName ? (
+                  <p className="text-xs text-gray-500">{fileName}</p>
+                ) : (
+                  <p className="text-xs text-gray-500">
+                    PDF, DOC, DOCX up to 5MB
+                  </p>
+                )}
+              </div>
+            </div>
+            {errors.resume && (
+              <p className="text-xs text-red-600 mt-1">{errors.resume}</p>
+            )}
+          </div>
+          <div>
             <label
               htmlFor="coverLetter"
-              className="block text-gray-800 font-medium mb-1"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Thư xin việc
+              Cover Letter (Optional)
             </label>
             <textarea
               id="coverLetter"
               name="coverLetter"
               value={formData.coverLetter}
-              onChange={this.handleInputChange}
-              rows="5"
-              placeholder="Hãy cho chúng tôi biết tại sao bạn quan tâm đến vị trí này và điều gì khiến bạn trở thành một ứng viên tuyệt vời"
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              onChange={handleChange}
+              rows="4"
+              className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="Tell us why you're a great fit for this role..."
             />
           </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label
+                htmlFor="linkedIn"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                LinkedIn Profile (Optional)
+              </label>
+              <input
+                type="url"
+                id="linkedIn"
+                name="linkedIn"
+                value={formData.linkedIn}
+                onChange={handleChange}
+                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://linkedin.com/in/yourprofile"
+              />
+            </div>
+            <div>
+              <label
+                htmlFor="portfolio"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                Portfolio URL (Optional)
+              </label>
+              <input
+                type="url"
+                id="portfolio"
+                name="portfolio"
+                value={formData.portfolio}
+                onChange={handleChange}
+                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="https://yourportfolio.com"
+              />
+            </div>
+          </div>
         </div>
-
-        <div className="mb-6 pb-4 border-b border-gray-200">
-          <h3 className="text-xl font-semibold text-gray-800 mb-4">
-            Câu hỏi bổ sung
-          </h3>
-
-          <div className="mb-4">
-            <label
-              htmlFor="questions.workAuthorization"
-              className="block text-gray-800 font-medium mb-1"
-            >
-              Bạn có được pháp luật cho phép làm việc tại quốc gia này không?*
-            </label>
-            <select
-              id="questions.workAuthorization"
-              name="questions.workAuthorization"
-              value={formData.questions.workAuthorization}
-              onChange={this.handleInputChange}
-              required
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-            >
-              <option value="">Chọn một câu trả lời</option>
-              <option value="yes">Có</option>
-              <option value="no">Không</option>
-            </select>
-          </div>
-
-          <div className="mb-4">
-            <label
-              htmlFor="questions.relocate"
-              className="block text-gray-800 font-medium mb-1"
-            >
-              Bạn có sẵn sàng chuyển địa điểm nếu cần không?
-            </label>
-            <select
-              id="questions.relocate"
-              name="questions.relocate"
-              value={formData.questions.relocate}
-              onChange={this.handleInputChange}
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-            >
-              <option value="">Chọn một câu trả lời</option>
-              <option value="yes">Có</option>
-              <option value="no">Không</option>
-              <option value="maybe">Có thể</option>
-            </select>
-          </div>
-
-          <div className="mb-4">
+      </div>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">
+          Additional Information
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
             <label
               htmlFor="expectedSalary"
-              className="block text-gray-800 font-medium mb-1"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Mức lương mong đợi
+              Expected Salary (Optional)
             </label>
             <input
               type="text"
               id="expectedSalary"
               name="expectedSalary"
               value={formData.expectedSalary}
-              onChange={this.handleInputChange}
-              placeholder="Ví dụ: $50,000/năm"
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              onChange={handleChange}
+              className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+              placeholder="e.g., $50,000 per year"
             />
           </div>
-
-          <div className="mb-4">
+          <div>
             <label
               htmlFor="availableDate"
-              className="block text-gray-800 font-medium mb-1"
+              className="block text-sm font-medium text-gray-700 mb-1"
             >
-              Ngày bắt đầu có thể
+              Available Start Date (Optional)
             </label>
             <input
               type="date"
               id="availableDate"
               name="availableDate"
               value={formData.availableDate}
-              onChange={this.handleInputChange}
+              onChange={handleChange}
               min={new Date().toISOString().split("T")[0]}
-              className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+              className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
             />
           </div>
         </div>
-
-        <div className="flex justify-end space-x-4 mt-6">
-          <button
-            type="button"
-            className="px-6 py-3 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors duration-200"
-            onClick={() => this.props.history.goBack()}
+        {/* Example additional question */}
+        <div className="mt-4">
+          <label
+            htmlFor="questions.workAuthorization"
+            className="block text-sm font-medium text-gray-700 mb-1"
           >
-            Hủy
-          </button>
-
-          <button
-            type="submit"
-            className="px-6 py-3 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
-            disabled={loading}
+            Are you legally authorized to work in the country for this
+            position?*
+          </label>
+          <select
+            id="questions.workAuthorization"
+            name="questions.workAuthorization"
+            value={formData.questions.workAuthorization}
+            onChange={handleChange}
+            required
+            className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
           >
-            {loading ? "Đang gửi..." : "Gửi đơn đăng ký"}
-          </button>
+            <option value="">Select an option</option>
+            <option value="yes">Yes</option>
+            <option value="no">No</option>
+          </select>
+          {errors["questions.workAuthorization"] && (
+            <p className="text-xs text-red-600 mt-1">
+              {errors["questions.workAuthorization"]}
+            </p>
+          )}
         </div>
-      </form>
-    );
-  }
-}
-
-JobApplicationForm.propTypes = {
-  jobId: PropTypes.number.isRequired,
-  jobTitle: PropTypes.string.isRequired,
-  history: PropTypes.object.isRequired, // Injected by withRouter
+      </div>
+      <div className="flex justify-end space-x-3 mt-8">
+        <button
+          type="button"
+          onClick={() => navigate(-1)} // Go back
+          className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
+        >
+          Cancel
+        </button>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
+        >
+          {isSubmitting ? (
+            <LoadingSpinner size="small" />
+          ) : (
+            "Submit Application"
+          )}
+        </button>
+      </div>
+    </form>
+  );
 };
 
-export default withRouter(JobApplicationForm);
+ApplyForm.propTypes = {
+  jobId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+  jobTitle: PropTypes.string.isRequired,
+  onSubmitSuccess: PropTypes.func, // Callback for successful submission
+};
+
+export default ApplyForm;

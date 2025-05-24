@@ -1,394 +1,279 @@
-import React, { Component } from "react";
-import { Link, withRouter } from "react-router-dom"; // Import withRouter
-import AuthContext from "../../contexts/AuthContext";
-import JobsContext from "../../contexts/JobsContext";
-import ApplyForm from "../../components/jobs/ApplyForm";
-import Modal from "../../components/common/Modal";
-import { formatDate } from "../../utils/formatters";
-import PropTypes from "prop-types";
+// src/pages/applicant/JobDetailsPage.jsx
+import React, { useState, useEffect, useContext } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { JobsContext } from "../../contexts/JobsContext";
+import { AuthContext } from "../../contexts/AuthContext";
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import EmptyState from "../../components/common/EmptyState";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatRelativeTime } from "../../utils/formatters"; // Assumes this formatter exists
 
-class JobDetailsPage extends Component {
-  static contextType = AuthContext;
+const JobDetailsPage = () => {
+  const { id } = useParams(); // Get job ID from URL
+  const {
+    getJobById,
+    toggleSaveJob,
+    isJobSaved,
+    hasAppliedToJob,
+    loading: jobsLoading,
+  } = useContext(JobsContext);
+  const { isAuthenticated, user } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-  constructor(props) {
-    super(props);
-    this.state = {
-      job: null,
-      loading: true,
-      error: null,
-      showApplyModal: false,
-      isSaved: false,
-      hasApplied: false,
-    };
-    this.fetchJobDetails = this.fetchJobDetails.bind(this);
-    this.handleApplyClick = this.handleApplyClick.bind(this);
-    this.handleSaveJob = this.handleSaveJob.bind(this);
-    this.handleApplySubmit = this.handleApplySubmit.bind(this);
-    this.parseList = this.parseList.bind(this);
-  }
+  const [job, setJob] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  componentDidMount() {
-    this.fetchJobDetails();
-  }
-
-  async fetchJobDetails() {
-    this.setState({ loading: true, error: null });
-    const { id } = this.props.match.params;
-    const { getJobById, isJobSaved, hasAppliedToJob } = this.context; // Assuming these are available from JobsContext or passed via props
-
+  useEffect(() => {
+    setIsLoading(true);
     try {
-      // In a real app, this would be an API call to get job details
-      // For now, simulate fetching from JobsContext
-      const job = getJobById(id);
-
-      if (job) {
-        this.setState({
-          job,
-          isSaved: isJobSaved(job.id),
-          hasApplied: hasAppliedToJob(job.id),
-          loading: false,
-        });
-      } else {
-        this.setState({
-          error: "Không tìm thấy chi tiết công việc.",
-          loading: false,
-        });
+      // Wait for jobs context to finish loading before trying to get job
+      if (!jobsLoading) {
+        const fetchedJob = getJobById(id); // Use context function
+        if (fetchedJob) {
+          setJob(fetchedJob);
+          setError(null);
+        } else {
+          setError("Job not found.");
+        }
+        setIsLoading(false);
       }
     } catch (err) {
-      console.error("Lỗi khi lấy chi tiết công việc:", err);
-      this.setState({
-        error: "Không thể tải chi tiết công việc. Vui lòng thử lại sau.",
-        loading: false,
+      console.error("Error fetching job details:", err);
+      setError("Failed to load job details.");
+      setIsLoading(false);
+    }
+  }, [id, getJobById, jobsLoading]); // Re-run when ID or context changes
+
+  const handleApplyNow = () => {
+    if (!isAuthenticated) {
+      navigate("/login", {
+        state: { from: { pathname: `/jobs/${id}/apply` } },
       });
-    }
-  }
-
-  handleApplyClick() {
-    const { user } = this.context;
-    const { id } = this.props.match.params;
-
-    if (!user) {
-      this.props.history.push("/login", { state: { from: `/jobs/${id}` } });
+    } else if (user?.role?.toLowerCase() === "candidate") {
+      navigate(`/applicant/jobs/${id}/apply`);
     } else {
-      this.setState({ showApplyModal: true });
+      // Handle cases where non-candidates try to apply (e.g., show a message)
+      alert("Only candidates can apply for jobs.");
     }
-  }
+  };
 
-  handleSaveJob() {
-    const { user } = this.context;
-    const { id } = this.props.match.params;
-    const { toggleSaveJob } = this.context; // Assuming toggleSaveJob is available from JobsContext
-
-    if (!user) {
-      this.props.history.push("/login", { state: { from: `/jobs/${id}` } });
+  const handleSaveJob = () => {
+    if (!isAuthenticated) {
+      navigate("/login", { state: { from: { pathname: `/jobs/${id}` } } });
     } else {
-      toggleSaveJob(id); // Call to save/unsave the job
-      this.setState((prevState) => ({ isSaved: !prevState.isSaved }));
+      toggleSaveJob(job.id);
     }
+  };
+
+  if (isLoading || jobsLoading) {
+    return <LoadingSpinner fullPage />;
   }
 
-  handleApplySubmit(formData) {
-    console.log("Đơn đăng ký đã được gửi:", formData);
-    this.setState({ showApplyModal: false, hasApplied: true });
-    // Optionally, redirect to applications page
-    this.props.history.push("/applicant/applications", {
-      state: { success: true, message: "Đơn đăng ký đã được gửi thành công!" },
-    });
-  }
-
-  parseList(text) {
-    if (!text) return [];
-    return text
-      .split("\n")
-      .map((line) => line.trim())
-      .filter((line) => line.length > 0);
-  }
-
-  render() {
-    const { job, loading, error, showApplyModal, isSaved, hasApplied } =
-      this.state;
-
-    if (loading) {
-      return (
-        <div className="text-center py-8">Đang tải chi tiết công việc...</div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
-      );
-    }
-
-    if (!job) {
-      return <div className="text-center py-8">Không tìm thấy công việc.</div>;
-    }
-
-    const responsibilities = this.parseList(job.responsibilities);
-    const requirements = this.parseList(job.requirements);
-    const benefits = this.parseList(job.benefits);
-    const skills = job.skills
-      ? job.skills.split(",").map((skill) => skill.trim())
-      : [];
-
+  if (error) {
     return (
-      <div className="job-details-page p-6 bg-gray-50">
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center flex-shrink-0">
-              <img
-                src="/assets/images/logo.png"
-                alt={job.company}
-                className="w-full h-full object-contain"
-              />
-            </div>
-            <div className="flex-1">
-              <h1 className="text-2xl font-bold text-gray-900 mb-1">
-                {job.title}
-              </h1>
-              <div className="flex flex-wrap items-center gap-x-4 text-gray-600 text-sm">
-                <span className="font-medium">{job.company}</span>
-                <span className="flex items-center">
-                  <i className="fa-solid fa-location-dot mr-1"></i>{" "}
-                  {job.location}
-                </span>
-                <span className="bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full text-xs font-medium">
-                  {job.type}
-                </span>
-                <span>Đăng: {formatDate(job.postedDate)}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex gap-3 mt-4 md:mt-0 w-full md:w-auto">
-            <button
-              className={`flex items-center gap-2 px-4 py-2 rounded font-medium transition-all duration-200 border
-                ${
-                  isSaved
-                    ? "bg-blue-100 text-blue-600 border-blue-600"
-                    : "bg-white text-gray-800 border-gray-300 hover:bg-gray-100"
-                }`}
-              onClick={this.handleSaveJob}
-            >
-              <i
-                className={`fa-bookmark ${isSaved ? "fa-solid" : "fa-regular"}`}
-              ></i>
-              {isSaved ? "Đã lưu" : "Lưu việc làm"}
-            </button>
-
-            {hasApplied ? (
-              <button
-                className="px-4 py-2 bg-gray-400 text-white rounded font-medium cursor-not-allowed"
-                disabled
-              >
-                Đã ứng tuyển
-              </button>
-            ) : (
-              <button
-                className="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors duration-200"
-                onClick={this.handleApplyClick}
-              >
-                Ứng tuyển ngay
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 flex flex-col space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                Mô tả công việc
-              </h2>
-              <div
-                className="text-gray-700 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: job.description }}
-              />
-            </div>
-
-            {responsibilities.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                  Trách nhiệm
-                </h2>
-                <ul className="list-disc list-inside text-gray-700 leading-relaxed">
-                  {responsibilities.map((responsibility, index) => (
-                    <li key={index} className="mb-2">
-                      {responsibility}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {requirements.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                  Yêu cầu
-                </h2>
-                <ul className="list-disc list-inside text-gray-700 leading-relaxed">
-                  {requirements.map((requirement, index) => (
-                    <li key={index} className="mb-2">
-                      {requirement}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {benefits.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                  Phúc lợi
-                </h2>
-                <ul className="list-disc list-inside text-gray-700 leading-relaxed">
-                  {benefits.map((benefit, index) => (
-                    <li key={index} className="mb-2">
-                      {benefit}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {skills.length > 0 && (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <h2 className="text-2xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                  Kỹ năng yêu cầu
-                </h2>
-                <div className="flex flex-wrap gap-2">
-                  {skills.map((skill, index) => (
-                    <span
-                      key={index}
-                      className="bg-blue-100 text-blue-600 px-3 py-1 rounded-full text-sm font-medium"
-                    >
-                      {skill}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          <div className="lg:col-span-1 flex flex-col space-y-6">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                Tổng quan công việc
-              </h3>
-              <ul className="space-y-4">
-                <li className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded bg-blue-100 text-blue-600 flex items-center justify-center flex-shrink-0">
-                    <i className="fa-solid fa-industry text-lg"></i>
-                  </div>
-                  <div>
-                    <span className="block text-sm text-gray-600">Ngành</span>
-                    <span className="block font-medium text-gray-800">
-                      {job.industry || "Thời trang / Bán lẻ"}
-                    </span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded bg-green-100 text-green-600 flex items-center justify-center flex-shrink-0">
-                    <i className="fa-solid fa-briefcase text-lg"></i>
-                  </div>
-                  <div>
-                    <span className="block text-sm text-gray-600">
-                      Kinh nghiệm
-                    </span>
-                    <span className="block font-medium text-gray-800">
-                      {job.experience}
-                    </span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded bg-purple-100 text-purple-600 flex items-center justify-center flex-shrink-0">
-                    <i className="fa-solid fa-graduation-cap text-lg"></i>
-                  </div>
-                  <div>
-                    <span className="block text-sm text-gray-600">Học vấn</span>
-                    <span className="block font-medium text-gray-800">
-                      {job.education}
-                    </span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded bg-yellow-100 text-yellow-600 flex items-center justify-center flex-shrink-0">
-                    <i className="fa-solid fa-dollar-sign text-lg"></i>
-                  </div>
-                  <div>
-                    <span className="block text-sm text-gray-600">
-                      Mức lương
-                    </span>
-                    <span className="block font-medium text-gray-800">
-                      {job.salary}
-                    </span>
-                  </div>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded bg-red-100 text-red-600 flex items-center justify-center flex-shrink-0">
-                    <i className="fa-solid fa-calendar-times text-lg"></i>
-                  </div>
-                  <div>
-                    <span className="block text-sm text-gray-600">
-                      Hạn chót
-                    </span>
-                    <span className="block font-medium text-gray-800">
-                      {formatDate(job.deadline)}
-                    </span>
-                  </div>
-                </li>
-              </ul>
-            </div>
-
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h3 className="text-xl font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
-                Thông tin công ty
-              </h3>
-              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gray-100 flex items-center justify-center mb-4">
-                <img
-                  src="/assets/images/logo.png"
-                  alt={job.company}
-                  className="w-full h-full object-contain"
-                />
-              </div>
-              <h4 className="text-lg font-semibold text-gray-800 mb-2">
-                {job.company}
-              </h4>
-              <p className="text-gray-700 leading-relaxed mb-4">
-                MyaCorp là nhà bán lẻ thời trang hàng đầu chuyên về quần áo và
-                phụ kiện chất lượng cao.
-              </p>
-              <Link
-                to="/about"
-                className="block w-full py-2 bg-transparent text-blue-600 border border-blue-600 rounded font-medium text-center hover:bg-blue-600 hover:text-white transition-colors duration-200"
-              >
-                Xem hồ sơ công ty
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        {showApplyModal && (
-          <Modal
-            title={`Ứng tuyển cho ${job.title}`}
-            onClose={() => this.setState({ showApplyModal: false })}
-          >
-            <ApplyForm
-              jobId={job.id}
-              jobTitle={job.title}
-              onSubmit={this.handleApplySubmit}
-            />
-          </Modal>
-        )}
-      </div>
+      <EmptyState
+        title="Error"
+        description={error}
+        icon="exclamation-triangle"
+      />
     );
   }
-}
 
-JobDetailsPage.propTypes = {
-  match: PropTypes.object.isRequired, // Injected by withRouter
-  history: PropTypes.object.isRequired, // Injected by withRouter
-  location: PropTypes.object.isRequired, // Injected by withRouter
+  if (!job) {
+    return (
+      <EmptyState
+        title="Job Not Found"
+        description="The job you are looking for does not exist or may have been removed."
+        icon="search"
+      />
+    );
+  }
+
+  const isAlreadyApplied = hasAppliedToJob(job.id);
+  const isSaved = isJobSaved(job.id);
+
+  return (
+    <div className="job-details-page container mx-auto p-4 md:p-8">
+      <div className="bg-white p-6 md:p-10 rounded-lg shadow-xl">
+        {/* Header */}
+        <div className="border-b border-gray-200 pb-6 mb-8">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-2 md:mb-0">
+              {job.title}
+            </h1>
+            <div className="flex items-center space-x-3 mt-2 md:mt-0">
+              {isAuthenticated && user?.role?.toLowerCase() === "candidate" && (
+                <button
+                  onClick={handleSaveJob}
+                  className={`p-3 rounded-full border transition-colors duration-200 ${
+                    isSaved
+                      ? "bg-blue-100 text-blue-600 border-blue-600"
+                      : "bg-white text-gray-500 border-gray-300 hover:text-blue-600 hover:border-blue-600"
+                  }`}
+                  aria-label={isSaved ? "Unsave Job" : "Save Job"}
+                >
+                  <FontAwesomeIcon
+                    icon={isSaved ? ["fas", "bookmark"] : ["far", "bookmark"]}
+                  />
+                </button>
+              )}
+              <button
+                onClick={handleApplyNow}
+                disabled={isAlreadyApplied}
+                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
+              >
+                {isAlreadyApplied ? "Applied" : "Apply Now"}
+              </button>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-gray-600">
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon="building" className="text-gray-500" />
+              <span>{job.company}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon="location-dot" className="text-gray-500" />
+              <span>{job.location}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon="clock" className="text-gray-500" />
+              <span>{job.type}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <FontAwesomeIcon icon="dollar-sign" className="text-gray-500" />
+              <span>{job.salary || "Competitive"}</span>
+            </div>
+          </div>
+          <div className="text-sm text-gray-500 mt-3">
+            <span>Posted {formatRelativeTime(job.postedDate)}</span>
+            <span className="mx-2">|</span>
+            <span>
+              Apply before {new Date(job.deadline).toLocaleDateString()}
+            </span>
+          </div>
+        </div>
+
+        {/* Main Content Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+          {/* Left Column: Description & Details */}
+          <div className="lg:col-span-2">
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                Job Description
+              </h2>
+              <p className="text-gray-700 leading-relaxed whitespace-pre-line">
+                {job.description}
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                Responsibilities
+              </h2>
+              <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                {job.responsibilities?.split("\n").map((res, index) => (
+                  <li key={index}>{res}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                Requirements
+              </h2>
+              <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                {job.requirements?.split("\n").map((req, index) => (
+                  <li key={index}>{req}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section>
+              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+                Benefits
+              </h2>
+              <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                {job.benefits?.split("\n").map((ben, index) => (
+                  <li key={index}>{ben}</li>
+                ))}
+              </ul>
+            </section>
+          </div>
+
+          {/* Right Column: Job Overview & Company Info */}
+          <div className="lg:col-span-1">
+            <div className="bg-gray-50 p-6 rounded-lg border border-gray-100 sticky top-20">
+              <h3 className="text-xl font-semibold text-gray-800 mb-5 border-b pb-3">
+                Job Overview
+              </h3>
+              <ul className="space-y-4 text-gray-700">
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">
+                    Posted Date:
+                  </strong>
+                  <span>{new Date(job.postedDate).toLocaleDateString()}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">
+                    Location:
+                  </strong>
+                  <span>{job.location}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">
+                    Job Type:
+                  </strong>
+                  <span>{job.type}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">
+                    Experience:
+                  </strong>
+                  <span>{job.experience}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">
+                    Education:
+                  </strong>
+                  <span>{job.education}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">Salary:</strong>
+                  <span>{job.salary || "Negotiable"}</span>
+                </li>
+                <li className="flex justify-between">
+                  <strong className="font-medium text-gray-600">
+                    Deadline:
+                  </strong>
+                  <span>{new Date(job.deadline).toLocaleDateString()}</span>
+                </li>
+              </ul>
+
+              <h3 className="text-xl font-semibold text-gray-800 mb-4 mt-8 border-b pb-3">
+                Required Skills
+              </h3>
+              <div className="flex flex-wrap gap-2">
+                {job.skills?.split(",").map((skill, index) => (
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
+                  >
+                    {skill.trim()}
+                  </span>
+                ))}
+              </div>
+
+              {/* TODO: Add Company Info Section Here */}
+              {/* <h3 className="text-xl font-semibold text-gray-800 mb-4 mt-8 border-b pb-3">About MyaCorp</h3>
+                            <p className="text-sm text-gray-600 mb-4">...</p>
+                            <Link to="/about" className="text-blue-600 hover:underline">Learn More</Link> */}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
-export default withRouter(JobDetailsPage);
+export default JobDetailsPage;

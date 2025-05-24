@@ -1,386 +1,298 @@
-import React, { Component } from "react";
-import { withRouter } from "react-router-dom"; // Import withRouter
-import { candidateAPI } from "../../api/candidate";
-import PropTypes from "prop-types";
+// src/pages/applicant/InterviewFeedbackPage.jsx
+import React, { useState, useEffect, useContext } from "react";
+import { useParams, useNavigate, Link } from "react-router-dom";
+import { JobsContext } from "../../contexts/JobsContext"; // To get application details
+// import { candidateAPI } from '../../api/candidate'; // If direct API call is preferred
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import EmptyState from "../../components/common/EmptyState";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatDate, formatApplicationStatus } from "../../utils/formatters";
 
-class InterviewFeedbackPage extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      application: null,
-      loading: true,
-      error: null,
-      feedbackSent: false,
-      feedback: {
-        overallExperience: 5, // 1-10
-        preparedness: 5, // 1-10
-        clarity: 5, // 1-10
-        technicalDepth: 5, // 1-10
-        cultureFit: 5, // 1-10
-        comments: "",
-        wouldRecommend: null, // true/false
-      },
-    };
-    this.handleRatingChange = this.handleRatingChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.fetchApplicationDetails = this.fetchApplicationDetails.bind(this);
-  }
+const ratingCategories = [
+  {
+    id: "overallExperience",
+    label: "Overall Interview Experience",
+    low: "Poor",
+    high: "Excellent",
+  },
+  {
+    id: "interviewerProfessionalism",
+    label: "Interviewer Professionalism",
+    low: "Unprofessional",
+    high: "Very Professional",
+  },
+  {
+    id: "clarityOfRole",
+    label: "Clarity of the Role Discussed",
+    low: "Unclear",
+    high: "Very Clear",
+  },
+  {
+    id: "questionRelevance",
+    label: "Relevance of Questions Asked",
+    low: "Irrelevant",
+    high: "Very Relevant",
+  },
+  {
+    id: "yourPerformanceFeel",
+    label: "How You Felt About Your Performance",
+    low: "Not Good",
+    high: "Great",
+  },
+];
 
-  componentDidMount() {
-    this.fetchApplicationDetails();
-  }
+const InterviewFeedbackPage = () => {
+  const { applicationId } = useParams();
+  const navigate = useNavigate();
+  const { getUserApplications, loading: jobsContextLoading } =
+    useContext(JobsContext);
 
-  async fetchApplicationDetails() {
-    this.setState({ loading: true, error: null });
-    const { applicationId } = this.props.match.params;
+  const [application, setApplication] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
+  const initialFeedbackState = ratingCategories.reduce(
+    (acc, category) => {
+      acc[category.id] = 5; // Default rating
+      return acc;
+    },
+    { comments: "", wouldRecommendCompany: null }
+  ); // null for yes/no/unset
+
+  const [feedback, setFeedback] = useState(initialFeedbackState);
+
+  useEffect(() => {
+    if (jobsContextLoading) return;
+
+    setLoading(true);
+    setError(null);
     try {
-      const response = await candidateAPI.getApplicationDetail(applicationId);
-      if (!response.application.interview) {
-        throw new Error("Không tìm thấy chi tiết phỏng vấn");
+      const userApps = getUserApplications();
+      const currentApp = userApps.find(
+        (app) => app.id.toString() === applicationId
+      );
+
+      if (currentApp) {
+        setApplication(currentApp);
+        // TODO: Check if feedback already submitted and prefill or disable form
+        // if (currentApp.interviewFeedback) {
+        //     setFeedback(currentApp.interviewFeedback);
+        //     setSubmitSuccess(true); // If already submitted
+        // }
+      } else {
+        setError("Application not found.");
       }
-      this.setState({
-        application: response.application,
-        feedback: response.application.feedback || this.state.feedback, // Load existing feedback
-        feedbackSent: !!response.application.feedback, // Set feedbackSent if feedback exists
-        loading: false,
-      });
     } catch (err) {
-      this.setState({
-        error:
-          err.message || "Không thể tải chi tiết phỏng vấn. Vui lòng thử lại.",
-        loading: false,
-      });
-      console.error("Lỗi khi lấy đơn đăng ký:", err);
+      console.error("Error fetching application for feedback:", err);
+      setError("Failed to load application details.");
+    } finally {
+      setLoading(false);
     }
-  }
+  }, [applicationId, getUserApplications, jobsContextLoading]);
 
-  handleRatingChange(field, value) {
-    this.setState((prevState) => ({
-      feedback: {
-        ...prevState.feedback,
-        [field]: value,
-      },
-    }));
-  }
+  const handleRatingChange = (field, value) => {
+    setFeedback((prev) => ({ ...prev, [field]: parseInt(value, 10) }));
+  };
 
-  async handleSubmit(e) {
+  const handleTextChange = (e) => {
+    const { name, value } = e.target;
+    setFeedback((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleRecommendChange = (value) => {
+    setFeedback((prev) => ({ ...prev, wouldRecommendCompany: value }));
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    this.setState({ error: null });
-    const { applicationId } = this.props.match.params;
-
+    setIsSubmitting(true);
+    setError(null);
     try {
-      await candidateAPI.updateApplication(applicationId, {
-        feedback: this.state.feedback,
-      });
-      this.setState({ feedbackSent: true });
-
+      // TODO: API call to submit feedback
+      // await candidateAPI.submitInterviewFeedback(applicationId, feedback);
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API
+      setSubmitSuccess(true);
+      // Optionally, update application in JobsContext if feedback is stored there
       setTimeout(() => {
-        this.props.history.push("/applicant/applications");
-      }, 2000);
+        navigate(`/applicant/applications/${applicationId}`);
+      }, 3000);
     } catch (err) {
-      this.setState({ error: "Không thể gửi phản hồi. Vui lòng thử lại." });
-      console.error("Lỗi khi gửi phản hồi:", err);
+      console.error("Error submitting feedback:", err);
+      setError(err.message || "Failed to submit feedback. Please try again.");
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  if (loading) {
+    return <LoadingSpinner fullPage message="Loading feedback form..." />;
   }
 
-  render() {
-    const { application, loading, error, feedbackSent, feedback } = this.state;
-
-    if (loading) {
-      return (
-        <div className="text-center py-8">Đang tải chi tiết phỏng vấn...</div>
-      );
-    }
-
-    if (error) {
-      return (
-        <div className="bg-red-100 text-red-700 p-4 rounded mb-4">{error}</div>
-      );
-    }
-
-    if (!application) {
-      return (
-        <div className="text-center py-8">
-          Không tìm thấy chi tiết đơn đăng ký.
-        </div>
-      );
-    }
-
+  if (error) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Phản hồi phỏng vấn
-          </h1>
-          <p className="text-gray-600">
-            Vui lòng chia sẻ suy nghĩ của bạn về trải nghiệm phỏng vấn
-          </p>
-        </div>
+      <EmptyState
+        title="Error"
+        description={error}
+        icon="exclamation-triangle"
+      />
+    );
+  }
 
-        {feedbackSent ? (
-          <div className="bg-green-100 text-green-700 p-6 rounded mb-4 text-center">
-            <div className="text-2xl mb-2">✓</div>
-            <h2 className="text-xl font-semibold mb-2">
-              Cảm ơn bạn đã phản hồi!
-            </h2>
-            <p className="text-gray-700">
-              Phản hồi của bạn giúp chúng tôi cải thiện quy trình phỏng vấn.
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={this.handleSubmit}>
-            <div className="mb-6 pb-4 border-b border-gray-200">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Chi tiết phỏng vấn
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-gray-600 text-sm">Vị trí</label>
-                  <span className="block text-gray-800 font-medium">
-                    {application.jobTitle}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-gray-600 text-sm">Công ty</label>
-                  <span className="block text-gray-800 font-medium">
-                    {application.company}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-gray-600 text-sm">Ngày</label>
-                  <span className="block text-gray-800 font-medium">
-                    {new Date(
-                      application.interview.dateTime
-                    ).toLocaleDateString()}
-                  </span>
-                </div>
-                <div>
-                  <label className="block text-gray-600 text-sm">Loại</label>
-                  <span className="block text-gray-800 font-medium">
-                    {application.interview.type}
-                  </span>
-                </div>
-              </div>
-            </div>
+  if (!application) {
+    return (
+      <EmptyState
+        title="Application Not Found"
+        description="Could not retrieve application details."
+        icon="file-excel"
+      />
+    );
+  }
 
-            <div className="mb-6 pb-4 border-b border-gray-200">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Đánh giá trải nghiệm của bạn
-              </h2>
-
-              <div className="mb-4">
-                <label className="block text-gray-800 font-medium mb-2">
-                  Trải nghiệm phỏng vấn tổng thể
-                </label>
-                <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200
-                        ${
-                          feedback.overallExperience === num
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-200"
-                        }`}
-                      onClick={() =>
-                        this.handleRatingChange("overallExperience", num)
-                      }
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>Kém</span>
-                  <span>Xuất sắc</span>
-                </div>
-              </div>
-
-              {/* Repeat for other rating groups */}
-              <div className="mb-4">
-                <label className="block text-gray-800 font-medium mb-2">
-                  Sự chuẩn bị của người phỏng vấn
-                </label>
-                <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200
-                        ${
-                          feedback.preparedness === num
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-200"
-                        }`}
-                      onClick={() =>
-                        this.handleRatingChange("preparedness", num)
-                      }
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>Chưa chuẩn bị</span>
-                  <span>Chuẩn bị tốt</span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-800 font-medium mb-2">
-                  Sự rõ ràng của câu hỏi
-                </label>
-                <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200
-                        ${
-                          feedback.clarity === num
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-200"
-                        }`}
-                      onClick={() => this.handleRatingChange("clarity", num)}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>Không rõ ràng</span>
-                  <span>Rất rõ ràng</span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-800 font-medium mb-2">
-                  Độ sâu thảo luận kỹ thuật
-                </label>
-                <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200
-                        ${
-                          feedback.technicalDepth === num
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-200"
-                        }`}
-                      onClick={() =>
-                        this.handleRatingChange("technicalDepth", num)
-                      }
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>Quá cơ bản</span>
-                  <span>Vừa đủ</span>
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label className="block text-gray-800 font-medium mb-2">
-                  Thảo luận về văn hóa công ty
-                </label>
-                <div className="flex justify-between items-center bg-gray-100 p-2 rounded">
-                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((num) => (
-                    <button
-                      key={num}
-                      type="button"
-                      className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium transition-colors duration-200
-                        ${
-                          feedback.cultureFit === num
-                            ? "bg-blue-600 text-white"
-                            : "bg-white text-gray-700 hover:bg-gray-200"
-                        }`}
-                      onClick={() => this.handleRatingChange("cultureFit", num)}
-                    >
-                      {num}
-                    </button>
-                  ))}
-                </div>
-                <div className="flex justify-between text-xs text-gray-600 mt-1">
-                  <span>Không thảo luận</span>
-                  <span>Được đề cập tốt</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="mb-6 pb-4 border-b border-gray-200">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Bạn có giới thiệu công ty chúng tôi cho người khác không?
-              </h2>
-              <div className="flex space-x-4">
-                <button
-                  type="button"
-                  className={`px-6 py-2 rounded font-medium transition-colors duration-200
-                    ${
-                      feedback.wouldRecommend === true
-                        ? "bg-blue-600 text-white"
-                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    }`}
-                  onClick={() =>
-                    this.handleRatingChange("wouldRecommend", true)
-                  }
-                >
-                  Có
-                </button>
-                <button
-                  type="button"
-                  className={`px-6 py-2 rounded font-medium transition-colors duration-200
-                    ${
-                      feedback.wouldRecommend === false
-                        ? "bg-red-600 text-white"
-                        : "bg-gray-200 text-gray-800 hover:bg-gray-300"
-                    }`}
-                  onClick={() =>
-                    this.handleRatingChange("wouldRecommend", false)
-                  }
-                >
-                  Không
-                </button>
-              </div>
-            </div>
-
-            <div className="mb-6">
-              <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-                Bình luận bổ sung
-              </h2>
-              <textarea
-                value={feedback.comments}
-                onChange={(e) =>
-                  this.handleRatingChange("comments", e.target.value)
-                }
-                placeholder="Vui lòng chia sẻ bất kỳ suy nghĩ hoặc đề xuất bổ sung nào về trải nghiệm phỏng vấn của bạn..."
-                rows="5"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-            </div>
-
-            <div className="flex justify-end mt-6">
-              <button
-                type="submit"
-                className="px-6 py-3 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors duration-200"
-              >
-                Gửi phản hồi
-              </button>
-            </div>
-          </form>
-        )}
+  if (submitSuccess && !isSubmitting) {
+    // Check !isSubmitting to avoid flash before redirect
+    return (
+      <div className="p-4 md:p-8 text-center">
+        <FontAwesomeIcon
+          icon="check-circle"
+          className="text-6xl text-green-500 mb-6"
+        />
+        <h2 className="text-3xl font-bold text-gray-800 mb-3">
+          Thank You for Your Feedback!
+        </h2>
+        <p className="text-gray-600 mb-6">
+          Your insights help us improve our interview process.
+        </p>
+        <p className="text-gray-500 text-sm">
+          Redirecting you back to the application details...
+        </p>
       </div>
     );
   }
-}
 
-InterviewFeedbackPage.propTypes = {
-  match: PropTypes.object.isRequired, // Injected by withRouter
-  history: PropTypes.object.isRequired, // Injected by withRouter
+  return (
+    <div className="interview-feedback-page container mx-auto p-4 md:p-8">
+      <div className="mb-8">
+        <Link
+          to={`/applicant/applications/${applicationId}`}
+          className="text-blue-600 hover:underline flex items-center mb-4 text-sm"
+        >
+          <FontAwesomeIcon icon="arrow-left" className="mr-2" />
+          Back to Application
+        </Link>
+        <h1 className="text-3xl md:text-4xl font-bold text-gray-800">
+          Interview Feedback
+        </h1>
+        <p className="text-gray-600 mt-1">
+          For: <span className="font-semibold">{application.jobTitle}</span> at{" "}
+          {application.company}
+        </p>
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="bg-white p-6 md:p-10 rounded-xl shadow-xl border border-gray-100 space-y-8"
+      >
+        {error && (
+          <div
+            className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md text-sm"
+            role="alert"
+          >
+            {error}
+          </div>
+        )}
+
+        {/* Rating Sections */}
+        {ratingCategories.map((category) => (
+          <div key={category.id} className="rating-category">
+            <label className="block text-md font-semibold text-gray-700 mb-2">
+              {category.label}
+            </label>
+            <div className="flex items-center justify-between space-x-1 sm:space-x-2 bg-gray-50 p-3 rounded-lg">
+              {[...Array(10)].map((_, i) => {
+                const ratingValue = i + 1;
+                return (
+                  <button
+                    key={ratingValue}
+                    type="button"
+                    onClick={() => handleRatingChange(category.id, ratingValue)}
+                    className={`w-8 h-8 sm:w-9 sm:h-9 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium transition-all duration-150 border
+                                            ${
+                                              feedback[category.id] ===
+                                              ratingValue
+                                                ? "bg-blue-600 text-white border-blue-600 ring-2 ring-blue-300"
+                                                : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100 hover:border-gray-400"
+                                            }`}
+                    aria-label={`Rate ${ratingValue} out of 10`}
+                  >
+                    {ratingValue}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="flex justify-between text-xs text-gray-500 mt-1 px-1">
+              <span>{category.low}</span>
+              <span>{category.high}</span>
+            </div>
+          </div>
+        ))}
+
+        {/* Recommendation Section */}
+        <div className="recommend-section">
+          <label className="block text-md font-semibold text-gray-700 mb-2">
+            Would you recommend applying to MyaCorp to a friend or colleague?
+          </label>
+          <div className="flex space-x-4">
+            {["Yes", "No", "Maybe"].map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => handleRecommendChange(option)}
+                className={`px-5 py-2.5 rounded-md text-sm font-medium border transition-colors duration-150
+                                    ${
+                                      feedback.wouldRecommendCompany === option
+                                        ? "bg-blue-600 text-white border-blue-600"
+                                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                                    }`}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Comments Section */}
+        <div>
+          <label
+            htmlFor="comments"
+            className="block text-md font-semibold text-gray-700 mb-2"
+          >
+            Additional Comments or Suggestions
+          </label>
+          <textarea
+            id="comments"
+            name="comments"
+            value={feedback.comments}
+            onChange={handleTextChange}
+            rows="5"
+            placeholder="Share any other thoughts about your interview experience..."
+            className="w-full p-3 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+
+        <div className="flex justify-end pt-6 border-t border-gray-200">
+          <button
+            type="submit"
+            disabled={isSubmitting}
+            className="px-8 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md disabled:bg-gray-400"
+          >
+            {isSubmitting ? <LoadingSpinner size="sm" /> : "Submit Feedback"}
+          </button>
+        </div>
+      </form>
+    </div>
+  );
 };
 
-export default withRouter(InterviewFeedbackPage);
+export default InterviewFeedbackPage;

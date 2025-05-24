@@ -1,129 +1,151 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { candidateAPI } from '../../api/candidate';
+// src/components/applicant/ApplicationsList.jsx
+// This component displays a list of applications, possibly on a dashboard or a section of a page.
+// It's different from ApplicationsPage.jsx which is a full page.
 
-const ApplicationsList = () => {
-  const [applications, setApplications] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [filter, setFilter] = useState('all');
+import React from "react";
+import PropTypes from "prop-types";
+import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatDate, formatApplicationStatus } from "../../utils/formatters";
+import EmptyState from "../common/EmptyState";
+import LoadingSpinner from "../common/LoadingSpinner";
 
-  useEffect(() => {
-    const fetchApplications = async () => {
-      try {
-        setLoading(true);
-        const response = await candidateAPI.getApplications();
-        setApplications(response.applications);
-        setError(null);
-      } catch (err) {
-        setError('Failed to fetch applications');
-        console.error('Error fetching applications:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+const ApplicationsList = ({
+  applications,
+  loading,
+  error,
+  title = "My Recent Applications",
+  limit,
+  showViewAllLink = false,
+  viewAllLinkPath = "/applicant/applications",
+}) => {
+  if (loading) {
+    return (
+      <div className="p-4 text-center">
+        <LoadingSpinner message="Loading applications..." />
+      </div>
+    );
+  }
 
-    fetchApplications();
-  }, []);
+  if (error) {
+    return <p className="text-red-500 p-4 bg-red-50 rounded-md">{error}</p>;
+  }
 
-  const filteredApplications = filter === 'all' 
-    ? applications
-    : applications.filter(app => app.status.toLowerCase() === filter);
+  const applicationsToDisplay = limit
+    ? applications.slice(0, limit)
+    : applications;
 
-  const handleWithdraw = async (applicationId) => {
-    if (window.confirm('Are you sure you want to withdraw this application?')) {
-      try {
-        await candidateAPI.deleteApplication(applicationId);
-        setApplications(apps => apps.filter(app => app.id !== applicationId));
-      } catch (err) {
-        console.error('Error withdrawing application:', err);
-        alert('Failed to withdraw application. Please try again.');
-      }
+  const getStatusPillClass = (status) => {
+    const formattedStatus = formatApplicationStatus(status)
+      .toLowerCase()
+      .replace(/\s+/g, "");
+    switch (formattedStatus) {
+      case "pendingreview":
+        return "bg-yellow-100 text-yellow-800";
+      case "inreview":
+        return "bg-blue-100 text-blue-800";
+      case "shortlisted":
+        return "bg-indigo-100 text-indigo-800";
+      case "interviewscheduled":
+        return "bg-purple-100 text-purple-800";
+      case "offerextended":
+        return "bg-pink-100 text-pink-800";
+      case "hired":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+      case "notselected":
+        return "bg-red-100 text-red-800";
+      case "withdrawn":
+        return "bg-gray-100 text-gray-500";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  if (loading) return <div className="loading">Loading applications...</div>;
-  if (error) return <div className="error">{error}</div>;
-
   return (
-    <div className="applications-list">
-      <div className="filters">
-        <button 
-          className={filter === 'all' ? 'active' : ''}
-          onClick={() => setFilter('all')}
-        >
-          All
-        </button>
-        <button 
-          className={filter === 'pending' ? 'active' : ''}
-          onClick={() => setFilter('pending')}
-        >
-          Pending
-        </button>
-        <button 
-          className={filter === 'reviewing' ? 'active' : ''}
-          onClick={() => setFilter('reviewing')}
-        >
-          Reviewing
-        </button>
-        <button 
-          className={filter === 'accepted' ? 'active' : ''}
-          onClick={() => setFilter('accepted')}
-        >
-          Accepted
-        </button>
-        <button 
-          className={filter === 'rejected' ? 'active' : ''}
-          onClick={() => setFilter('rejected')}
-        >
-          Rejected
-        </button>
+    <div className="applications-list-component bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+      <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
+        <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+        {showViewAllLink && applications.length > (limit || 0) && (
+          <Link
+            to={viewAllLinkPath}
+            className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
+          >
+            View All <FontAwesomeIcon icon="arrow-right" size="xs" />
+          </Link>
+        )}
       </div>
 
-      {filteredApplications.length === 0 ? (
-        <div className="no-applications">
-          <p>No applications found</p>
-        </div>
+      {applicationsToDisplay.length === 0 ? (
+        <EmptyState
+          icon="file-alt"
+          title="No Applications Found"
+          description="You haven't applied for any jobs yet, or no applications match the current view."
+          action={
+            <Link
+              to="/applicant/jobs"
+              className="mt-4 inline-flex items-center px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-md hover:bg-blue-600"
+            >
+              <FontAwesomeIcon icon="search" className="mr-2" />
+              Find Jobs
+            </Link>
+          }
+        />
       ) : (
-        <div className="applications-grid">
-          {filteredApplications.map(application => (
-            <div key={application.id} className="application-card">
-              <div className="job-info">
-                <h3>{application.jobTitle}</h3>
-                <p className="company">{application.company}</p>
-              </div>
-
-              <div className="application-meta">
-                <span className="applied-date">
-                  Applied: {new Date(application.appliedDate).toLocaleDateString()}
-                </span>
-                <span className={`status ${application.status.toLowerCase()}`}>
-                  {application.status}
-                </span>
-              </div>
-
-              <div className="application-actions">
-                <Link 
-                  to={`/applications/${application.id}`}
-                  className="view-details"
-                >
-                  View Details
-                </Link>
-                {application.status === 'pending' && (
-                  <button
-                    onClick={() => handleWithdraw(application.id)}
-                    className="withdraw-button"
+        <ul className="space-y-4 max-h-96 overflow-y-auto pr-2">
+          {" "}
+          {/* Added max-height and scroll */}
+          {applicationsToDisplay.map((app) => (
+            <li
+              key={app.id}
+              className="p-4 border border-gray-200 rounded-lg hover:shadow-md transition-shadow duration-200 bg-gray-50/50"
+            >
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
+                <div>
+                  <Link
+                    to={`/jobs/${app.jobId}`}
+                    className="font-semibold text-gray-800 hover:text-blue-600 text-md"
                   >
-                    Withdraw
-                  </button>
-                )}
+                    {app.jobTitle}
+                  </Link>
+                  <p className="text-xs text-gray-500">{app.company}</p>
+                </div>
+                <span
+                  className={`mt-2 sm:mt-0 px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusPillClass(
+                    app.status
+                  )}`}
+                >
+                  {formatApplicationStatus(app.status)}
+                </span>
               </div>
-            </div>
+              <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mt-2 pt-2 border-t border-gray-100">
+                <p className="text-xs text-gray-500">
+                  Applied: {formatDate(app.appliedDate)}
+                </p>
+                <Link
+                  to={`/applicant/applications/${app.id}`}
+                  className="mt-2 sm:mt-0 text-xs text-blue-600 hover:underline font-medium flex items-center gap-1"
+                >
+                  View Details{" "}
+                  <FontAwesomeIcon icon="chevron-right" size="xs" />
+                </Link>
+              </div>
+            </li>
           ))}
-        </div>
+        </ul>
       )}
     </div>
   );
+};
+
+ApplicationsList.propTypes = {
+  applications: PropTypes.arrayOf(PropTypes.object).isRequired,
+  loading: PropTypes.bool,
+  error: PropTypes.string,
+  title: PropTypes.string,
+  limit: PropTypes.number, // Max number of applications to show
+  showViewAllLink: PropTypes.bool,
+  viewAllLinkPath: PropTypes.string,
 };
 
 export default ApplicationsList;

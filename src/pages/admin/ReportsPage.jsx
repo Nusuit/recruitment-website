@@ -1,348 +1,255 @@
-import React, { useState, useEffect } from 'react';
-import { getJobStats } from '../../api/jobs';
-import { getApplicationStats } from '../../api/applications';
+// src/pages/admin/ReportsPage.jsx
+import React, { useState, useEffect } from "react";
+// import { recruiterAPI } from '../../api/recruiter'; // Assuming API for reports
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Bar, Line, Pie } from "react-chartjs-2";
+// Ensure Chart.js elements are registered (typically in App.js or a ChartConfig.js)
+// import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
+// ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
 
 const ReportsPage = () => {
-  const [timeRange, setTimeRange] = useState('month');
-  const [jobStats, setJobStats] = useState(null);
-  const [applicationStats, setApplicationStats] = useState(null);
+  const [reportData, setReportData] = useState(null);
+  const [timeRange, setTimeRange] = useState("last30days"); // e.g., last7days, last30days, last90days, custom
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
-  // Fetch report data based on selected time range
+
   useEffect(() => {
     const fetchReportData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        
-        // In a real app, you would fetch data from your API with the time range
-        // const jobStatsResponse = await getJobStats({ timeRange });
-        // const applicationStatsResponse = await getApplicationStats({ timeRange });
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Sample data for jobs
-        const jobsData = {
-          totalJobs: 25,
-          activeJobs: 12,
-          expiredJobs: 8,
-          draftJobs: 5,
-          jobsByDepartment: [
-            { name: 'Design', count: 8 },
-            { name: 'Marketing', count: 6 },
-            { name: 'Sales', count: 5 },
-            { name: 'Production', count: 3 },
-            { name: 'Management', count: 3 }
-          ],
-          jobsByLocation: [
-            { name: 'HCM', count: 12 },
-            { name: 'Hanoi', count: 8 },
-            { name: 'Danang', count: 3 },
-            { name: 'Remote', count: 2 }
-          ],
-          jobActivity: [
-            { date: '2025-03-01', posted: 2, expired: 1 },
-            { date: '2025-03-08', posted: 3, expired: 0 },
-            { date: '2025-03-15', posted: 1, expired: 2 },
-            { date: '2025-03-22', posted: 4, expired: 1 },
-            { date: '2025-03-29', posted: 2, expired: 1 }
-          ]
-        };
-        
-        // Sample data for applications
-        const applicationsData = {
-          totalApplications: 187,
-          newApplications: 14,
-          processingApplications: 32,
-          hiredCandidates: 7,
-          rejectedCandidates: 134,
-          applicationsByJob: [
-            { name: 'Fashion Designer', count: 42 },
-            { name: 'Marketing Specialist', count: 35 },
-            { name: 'Store Manager', count: 28 },
-            { name: 'Sales Associate', count: 26 },
-            { name: 'Visual Merchandiser', count: 18 },
-            { name: 'Other', count: 38 }
-          ],
-          applicationsByStatus: [
-            { status: 'Pending Review', count: 14 },
-            { status: 'Shortlisted', count: 32 },
-            { status: 'Interview Scheduled', count: 18 },
-            { status: 'Hired', count: 7 },
-            { status: 'Rejected', count: 116 }
-          ],
-          applicationActivity: [
-            { date: '2025-03-01', count: 12 },
-            { date: '2025-03-08', count: 18 },
-            { date: '2025-03-15', count: 15 },
-            { date: '2025-03-22', count: 23 },
-            { date: '2025-03-29', count: 16 }
-          ],
-          hiringFunnel: {
-            applied: 187,
-            reviewed: 173,
-            shortlisted: 52,
-            interviewed: 25,
-            hired: 7
-          }
-        };
-        
-        setJobStats(jobsData);
-        setApplicationStats(applicationsData);
-        setError(null);
+        // TODO: Replace with actual API call
+        // const response = await recruiterAPI.getRecruitmentReports({ timeRange });
+        // setReportData(response.data);
+
+        // Mock data for now
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        setReportData({
+          summaryStats: {
+            totalApplications: 1250,
+            totalHires: 75,
+            avgTimeToHire: 28, // days
+            offerAcceptanceRate: 85, // percentage
+            costPerHire: 1200, // currency
+          },
+          applicationsOverTime: {
+            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+            datasets: [
+              {
+                label: "Applications",
+                data: [150, 200, 180, 220, 250, 210],
+                backgroundColor: "rgba(54, 162, 235, 0.6)",
+              },
+            ],
+          },
+          hiresBySource: {
+            labels: [
+              "LinkedIn",
+              "Company Website",
+              "Referrals",
+              "Job Boards",
+              "Other",
+            ],
+            datasets: [
+              {
+                data: [30, 20, 15, 25, 10],
+                backgroundColor: [
+                  "#FF6384",
+                  "#36A2EB",
+                  "#FFCE56",
+                  "#4BC0C0",
+                  "#9966FF",
+                ],
+              },
+            ],
+          },
+          timeToFillByDepartment: {
+            labels: ["Engineering", "Marketing", "Sales", "HR", "Design"],
+            datasets: [
+              {
+                label: "Avg. Days to Fill",
+                data: [35, 25, 30, 22, 40],
+                backgroundColor: "rgba(75, 192, 192, 0.6)",
+              },
+            ],
+          },
+          // Add more detailed data structures as needed
+        });
       } catch (err) {
-        console.error('Error fetching report data:', err);
-        setError('Failed to load report data. Please try again later.');
+        console.error("Error fetching report data:", err);
+        setError("Failed to load report data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    
     fetchReportData();
   }, [timeRange]);
-  
-  // Calculate conversion rates for hiring funnel
-  const calculateConversionRate = (current, previous) => {
-    if (!previous || previous === 0) return 0;
-    return ((current / previous) * 100).toFixed(1);
+
+  const handleExportReport = () => {
+    // TODO: Implement report export functionality (e.g., CSV, PDF)
+    alert("Export functionality to be implemented.");
   };
-  
-  // Handle time range change
-  const handleTimeRangeChange = (e) => {
-    setTimeRange(e.target.value);
-  };
-  
-  // Render loading state
+
   if (loading) {
-    return <div className="loading-container">Loading report data...</div>;
+    return <LoadingSpinner fullPage message="Loading reports..." />;
   }
-  
-  // Render error state
   if (error) {
-    return <div className="error-container">{error}</div>;
+    return (
+      <div className="p-4 text-red-600 bg-red-100 rounded-md text-center">
+        {error}
+      </div>
+    );
   }
-  
-  // Calculate funnel conversion rates
-  const funnel = applicationStats.hiringFunnel;
-  const conversionRates = {
-    reviewedRate: calculateConversionRate(funnel.reviewed, funnel.applied),
-    shortlistedRate: calculateConversionRate(funnel.shortlisted, funnel.reviewed),
-    interviewedRate: calculateConversionRate(funnel.interviewed, funnel.shortlisted),
-    hiredRate: calculateConversionRate(funnel.hired, funnel.interviewed),
-    overallRate: calculateConversionRate(funnel.hired, funnel.applied)
+  if (!reportData) {
+    return (
+      <div className="p-4 text-gray-600 text-center">
+        No report data available for the selected period.
+      </div>
+    );
+  }
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { position: "top" },
+      title: { display: true, text: "Chart Title" }, // Placeholder, set per chart
+    },
   };
-  
+
   return (
-    <div className="reports-page">
-      <div className="page-header">
-        <h1>Reports & Analytics</h1>
-        
-        <div className="report-filters">
-          <div className="time-range-filter">
-            <label htmlFor="timeRange">Time Range:</label>
-            <select
-              id="timeRange"
-              value={timeRange}
-              onChange={handleTimeRangeChange}
-            >
-              <option value="week">Past Week</option>
-              <option value="month">Past Month</option>
-              <option value="quarter">Past Quarter</option>
-              <option value="year">Past Year</option>
-              <option value="all">All Time</option>
-            </select>
-          </div>
-          
-          <button className="export-btn">
-            Export Report
+    <div className="reports-page p-4 md:p-6 space-y-8">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6 pb-4 border-b border-gray-200">
+        <h1 className="text-3xl font-bold text-gray-800">
+          Recruitment Reports & Analytics
+        </h1>
+        <div className="flex items-center gap-4">
+          <select
+            value={timeRange}
+            onChange={(e) => setTimeRange(e.target.value)}
+            className="p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white text-sm"
+          >
+            <option value="last7days">Last 7 Days</option>
+            <option value="last30days">Last 30 Days</option>
+            <option value="last90days">Last 90 Days</option>
+            <option value="alltime">All Time</option>
+          </select>
+          <button
+            onClick={handleExportReport}
+            className="px-4 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors text-sm flex items-center gap-2"
+          >
+            <FontAwesomeIcon icon="file-export" /> Export Report
           </button>
         </div>
       </div>
-      
-      <div className="report-sections">
-        <div className="report-section">
-          <h2>Job Analytics</h2>
-          
-          <div className="report-cards">
-            <div className="report-card">
-              <div className="report-card-title">Total Jobs</div>
-              <div className="report-card-value">{jobStats.totalJobs}</div>
-            </div>
-            <div className="report-card">
-              <div className="report-card-title">Active Jobs</div>
-              <div className="report-card-value">{jobStats.activeJobs}</div>
-            </div>
-            <div className="report-card">
-              <div className="report-card-title">Expired Jobs</div>
-              <div className="report-card-value">{jobStats.expiredJobs}</div>
-            </div>
-            <div className="report-card">
-              <div className="report-card-title">Draft Jobs</div>
-              <div className="report-card-value">{jobStats.draftJobs}</div>
-            </div>
-          </div>
-          
-          <div className="report-charts">
-            <div className="report-chart">
-              <h3>Jobs by Department</h3>
-              <div className="chart-container">
-                {/* In a real app, you would use a charting library like Chart.js or Recharts */}
-                <div className="bar-chart">
-                  {jobStats.jobsByDepartment.map((item, index) => (
-                    <div key={index} className="bar-item">
-                      <div className="bar-label">{item.name}</div>
-                      <div className="bar-container">
-                        <div 
-                          className="bar" 
-                          style={{ 
-                            width: `${(item.count / Math.max(...jobStats.jobsByDepartment.map(d => d.count))) * 100}%` 
-                          }}
-                        >
-                          {item.count}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="report-chart">
-              <h3>Jobs by Location</h3>
-              <div className="chart-container">
-                <div className="pie-chart-placeholder">
-                  {/* In a real app, you would use a charting library */}
-                  <div className="pie-chart-text">
-                    <div>HCM: {jobStats.jobsByLocation[0].count}</div>
-                    <div>Hanoi: {jobStats.jobsByLocation[1].count}</div>
-                    <div>Danang: {jobStats.jobsByLocation[2].count}</div>
-                    <div>Remote: {jobStats.jobsByLocation[3].count}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="report-chart full-width">
-            <h3>Job Activity Over Time</h3>
-            <div className="chart-container">
-              <div className="line-chart-placeholder">
-                {/* In a real app, you would use a charting library */}
-                <div className="line-chart-text">
-                  Line chart showing job postings and expirations over time
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        <div className="report-section">
-          <h2>Application Analytics</h2>
-          
-          <div className="report-cards">
-            <div className="report-card">
-              <div className="report-card-title">Total Applications</div>
-              <div className="report-card-value">{applicationStats.totalApplications}</div>
-            </div>
-            <div className="report-card">
-              <div className="report-card-title">New Applications</div>
-              <div className="report-card-value">{applicationStats.newApplications}</div>
-            </div>
-            <div className="report-card">
-              <div className="report-card-title">Hired Candidates</div>
-              <div className="report-card-value">{applicationStats.hiredCandidates}</div>
-            </div>
-            <div className="report-card">
-              <div className="report-card-title">Conversion Rate</div>
-              <div className="report-card-value">{conversionRates.overallRate}%</div>
-            </div>
-          </div>
-          
-          <div className="report-charts">
-            <div className="report-chart">
-              <h3>Applications by Job</h3>
-              <div className="chart-container">
-                <div className="bar-chart">
-                  {applicationStats.applicationsByJob.map((item, index) => (
-                    <div key={index} className="bar-item">
-                      <div className="bar-label">{item.name}</div>
-                      <div className="bar-container">
-                        <div 
-                          className="bar" 
-                          style={{ 
-                            width: `${(item.count / Math.max(...applicationStats.applicationsByJob.map(d => d.count))) * 100}%` 
-                          }}
-                        >
-                          {item.count}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            
-            <div className="report-chart">
-              <h3>Applications by Status</h3>
-              <div className="chart-container">
-                <div className="pie-chart-placeholder">
-                  {/* In a real app, you would use a charting library */}
-                  <div className="pie-chart-text">
-                    <div>Pending Review: {applicationStats.applicationsByStatus[0].count}</div>
-                    <div>Shortlisted: {applicationStats.applicationsByStatus[1].count}</div>
-                    <div>Interview: {applicationStats.applicationsByStatus[2].count}</div>
-                    <div>Hired: {applicationStats.applicationsByStatus[3].count}</div>
-                    <div>Rejected: {applicationStats.applicationsByStatus[4].count}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="report-chart full-width">
-            <h3>Hiring Funnel</h3>
-            <div className="chart-container">
-              <div className="funnel-chart">
-                <div className="funnel-step" style={{ width: '100%' }}>
-                  <div className="funnel-label">Applied</div>
-                  <div className="funnel-value">{funnel.applied}</div>
-                </div>
-                <div className="funnel-step" style={{ width: '90%' }}>
-                  <div className="funnel-label">Reviewed</div>
-                  <div className="funnel-value">{funnel.reviewed} ({conversionRates.reviewedRate}%)</div>
-                </div>
-                <div className="funnel-step" style={{ width: '60%' }}>
-                  <div className="funnel-label">Shortlisted</div>
-                  <div className="funnel-value">{funnel.shortlisted} ({conversionRates.shortlistedRate}%)</div>
-                </div>
-                <div className="funnel-step" style={{ width: '40%' }}>
-                  <div className="funnel-label">Interviewed</div>
-                  <div className="funnel-value">{funnel.interviewed} ({conversionRates.interviewedRate}%)</div>
-                </div>
-                <div className="funnel-step" style={{ width: '20%' }}>
-                  <div className="funnel-label">Hired</div>
-                  <div className="funnel-value">{funnel.hired} ({conversionRates.hiredRate}%)</div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <div className="report-chart full-width">
-            <h3>Application Activity Over Time</h3>
-            <div className="chart-container">
-              <div className="line-chart-placeholder">
-                {/* In a real app, you would use a charting library */}
-                <div className="line-chart-text">
-                  Line chart showing application trends over time
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
+
+      {/* Summary Stats */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-8">
+        <StatCard
+          title="Total Applications"
+          value={reportData.summaryStats.totalApplications}
+          icon="file-alt"
+        />
+        <StatCard
+          title="Total Hires"
+          value={reportData.summaryStats.totalHires}
+          icon="user-check"
+        />
+        <StatCard
+          title="Avg. Time to Hire"
+          value={`${reportData.summaryStats.avgTimeToHire} days`}
+          icon="clock"
+        />
+        <StatCard
+          title="Offer Acceptance Rate"
+          value={`${reportData.summaryStats.offerAcceptanceRate}%`}
+          icon="thumbs-up"
+        />
+        <StatCard
+          title="Cost Per Hire"
+          value={`$${reportData.summaryStats.costPerHire}`}
+          icon="dollar-sign"
+        />
       </div>
+
+      {/* Charts Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <ChartCard title="Applications Over Time">
+          <Line
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                title: { display: true, text: "Applications Trend" },
+              },
+            }}
+            data={reportData.applicationsOverTime}
+          />
+        </ChartCard>
+        <ChartCard title="Hires by Source">
+          <Pie
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                title: { display: true, text: "Candidate Sources" },
+              },
+            }}
+            data={reportData.hiresBySource}
+          />
+        </ChartCard>
+        <ChartCard title="Time to Fill by Department" className="lg:col-span-2">
+          <Bar
+            options={{
+              ...chartOptions,
+              plugins: {
+                ...chartOptions.plugins,
+                title: {
+                  display: true,
+                  text: "Average Days to Fill Role by Department",
+                },
+              },
+            }}
+            data={reportData.timeToFillByDepartment}
+          />
+        </ChartCard>
+      </div>
+
+      {/* TODO: Add more detailed tables or data sections as needed */}
+      {/* Example: Top Performing Recruiters, Bottlenecks in Pipeline, etc. */}
     </div>
   );
 };
+
+const StatCard = ({ title, value, icon }) => (
+  <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-sm font-medium text-gray-500 uppercase">{title}</p>
+        <p className="text-3xl font-bold text-gray-800">{value}</p>
+      </div>
+      {icon && (
+        <FontAwesomeIcon
+          icon={icon}
+          className="text-3xl text-blue-500 opacity-70"
+        />
+      )}
+    </div>
+  </div>
+);
+
+const ChartCard = ({ title, children, className = "" }) => (
+  <div
+    className={`bg-white p-6 rounded-xl shadow-lg border border-gray-100 ${className}`}
+  >
+    <h2 className="text-xl font-semibold text-gray-800 mb-4">{title}</h2>
+    <div className="h-80 md:h-96">
+      {" "}
+      {/* Fixed height for chart containers */}
+      {children}
+    </div>
+  </div>
+);
 
 export default ReportsPage;

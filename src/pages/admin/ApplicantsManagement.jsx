@@ -1,432 +1,470 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import Modal from '../../components/common/Modal';
+// src/pages/admin/ApplicantsManagement.jsx
+import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
+import Modal from "../../components/common/Modal";
+import { recruiterAPI } from "../../api/recruiter"; // Assuming API functions
+import LoadingSpinner from "../../components/common/LoadingSpinner";
+import EmptyState from "../../components/common/EmptyState";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { formatDate, formatApplicationStatus } from "../../utils/formatters";
+import Pagination from "../../components/common/Pagination"; // Assuming Pagination is updated
 
 const ApplicantsManagement = () => {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [search, setSearch] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [filterJob, setFilterJob] = useState('all');
-  const [sortBy, setSortBy] = useState('newest');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+  const [filterJob, setFilterJob] = useState("ALL");
+  const [sortBy, setSortBy] = useState("appliedDate_desc"); // e.g., 'applicantName_asc', 'appliedDate_desc'
+
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
-  const [newStatus, setNewStatus] = useState('');
-  const [jobs, setJobs] = useState([]);
-  
-  // Sample applications data
-  const sampleApplications = [
-    {
-      id: 101,
-      applicantName: 'Nguyen Van A',
-      email: 'nguyenvana@example.com',
-      phone: '+84 123 456 789',
-      jobId: 1,
-      jobTitle: 'Fashion Designer',
-      appliedDate: '2025-03-27',
-      status: 'Pending Review',
-      resume: 'resume_101.pdf',
-      coverLetter: 'I am applying for the Fashion Designer position...',
-      education: 'Bachelor in Fashion Design',
-      experience: '3 years in luxury fashion design'
-    },
-    {
-      id: 102,
-      applicantName: 'Tran Thi B',
-      email: 'tranthib@example.com',
-      phone: '+84 234 567 890',
-      jobId: 2,
-      jobTitle: 'Store Manager',
-      appliedDate: '2025-03-26',
-      status: 'Shortlisted',
-      resume: 'resume_102.pdf',
-      coverLetter: 'With my extensive retail management experience...',
-      education: 'MBA in Retail Management',
-      experience: '5 years in fashion retail'
-    },
-    {
-      id: 103,
-      applicantName: 'Le Van C',
-      email: 'levanc@example.com',
-      phone: '+84 345 678 901',
-      jobId: 3,
-      jobTitle: 'Marketing Specialist',
-      appliedDate: '2025-03-25',
-      status: 'Interview Scheduled',
-      resume: 'resume_103.pdf',
-      coverLetter: 'I am excited to apply for the Marketing Specialist role...',
-      education: 'Bachelor in Marketing',
-      experience: '4 years in digital marketing'
-    },
-    {
-      id: 104,
-      applicantName: 'Pham Thi D',
-      email: 'phamthid@example.com',
-      phone: '+84 456 789 012',
-      jobId: 4,
-      jobTitle: 'Sales Associate',
-      appliedDate: '2025-03-24',
-      status: 'Pending Review',
-      resume: 'resume_104.pdf',
-      coverLetter: 'I would like to apply for the Sales Associate position...',
-      education: 'High School Diploma',
-      experience: '2 years in retail sales'
-    },
-    {
-      id: 105,
-      applicantName: 'Hoang Van E',
-      email: 'hoangvane@example.com',
-      phone: '+84 567 890 123',
-      jobId: 1,
-      jobTitle: 'Fashion Designer',
-      appliedDate: '2025-03-23',
-      status: 'Shortlisted',
-      resume: 'resume_105.pdf',
-      coverLetter: 'I am a passionate fashion designer with experience...',
-      education: 'Master in Fashion Design',
-      experience: '6 years in high-end fashion'
-    },
-    {
-      id: 106,
-      applicantName: 'Nguyen Thi F',
-      email: 'nguyenthif@example.com',
-      phone: '+84 678 901 234',
-      jobId: 3,
-      jobTitle: 'Marketing Specialist',
-      appliedDate: '2025-03-22',
-      status: 'Rejected',
-      resume: 'resume_106.pdf',
-      coverLetter: 'I am applying for the Marketing Specialist position...',
-      education: 'Bachelor in Business Administration',
-      experience: '2 years in marketing'
-    },
-    {
-      id: 107,
-      applicantName: 'Tran Van G',
-      email: 'tranvang@example.com',
-      phone: '+84 789 012 345',
-      jobId: 2,
-      jobTitle: 'Store Manager',
-      appliedDate: '2025-03-21',
-      status: 'Hired',
-      resume: 'resume_107.pdf',
-      coverLetter: 'I am excited to apply for the Store Manager position...',
-      education: 'Bachelor in Business Management',
-      experience: '7 years in retail management'
-    }
-  ];
-  
-  // Sample jobs for filter dropdown
-  const sampleJobs = [
-    { id: 1, title: 'Fashion Designer' },
-    { id: 2, title: 'Store Manager' },
-    { id: 3, title: 'Marketing Specialist' },
-    { id: 4, title: 'Sales Associate' }
+  const [newStatus, setNewStatus] = useState("");
+
+  const [availableJobs, setAvailableJobs] = useState([]); // For the job filter dropdown
+  const [currentPage, setCurrentPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
+
+  // Available statuses for filtering and modal
+  const applicationStatuses = [
+    "PENDING_REVIEW",
+    "IN_REVIEW",
+    "SHORTLISTED",
+    "INTERVIEW_SCHEDULED",
+    "OFFER_EXTENDED",
+    "HIRED",
+    "REJECTED",
+    "WITHDRAWN",
   ];
 
-  // Fetch applications and jobs
   useEffect(() => {
     const fetchData = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setLoading(true);
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 800));
-        
-        // Set sample data
-        setApplications(sampleApplications);
-        setJobs(sampleJobs);
-        setError(null);
+        // TODO: Replace with actual API calls
+        // const appsResponse = await recruiterAPI.getAllApplications();
+        // const jobsResponse = await recruiterAPI.getAllJobsForFilter(); // API to get job titles for filter
+        // setApplications(appsResponse.applications || []);
+        // setAvailableJobs(jobsResponse.jobs || []);
+
+        // Mock data
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        const mockApplications = [
+          {
+            id: "app101",
+            applicantName: "Nguyen Van A",
+            email: "nguyenvana@example.com",
+            phone: "0901234567",
+            jobId: "job1",
+            jobTitle: "Senior Fashion Designer",
+            appliedDate: new Date(
+              Date.now() - 1 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            status: "PENDING_REVIEW",
+            resumeUrl: "#",
+            rating: 0,
+          },
+          {
+            id: "app102",
+            applicantName: "Tran Thi B",
+            email: "tranthib@example.com",
+            phone: "0902345678",
+            jobId: "job2",
+            jobTitle: "Retail Store Manager",
+            appliedDate: new Date(
+              Date.now() - 2 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            status: "SHORTLISTED",
+            resumeUrl: "#",
+            rating: 0,
+          },
+          {
+            id: "app103",
+            applicantName: "Le Van C",
+            email: "levanc@example.com",
+            phone: "0903456789",
+            jobId: "job1",
+            jobTitle: "Senior Fashion Designer",
+            appliedDate: new Date(
+              Date.now() - 3 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            status: "INTERVIEW_SCHEDULED",
+            resumeUrl: "#",
+            rating: 0,
+          },
+          {
+            id: "app104",
+            applicantName: "Pham Thi D",
+            email: "phamthid@example.com",
+            phone: "0904567890",
+            jobId: "job3",
+            jobTitle: "Marketing Intern",
+            appliedDate: new Date(
+              Date.now() - 4 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            status: "HIRED",
+            resumeUrl: "#",
+            rating: 0,
+          },
+          {
+            id: "app105",
+            applicantName: "Hoang Van E",
+            email: "hoangvane@example.com",
+            phone: "0905678901",
+            jobId: "job2",
+            jobTitle: "Retail Store Manager",
+            appliedDate: new Date(
+              Date.now() - 5 * 24 * 60 * 60 * 1000
+            ).toISOString(),
+            status: "REJECTED",
+            resumeUrl: "#",
+            rating: 0,
+          },
+        ];
+        setApplications(mockApplications);
+        setAvailableJobs([
+          { id: "job1", title: "Senior Fashion Designer" },
+          { id: "job2", title: "Retail Store Manager" },
+          { id: "job3", title: "Marketing Intern" },
+        ]);
       } catch (err) {
-        setError('Failed to fetch data. Please try again later.');
-        console.error('Error fetching data:', err);
+        console.error("Error fetching applicants data:", err);
+        setError("Failed to load applicant data. Please try again.");
       } finally {
         setLoading(false);
       }
     };
-    
     fetchData();
   }, []);
 
-  // Filter and sort applications
-  const filteredApplications = applications.filter(app => {
-    // Search filter
-    const matchesSearch = 
-      app.applicantName.toLowerCase().includes(search.toLowerCase()) ||
-      app.email.toLowerCase().includes(search.toLowerCase()) ||
-      app.jobTitle.toLowerCase().includes(search.toLowerCase());
-    
-    // Status filter
-    const matchesStatus = 
-      filterStatus === 'all' || 
-      app.status.toLowerCase() === filterStatus.toLowerCase();
-    
-    // Job filter
-    const matchesJob = 
-      filterJob === 'all' || 
-      app.jobId === parseInt(filterJob);
-    
-    return matchesSearch && matchesStatus && matchesJob;
-  });
+  const handleUpdateStatus = async () => {
+    if (!selectedApplication || !newStatus) return;
+    // TODO: Implement API call to update application status
+    // await recruiterAPI.updateApplicationStatus(selectedApplication.id, newStatus);
+    setApplications((prevApps) =>
+      prevApps.map((app) =>
+        app.id === selectedApplication.id ? { ...app, status: newStatus } : app
+      )
+    );
+    setShowStatusModal(false);
+    setSelectedApplication(null);
+  };
 
-  // Sort applications
-  const sortedApplications = [...filteredApplications].sort((a, b) => {
-    switch (sortBy) {
-      case 'newest':
-        return new Date(b.appliedDate) - new Date(a.appliedDate);
-      case 'oldest':
-        return new Date(a.appliedDate) - new Date(b.appliedDate);
-      case 'a-z':
-        return a.applicantName.localeCompare(b.applicantName);
-      case 'z-a':
-        return b.applicantName.localeCompare(a.applicantName);
-      default:
+  const filteredApplications = useMemo(() => {
+    return applications
+      .filter((app) => {
+        const nameMatch = app.applicantName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const emailMatch = app.email
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const jobTitleMatch = app.jobTitle
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
+        const statusMatch =
+          filterStatus === "ALL" || app.status === filterStatus;
+        const jobMatch = filterJob === "ALL" || app.jobId === filterJob;
+        return (
+          (nameMatch || emailMatch || jobTitleMatch) && statusMatch && jobMatch
+        );
+      })
+      .sort((a, b) => {
+        const [key, direction] = sortBy.split("_");
+        let valA = a[key];
+        let valB = b[key];
+        if (key === "appliedDate") {
+          valA = new Date(valA);
+          valB = new Date(valB);
+        } else if (typeof valA === "string") {
+          valA = valA.toLowerCase();
+          valB = valB.toLowerCase();
+        }
+        if (valA < valB) return direction === "asc" ? -1 : 1;
+        if (valA > valB) return direction === "asc" ? 1 : -1;
         return 0;
-    }
-  });
+      });
+  }, [applications, searchTerm, filterStatus, filterJob, sortBy]);
 
-  // Handle application status update
-  const handleUpdateStatus = () => {
-    if (selectedApplication && newStatus) {
-      setApplications(applications.map(app => 
-        app.id === selectedApplication.id 
-          ? { ...app, status: newStatus } 
-          : app
-      ));
-      setShowStatusModal(false);
-      setSelectedApplication(null);
-      setNewStatus('');
+  const paginatedApplications = useMemo(() => {
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredApplications.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  }, [filteredApplications, currentPage]);
+
+  const totalPages = Math.ceil(filteredApplications.length / ITEMS_PER_PAGE);
+
+  const requestSort = (key) => {
+    let direction = "asc";
+    if (sortBy.startsWith(key) && sortBy.endsWith("asc")) {
+      direction = "desc";
     }
+    setSortBy(`${key}_${direction}`);
   };
 
-  // Format date
-  const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
+  const getSortIcon = (key) => {
+    if (!sortBy.startsWith(key))
+      return <FontAwesomeIcon icon="sort" className="ml-1 text-gray-400" />;
+    if (sortBy.endsWith("asc"))
+      return <FontAwesomeIcon icon="sort-up" className="ml-1" />;
+    return <FontAwesomeIcon icon="sort-down" className="ml-1" />;
   };
 
-  // Get status badge class
-  const getStatusBadgeClass = (status) => {
-    switch (status.toLowerCase()) {
-      case 'pending review':
-        return 'status-pending';
-      case 'shortlisted':
-        return 'status-shortlisted';
-      case 'interview scheduled':
-        return 'status-interview';
-      case 'rejected':
-        return 'status-rejected';
-      case 'hired':
-        return 'status-hired';
+  const getStatusPillClass = (status) => {
+    const formattedStatus = formatApplicationStatus(status)
+      .toLowerCase()
+      .replace(/\s+/g, "");
+    switch (formattedStatus) {
+      case "pendingreview":
+        return "bg-yellow-100 text-yellow-800";
+      case "inreview":
+        return "bg-blue-100 text-blue-800";
+      case "shortlisted":
+        return "bg-indigo-100 text-indigo-800";
+      case "interviewscheduled":
+        return "bg-purple-100 text-purple-800";
+      case "offerextended":
+        return "bg-pink-100 text-pink-800";
+      case "hired":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "withdrawn":
+        return "bg-gray-100 text-gray-500";
       default:
-        return '';
+        return "bg-gray-100 text-gray-800";
     }
   };
 
-  if (loading) {
-    return <div className="loading-container">Loading applications...</div>;
-  }
-
-  if (error) {
-    return <div className="error-container">{error}</div>;
-  }
+  if (loading)
+    return <LoadingSpinner fullPage message="Loading applicants..." />;
+  if (error)
+    return (
+      <div className="p-4 text-red-600 bg-red-100 rounded-md text-center">
+        {error}
+      </div>
+    );
 
   return (
-    <div className="applicants-management-page">
-      <div className="page-header">
-        <h1>Applicants Management</h1>
-      </div>
-      
-      <div className="applicants-filters">
-        <div className="search-bar">
+    <div className="applicants-management-page p-4 md:p-6 space-y-6">
+      <h1 className="text-3xl font-bold text-gray-800">
+        Applicants Management
+      </h1>
+
+      {/* Filters and Search */}
+      <div className="bg-white p-4 rounded-lg shadow-md space-y-4 md:space-y-0 md:flex md:flex-wrap md:justify-between md:items-center gap-4">
+        <div className="relative flex-grow md:max-w-md">
+          <FontAwesomeIcon
+            icon="search"
+            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
+          />
           <input
             type="text"
-            placeholder="Search by name, email, or job title..."
-            value={search}
-            onChange={e => setSearch(e.target.value)}
+            placeholder="Search by name, email, job title..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full p-2.5 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
-        
-        <div className="filter-options">
-          <div className="status-filter">
-            <label>Status:</label>
-            <select 
-              value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value)}
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending review">Pending Review</option>
-              <option value="shortlisted">Shortlisted</option>
-              <option value="interview scheduled">Interview Scheduled</option>
-              <option value="rejected">Rejected</option>
-              <option value="hired">Hired</option>
-            </select>
-          </div>
-          
-          <div className="job-filter">
-            <label>Job:</label>
-            <select 
-              value={filterJob}
-              onChange={e => setFilterJob(e.target.value)}
-            >
-              <option value="all">All Jobs</option>
-              {jobs.map(job => (
-                <option key={job.id} value={job.id}>
-                  {job.title}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          <div className="sort-filter">
-            <label>Sort By:</label>
-            <select 
-              value={sortBy}
-              onChange={e => setSortBy(e.target.value)}
-            >
-              <option value="newest">Newest</option>
-              <option value="oldest">Oldest</option>
-              <option value="a-z">A-Z</option>
-              <option value="z-a">Z-A</option>
-            </select>
-          </div>
+        <div className="flex flex-col sm:flex-row gap-4">
+          <select
+            value={filterStatus}
+            onChange={(e) => setFilterStatus(e.target.value)}
+            className="p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="ALL">All Statuses</option>
+            {applicationStatuses.map((status) => (
+              <option key={status} value={status}>
+                {formatApplicationStatus(status)}
+              </option>
+            ))}
+          </select>
+          <select
+            value={filterJob}
+            onChange={(e) => setFilterJob(e.target.value)}
+            className="p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
+          >
+            <option value="ALL">All Jobs</option>
+            {availableJobs.map((job) => (
+              <option key={job.id} value={job.id}>
+                {job.title}
+              </option>
+            ))}
+          </select>
         </div>
       </div>
-      
-      {sortedApplications.length === 0 ? (
-        <div className="no-applications">
-          <div className="empty-state">
-            <i className="applications-icon large"></i>
-            <h3>No applications found</h3>
-            <p>
-              {search || filterStatus !== 'all' || filterJob !== 'all'
-                ? 'Try adjusting your filters or search terms'
-                : 'You haven\'t received any applications yet'
-              }
-            </p>
-          </div>
-        </div>
+
+      {paginatedApplications.length === 0 ? (
+        <EmptyState
+          icon="users-slash"
+          title="No Applicants Found"
+          description={
+            searchTerm || filterStatus !== "ALL" || filterJob !== "ALL"
+              ? "No applicants match your current filters."
+              : "There are no applications to display."
+          }
+        />
       ) : (
-        <div className="applications-table">
-          <div className="table-header">
-            <div className="col-applicant">Applicant</div>
-            <div className="col-job">Job Position</div>
-            <div className="col-date">Applied Date</div>
-            <div className="col-status">Status</div>
-            <div className="col-actions">Actions</div>
-          </div>
-          
-          {sortedApplications.map(application => (
-            <div key={application.id} className="application-row">
-              <div className="col-applicant">
-                <h3>{application.applicantName}</h3>
-                <div className="applicant-meta">
-                  <span className="applicant-email">{application.email}</span>
-                  <span className="applicant-phone">{application.phone}</span>
-                </div>
-              </div>
-              
-              <div className="col-job">
-                <Link to={`/admin/jobs/${application.jobId}`}>
-                  {application.jobTitle}
-                </Link>
-              </div>
-              
-              <div className="col-date">
-                {formatDate(application.appliedDate)}
-              </div>
-              
-              <div className="col-status">
-                <span className={`status-badge ${getStatusBadgeClass(application.status)}`}>
-                  {application.status}
-                </span>
-              </div>
-              
-              <div className="col-actions">
-                <Link to={`/admin/applicants/${application.id}`} className="view-btn">
-                  View
-                </Link>
-                <button 
-                  className="change-status-btn"
-                  onClick={() => {
-                    setSelectedApplication(application);
-                    setNewStatus(application.status);
-                    setShowStatusModal(true);
-                  }}
+        <div className="bg-white shadow-lg rounded-lg overflow-x-auto">
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="bg-gray-50">
+              <tr>
+                <th
+                  onClick={() => requestSort("applicantName")}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                 >
-                  Change Status
-                </button>
-                <button className="download-resume-btn">
-                  Download Resume
-                </button>
-              </div>
-            </div>
-          ))}
+                  Applicant {getSortIcon("applicantName")}
+                </th>
+                <th
+                  onClick={() => requestSort("jobTitle")}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                >
+                  Job Title {getSortIcon("jobTitle")}
+                </th>
+                <th
+                  onClick={() => requestSort("appliedDate")}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                >
+                  Applied {getSortIcon("appliedDate")}
+                </th>
+                <th
+                  onClick={() => requestSort("status")}
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                >
+                  Status {getSortIcon("status")}
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Actions
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {paginatedApplications.map((app) => (
+                <tr key={app.id} className="hover:bg-gray-50 transition-colors">
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-medium text-gray-900">
+                      {app.applicantName}
+                    </div>
+                    <div className="text-xs text-gray-500">{app.email}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    <Link
+                      to={`/admin/jobs/${app.jobId}`}
+                      className="hover:text-blue-600"
+                    >
+                      {app.jobTitle}
+                    </Link>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                    {formatDate(app.appliedDate)}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span
+                      className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusPillClass(
+                        app.status
+                      )}`}
+                    >
+                      {formatApplicationStatus(app.status)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                    <Link
+                      to={`/admin/applications/${app.id}`}
+                      className="text-blue-600 hover:text-blue-800"
+                      title="View Details"
+                    >
+                      <FontAwesomeIcon icon="eye" />
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setSelectedApplication(app);
+                        setNewStatus(app.status);
+                        setShowStatusModal(true);
+                      }}
+                      className="text-yellow-600 hover:text-yellow-800"
+                      title="Change Status"
+                    >
+                      <FontAwesomeIcon icon="edit" />
+                    </button>
+                    <a
+                      href={app.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-green-600 hover:text-green-800"
+                      title="Download Resume"
+                    >
+                      <FontAwesomeIcon icon="file-arrow-down" />
+                    </a>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       )}
-      
+      {totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          onPageChange={setCurrentPage}
+        />
+      )}
+
       {showStatusModal && selectedApplication && (
         <Modal
-          title="Update Application Status"
+          title={`Update Status for ${selectedApplication.applicantName}`}
+          isOpen={showStatusModal}
           onClose={() => setShowStatusModal(false)}
+          size="md"
         >
-          <div className="update-status-modal">
-            <p>
-              Update status for <strong>{selectedApplication.applicantName}</strong> 
-              applying for <strong>{selectedApplication.jobTitle}</strong>
+          <div className="p-2 space-y-4">
+            <p className="text-sm text-gray-600">
+              Applied for:{" "}
+              <span className="font-semibold">
+                {selectedApplication.jobTitle}
+              </span>
             </p>
-            
-            <div className="form-group">
-              <label htmlFor="status">Status:</label>
-              <select
-                id="status"
-                value={newStatus}
-                onChange={e => setNewStatus(e.target.value)}
+            <p className="text-sm text-gray-600">
+              Current Status:{" "}
+              <span
+                className={`font-semibold ${getStatusPillClass(
+                  selectedApplication.status
+                )} px-2 py-0.5 rounded-full text-xs`}
               >
-                <option value="Pending Review">Pending Review</option>
-                <option value="Shortlisted">Shortlisted</option>
-                <option value="Interview Scheduled">Interview Scheduled</option>
-                <option value="Rejected">Rejected</option>
-                <option value="Hired">Hired</option>
+                {formatApplicationStatus(selectedApplication.status)}
+              </span>
+            </p>
+            <div>
+              <label
+                htmlFor="newStatus"
+                className="block text-sm font-medium text-gray-700 mb-1"
+              >
+                New Status:
+              </label>
+              <select
+                id="newStatus"
+                value={newStatus}
+                onChange={(e) => setNewStatus(e.target.value)}
+                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
+              >
+                {applicationStatuses.map((status) => (
+                  <option key={status} value={status}>
+                    {formatApplicationStatus(status)}
+                  </option>
+                ))}
               </select>
             </div>
-            
-            {newStatus === 'Interview Scheduled' && (
-              <div className="form-group">
-                <label htmlFor="interviewDate">Interview Date:</label>
-                <input
-                  type="datetime-local"
-                  id="interviewDate"
-                />
-              </div>
-            )}
-            
-            {newStatus === 'Rejected' && (
-              <div className="form-group">
-                <label htmlFor="rejectionReason">Reason (Optional):</label>
-                <textarea
-                  id="rejectionReason"
-                  rows="3"
-                  placeholder="Enter reason for rejection"
-                ></textarea>
-              </div>
-            )}
-            
-            <div className="modal-actions">
-              <button 
-                className="cancel-btn"
+            <div className="flex justify-end gap-3 mt-4">
+              <button
                 onClick={() => setShowStatusModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
               >
                 Cancel
               </button>
-              <button 
-                className="update-btn"
+              <button
                 onClick={handleUpdateStatus}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
               >
                 Update Status
               </button>

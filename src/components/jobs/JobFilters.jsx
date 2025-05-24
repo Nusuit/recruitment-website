@@ -1,329 +1,153 @@
-import React from 'react';
+// src/components/jobs/JobFilters.jsx
+import React, { useState, useEffect } from "react";
+import PropTypes from "prop-types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-const JobFilters = ({ filters, onFilterChange, onClearFilters }) => {
-  // Handle checkbox filters (experience, salary, etc)
-  const handleCheckboxChange = (filterType, value) => {
-    const currentValues = [...filters[filterType]];
-    
-    if (currentValues.includes(value)) {
-      // Remove if already selected
-      const updatedValues = currentValues.filter(val => val !== value);
-      updateFilter(filterType, updatedValues);
-    } else {
-      // Add if not selected
-      updateFilter(filterType, [...currentValues, value]);
-    }
-  };
-  
-  // Update a single filter
-  const updateFilter = (filterType, value) => {
-    onFilterChange({
-      ...filters,
-      [filterType]: value
-    });
-  };
-  
+// Define filter options (can be fetched from API later)
+const filterOptions = {
+  experience: [
+    { value: "0_1_Years", label: "0-1 Years" },
+    { value: "1_3_Years", label: "1-3 Years" },
+    { value: "3_5_Years", label: "3-5 Years" },
+    { value: "5_Plus_Years", label: "5+ Years" },
+  ],
+  salary: [
+    { value: "0-1000", label: "Up to $1000" },
+    { value: "1000-2000", label: "$1000 - $2000" },
+    { value: "2000-3000", label: "$2000 - $3000" },
+    { value: "3000-5000", label: "$3000 - $5000" },
+    { value: "5000+", label: "$5000+" },
+  ],
+  jobType: [
+    { value: "Full Time", label: "Full Time" },
+    { value: "Part Time", label: "Part Time" },
+    { value: "Contract", label: "Contract" },
+    { value: "Internship", label: "Internship" },
+  ],
+  education: [
+    { value: "High School", label: "High School" },
+    { value: "Associate Degree", label: "Associate Degree" },
+    { value: "Bachelor Degree", label: "Bachelor Degree" },
+    { value: "Master Degree", label: "Master Degree" },
+    { value: "PhD", label: "PhD" },
+  ],
+  jobLevel: [
+    { value: "Intern", label: "Intern Level" },
+    { value: "Junior", label: "Junior Level" },
+    { value: "Mid", label: "Mid Level" },
+    { value: "Senior", label: "Senior Level" },
+    { value: "Manager", label: "Manager" },
+    { value: "Director", label: "Director" },
+  ],
+};
+
+const FilterSection = ({
+  title,
+  options,
+  filterKey,
+  selectedValues,
+  onCheckboxChange,
+}) => {
+  const [isOpen, setIsOpen] = useState(true); // Default to open
+
   return (
-    <div className="job-filters">
-      <div className="filter-section">
-        <h3>Experience</h3>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('Fresher')}
-              onChange={() => handleCheckboxChange('experience', 'Fresher')} 
-            />
-            <span>Fresher</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('0_1 Years')}
-              onChange={() => handleCheckboxChange('experience', '0_1 Years')} 
-            />
-            <span>0-1 Years</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('1_3 Years')}
-              onChange={() => handleCheckboxChange('experience', '1_3 Years')} 
-            />
-            <span>1-3 Years</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('3_5 Years')}
-              onChange={() => handleCheckboxChange('experience', '3_5 Years')} 
-            />
-            <span>3-5 Years</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('5_8 Years')}
-              onChange={() => handleCheckboxChange('experience', '5_8 Years')} 
-            />
-            <span>5-8 Years</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('8_10 Years')}
-              onChange={() => handleCheckboxChange('experience', '8_10 Years')} 
-            />
-            <span>8-10 Years</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('10_15 Years')}
-              onChange={() => handleCheckboxChange('experience', '10_15 Years')} 
-            />
-            <span>10-15 Years</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.experience.includes('15+ Years')}
-              onChange={() => handleCheckboxChange('experience', '15+ Years')} 
-            />
-            <span>15+ Years</span>
-          </label>
-        </div>
-      </div>
-      
-      <div className="filter-section">
-        <h3>Salary</h3>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$0-$1000')}
-              onChange={() => handleCheckboxChange('salary', '$0-$1000')} 
-            />
-            <span>$0 - $1000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$1000-$2000')}
-              onChange={() => handleCheckboxChange('salary', '$1000-$2000')} 
-            />
-            <span>$1000 - $2000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$2000-$3000')}
-              onChange={() => handleCheckboxChange('salary', '$2000-$3000')} 
-            />
-            <span>$2000 - $3000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$3000-$5000')}
-              onChange={() => handleCheckboxChange('salary', '$3000-$5000')} 
-            />
-            <span>$3000 - $5000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$5000-$8000')}
-              onChange={() => handleCheckboxChange('salary', '$5000-$8000')} 
-            />
-            <span>$5000 - $8000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$8000-$10000')}
-              onChange={() => handleCheckboxChange('salary', '$8000-$10000')} 
-            />
-            <span>$8000 - $10000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$10000-$15000')}
-              onChange={() => handleCheckboxChange('salary', '$10000-$15000')} 
-            />
-            <span>$10000 - $15000</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.salary.includes('$15000+')}
-              onChange={() => handleCheckboxChange('salary', '$15000+')} 
-            />
-            <span>$15000+</span>
-          </label>
-        </div>
-      </div>
-      
-      <div className="filter-section">
-        <h3>Job Type</h3>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('All')}
-              onChange={() => handleCheckboxChange('jobType', 'All')} 
-            />
-            <span>All</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('Full Time')}
-              onChange={() => handleCheckboxChange('jobType', 'Full Time')} 
-            />
-            <span>Full Time</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('Part Time')}
-              onChange={() => handleCheckboxChange('jobType', 'Part Time')} 
-            />
-            <span>Part Time</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('Internship')}
-              onChange={() => handleCheckboxChange('jobType', 'Internship')} 
-            />
-            <span>Internship</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('Remote')}
-              onChange={() => handleCheckboxChange('jobType', 'Remote')} 
-            />
-            <span>Remote</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('Temporary')}
-              onChange={() => handleCheckboxChange('jobType', 'Temporary')} 
-            />
-            <span>Temporary</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobType.includes('Contract Based')}
-              onChange={() => handleCheckboxChange('jobType', 'Contract Based')} 
-            />
-            <span>Contract Based</span>
-          </label>
-        </div>
-      </div>
-      
-      <div className="filter-section">
-        <h3>Education</h3>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.education.includes('All')}
-              onChange={() => handleCheckboxChange('education', 'All')} 
-            />
-            <span>All</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.education.includes('High School')}
-              onChange={() => handleCheckboxChange('education', 'High School')} 
-            />
-            <span>High School</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.education.includes('Intermediate')}
-              onChange={() => handleCheckboxChange('education', 'Intermediate')} 
-            />
-            <span>Intermediate</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.education.includes('Graduate')}
-              onChange={() => handleCheckboxChange('education', 'Graduate')} 
-            />
-            <span>Graduate</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.education.includes('Master Degree')}
-              onChange={() => handleCheckboxChange('education', 'Master Degree')} 
-            />
-            <span>Master Degree</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.education.includes('Bachelor Degree')}
-              onChange={() => handleCheckboxChange('education', 'Bachelor Degree')} 
-            />
-            <span>Bachelor Degree</span>
-          </label>
-        </div>
-      </div>
-      
-      <div className="filter-section">
-        <h3>Job Level</h3>
-        <div className="filter-options">
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobLevel.includes('All')}
-              onChange={() => handleCheckboxChange('jobLevel', 'All')} 
-            />
-            <span>All</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobLevel.includes('Entry Level')}
-              onChange={() => handleCheckboxChange('jobLevel', 'Entry Level')} 
-            />
-            <span>Entry Level</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobLevel.includes('Mid Level')}
-              onChange={() => handleCheckboxChange('jobLevel', 'Mid Level')} 
-            />
-            <span>Mid Level</span>
-          </label>
-          <label className="filter-option">
-            <input 
-              type="checkbox" 
-              checked={filters.jobLevel.includes('Expert Level')}
-              onChange={() => handleCheckboxChange('jobLevel', 'Expert Level')} 
-            />
-            <span>Expert Level</span>
-          </label>
-        </div>
-      </div>
-      
-      <button className="clear-filters-btn" onClick={onClearFilters}>
-        Clear All Filters
+    <div className="border-b border-gray-200 py-5">
+      <button
+        className="flex justify-between items-center w-full text-left"
+        onClick={() => setIsOpen(!isOpen)}
+      >
+        <h4 className="text-base font-semibold text-gray-800">{title}</h4>
+        <FontAwesomeIcon
+          icon={isOpen ? "chevron-up" : "chevron-down"}
+          className="text-gray-500"
+        />
       </button>
+      {isOpen && (
+        <div className="mt-4 space-y-3">
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center">
+              <input
+                type="checkbox"
+                id={`${filterKey}-${option.value}`}
+                name={filterKey}
+                value={option.value}
+                checked={selectedValues.includes(option.value)}
+                onChange={(e) =>
+                  onCheckboxChange(filterKey, option.value, e.target.checked)
+                }
+                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+              />
+              <label
+                htmlFor={`${filterKey}-${option.value}`}
+                className="ml-3 text-sm text-gray-600 cursor-pointer"
+              >
+                {option.label}
+              </label>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
+};
+
+FilterSection.propTypes = {
+  title: PropTypes.string.isRequired,
+  options: PropTypes.arrayOf(
+    PropTypes.shape({
+      value: PropTypes.string.isRequired,
+      label: PropTypes.string.isRequired,
+    })
+  ).isRequired,
+  filterKey: PropTypes.string.isRequired,
+  selectedValues: PropTypes.arrayOf(PropTypes.string).isRequired,
+  onCheckboxChange: PropTypes.func.isRequired,
+};
+
+const JobFilters = ({ filters, onFilterChange, onClearFilters }) => {
+  const handleCheckboxChange = (key, value, isChecked) => {
+    const currentValues = filters[key] || [];
+    let newValues;
+    if (isChecked) {
+      newValues = [...currentValues, value];
+    } else {
+      newValues = currentValues.filter((item) => item !== value);
+    }
+    onFilterChange({ [key]: newValues }); // Pass an object with the changed filter
+  };
+
+  return (
+    <aside className="job-filters bg-white p-6 rounded-lg shadow-sm border border-gray-100">
+      <div className="flex justify-between items-center border-b border-gray-200 pb-4 mb-1">
+        <h3 className="text-xl font-bold text-gray-900">Filters</h3>
+        <button
+          onClick={onClearFilters}
+          className="text-sm text-blue-600 font-medium hover:underline"
+        >
+          Clear All
+        </button>
+      </div>
+
+      {Object.keys(filterOptions).map((key) => (
+        <FilterSection
+          key={key}
+          title={key
+            .replace(/([A-Z])/g, " $1")
+            .replace(/^./, (str) => str.toUpperCase())} // Capitalize title
+          options={filterOptions[key]}
+          filterKey={key}
+          selectedValues={filters[key] || []}
+          onCheckboxChange={handleCheckboxChange}
+        />
+      ))}
+    </aside>
+  );
+};
+
+JobFilters.propTypes = {
+  filters: PropTypes.object.isRequired,
+  onFilterChange: PropTypes.func.isRequired,
+  onClearFilters: PropTypes.func.isRequired,
 };
 
 export default JobFilters;

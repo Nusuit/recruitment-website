@@ -1,75 +1,89 @@
-import React from 'react';
+// src/components/common/SocialIcons.jsx
+import React from "react";
+import PropTypes from "prop-types";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+// Ensure brand icons are registered in fontawesome.js:
+// import { faFacebookF, faTwitter, faLinkedinIn, faInstagram, faYoutube } from '@fortawesome/free-brands-svg-icons';
+// library.add(faFacebookF, faTwitter, faLinkedinIn, faInstagram, faYoutube);
 
-const SocialIcons = ({ className = '', size = 'medium', color = 'default', showLabels = false }) => {
-  // Social media links
-  const socialLinks = [
+const SocialIcons = ({
+  className = "",
+  iconSize = "lg", // FontAwesome size prop: xs, sm, lg, 2x, etc. or number
+  iconColor = "text-gray-600", // Default Tailwind text color
+  hoverColor = "hover:text-blue-500", // Default Tailwind hover color
+  showLabels = false,
+  links, // Optional: pass custom links, otherwise use defaults
+  itemClassName = "", // Class for each <a> tag
+}) => {
+  const defaultSocialLinks = [
     {
-      id: 'facebook',
-      icon: 'facebook-icon',
-      label: 'Facebook',
-      url: 'https://facebook.com'
+      id: "facebook",
+      icon: ["fab", "facebook-f"],
+      label: "Facebook",
+      url: "https://facebook.com/myacorp",
     },
     {
-      id: 'twitter',
-      icon: 'twitter-icon',
-      label: 'Twitter',
-      url: 'https://twitter.com'
+      id: "twitter",
+      icon: ["fab", "twitter"],
+      label: "Twitter",
+      url: "https://twitter.com/myacorp",
     },
     {
-      id: 'instagram',
-      icon: 'instagram-icon',
-      label: 'Instagram',
-      url: 'https://instagram.com'
+      id: "linkedin",
+      icon: ["fab", "linkedin-in"],
+      label: "LinkedIn",
+      url: "https://linkedin.com/company/myacorp",
     },
     {
-      id: 'linkedin',
-      icon: 'linkedin-icon',
-      label: 'LinkedIn',
-      url: 'https://linkedin.com'
+      id: "instagram",
+      icon: ["fab", "instagram"],
+      label: "Instagram",
+      url: "https://instagram.com/myacorp",
     },
-    {
-      id: 'youtube',
-      icon: 'youtube-icon',
-      label: 'YouTube',
-      url: 'https://youtube.com'
-    }
+    // { id: 'youtube', icon: ['fab', 'youtube'], label: 'YouTube', url: 'https://youtube.com/myacorp' }
   ];
 
-  // Size classes
-  const sizeClasses = {
-    small: 'social-icons-sm',
-    medium: '',
-    large: 'social-icons-lg'
-  };
-
-  // Color classes
-  const colorClasses = {
-    default: '',
-    primary: 'social-icons-primary',
-    light: 'social-icons-light',
-    dark: 'social-icons-dark'
-  };
-
-  // Combined classes
-  const combinedClassName = `social-icons ${sizeClasses[size]} ${colorClasses[color]} ${className}`;
+  const socialLinksToRender = links || defaultSocialLinks;
 
   return (
-    <div className={combinedClassName}>
-      {socialLinks.map(social => (
-        <a 
+    <div className={`social-icons flex items-center space-x-4 ${className}`}>
+      {socialLinksToRender.map((social) => (
+        <a
           key={social.id}
-          href={social.url} 
-          target="_blank" 
+          href={social.url}
+          target="_blank"
           rel="noopener noreferrer"
-          className="social-icon-link"
+          className={`social-icon-link transition-colors duration-200 ${iconColor} ${hoverColor} ${itemClassName}`}
           aria-label={social.label}
+          title={social.label}
         >
-          <span className={`social-icon ${social.icon}`}></span>
-          {showLabels && <span className="social-label">{social.label}</span>}
+          <FontAwesomeIcon icon={social.icon} size={iconSize} />
+          {showLabels && (
+            <span className="ml-2 text-sm sr-only md:not-sr-only">
+              {social.label}
+            </span>
+          )}
         </a>
       ))}
     </div>
   );
+};
+
+SocialIcons.propTypes = {
+  className: PropTypes.string,
+  iconSize: PropTypes.string, // FontAwesome size prop
+  iconColor: PropTypes.string, // Tailwind text color class
+  hoverColor: PropTypes.string, // Tailwind hover text color class
+  showLabels: PropTypes.bool,
+  links: PropTypes.arrayOf(
+    PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      icon: PropTypes.oneOfType([PropTypes.string, PropTypes.array]).isRequired, // For FontAwesome
+      label: PropTypes.string.isRequired,
+      url: PropTypes.string.isRequired,
+    })
+  ),
+  itemClassName: PropTypes.string,
 };
 
 export default SocialIcons;

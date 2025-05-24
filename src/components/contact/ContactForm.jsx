@@ -1,157 +1,188 @@
-import React, { useState } from 'react';
-import { validateContactForm } from '../../utils/validators';
-import useForm from '../../hooks/useForm';
+// src/components/contact/ContactForm.jsx
+import React, { useState } from "react";
+import { validateContactForm } from "../../utils/validators"; // Assuming this validator exists and is up-to-date
+// import { generalAPI } from '../../api/general'; // Example: if you have a general API for contact forms
+import LoadingSpinner from "../common/LoadingSpinner";
+import Button from "../common/Button"; // Using the refactored Button component
+import Input from "../common/Input"; // Using the refactored Input component
 
-const ContactForm = () => {
+const ContactForm = ({ className = "" }) => {
   const initialValues = {
-    firstName: '',
-    lastName: '',
-    email: '',
-    phoneNumber: '',
-    message: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "", // Changed from phoneNumber
+    subject: "",
+    message: "",
   };
-  
-  const { values, errors, handleChange, validateForm, resetForm, setErrors } = useForm(
-    initialValues,
-    validateContactForm
-  );
-  
+
+  const [formData, setFormData] = useState(initialValues);
+  const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  
+  const [submitError, setSubmitError] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
+    }
+    setSubmitError(""); // Clear general submit error on new input
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    if (!validateForm()) {
+    setSubmitError("");
+    const validationErrors = validateContactForm(formData); // Use your validator
+    setErrors(validationErrors);
+
+    if (Object.keys(validationErrors).length > 0) {
       return;
     }
-    
+
     setIsSubmitting(true);
-    setSubmitError('');
-    
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // In a real app, you would submit to a backend API
-      // const response = await submitContactForm(values);
-      
-      // Success handling
+      // TODO: Replace with actual API call
+      // await generalAPI.submitContactInquiry(formData);
+      await new Promise((resolve) => setTimeout(resolve, 1500)); // Simulate API call
       setSubmitSuccess(true);
-      resetForm();
-      
-      // Reset success message after 5 seconds
-      setTimeout(() => {
-        setSubmitSuccess(false);
-      }, 5000);
+      setFormData(initialValues); // Reset form on success
+      setTimeout(() => setSubmitSuccess(false), 5000); // Hide success message after 5 seconds
     } catch (error) {
-      console.error('Contact form submission error:', error);
-      setSubmitError('Failed to send message. Please try again later.');
+      console.error("Contact form submission error:", error);
+      setSubmitError(
+        error.message || "Failed to send message. Please try again later."
+      );
     } finally {
       setIsSubmitting(false);
     }
   };
-  
+
+  if (submitSuccess) {
+    return (
+      <div
+        className={`contact-form-container text-center p-8 bg-green-50 border-2 border-green-200 rounded-lg shadow-md ${className}`}
+      >
+        <FontAwesomeIcon
+          icon="check-circle"
+          className="text-5xl text-green-500 mb-4"
+        />
+        <h3 className="text-2xl font-semibold text-green-700 mb-2">
+          Message Sent Successfully!
+        </h3>
+        <p className="text-gray-600">
+          Thank you for reaching out. We will get back to you as soon as
+          possible.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="contact-form-container">
-      <h2>Send us a message</h2>
-      <p className="form-subtitle">Have questions or comments? We'd love to hear from you!</p>
-      
-      {submitSuccess && (
-        <div className="success-message">
-          Thank you for your message! We'll get back to you soon.
-        </div>
-      )}
-      
+    <div className={`contact-form-container ${className}`}>
+      {/* Removed h2 and p from here, assuming parent page provides context */}
       {submitError && (
-        <div className="error-message">
+        <div
+          className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md text-sm mb-6"
+          role="alert"
+        >
           {submitError}
         </div>
       )}
-      
-      <form className="contact-form" onSubmit={handleSubmit}>
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="firstName">First Name*</label>
-            <input
-              type="text"
-              id="firstName"
-              name="firstName"
-              value={values.firstName}
-              onChange={handleChange}
-              placeholder="Enter your first name"
-            />
-            {errors.firstName && <div className="field-error">{errors.firstName}</div>}
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="lastName">Last Name*</label>
-            <input
-              type="text"
-              id="lastName"
-              name="lastName"
-              value={values.lastName}
-              onChange={handleChange}
-              placeholder="Enter your last name"
-            />
-            {errors.lastName && <div className="field-error">{errors.lastName}</div>}
-          </div>
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Input
+            label="First Name*"
+            name="firstName"
+            value={formData.firstName}
+            onChange={handleChange}
+            error={errors.firstName}
+            required
+            placeholder="Enter your first name"
+          />
+          <Input
+            label="Last Name*"
+            name="lastName"
+            value={formData.lastName}
+            onChange={handleChange}
+            error={errors.lastName}
+            required
+            placeholder="Enter your last name"
+          />
         </div>
-        
-        <div className="form-row">
-          <div className="form-group">
-            <label htmlFor="email">Email*</label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={values.email}
-              onChange={handleChange}
-              placeholder="Enter your email address"
-            />
-            {errors.email && <div className="field-error">{errors.email}</div>}
-          </div>
-          
-          <div className="form-group">
-            <label htmlFor="phoneNumber">Phone Number</label>
-            <input
-              type="tel"
-              id="phoneNumber"
-              name="phoneNumber"
-              value={values.phoneNumber}
-              onChange={handleChange}
-              placeholder="Enter your phone number"
-            />
-            {errors.phoneNumber && <div className="field-error">{errors.phoneNumber}</div>}
-          </div>
-        </div>
-        
-        <div className="form-group">
-          <label htmlFor="message">Message*</label>
+        <Input
+          label="Email Address*"
+          name="email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          error={errors.email}
+          required
+          placeholder="you@example.com"
+        />
+        <Input
+          label="Phone Number"
+          name="phone"
+          type="tel"
+          value={formData.phone}
+          onChange={handleChange}
+          error={errors.phone}
+          placeholder="(+84) 123 456 789"
+        />
+        <Input
+          label="Subject*"
+          name="subject"
+          value={formData.subject}
+          onChange={handleChange}
+          error={errors.subject}
+          required
+          placeholder="Regarding..."
+        />
+        <div>
+          <label
+            htmlFor="message"
+            className="block text-sm font-medium text-gray-700 mb-1"
+          >
+            Message*
+          </label>
           <textarea
             id="message"
             name="message"
-            value={values.message}
+            value={formData.message}
             onChange={handleChange}
+            required
             rows="5"
             placeholder="Write your message here..."
-          ></textarea>
-          {errors.message && <div className="field-error">{errors.message}</div>}
+            className={`w-full p-3 border rounded-md focus:outline-none focus:ring-2 ${
+              errors.message
+                ? "border-red-500 ring-red-200"
+                : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+            }`}
+          />
+          {errors.message && (
+            <p className="text-xs text-red-600 mt-1">{errors.message}</p>
+          )}
         </div>
-        
-        <div className="form-actions">
-          <button
+        <div className="pt-2">
+          <Button
             type="submit"
-            className="submit-btn"
+            fullWidth
+            isLoading={isSubmitting}
             disabled={isSubmitting}
+            variant="primary"
+            size="lg"
           >
-            {isSubmitting ? 'Sending...' : 'Send Message'}
-          </button>
+            {isSubmitting ? "Sending..." : "Send Message"}
+          </Button>
         </div>
       </form>
     </div>
   );
+};
+
+ContactForm.propTypes = {
+  className: PropTypes.string,
 };
 
 export default ContactForm;

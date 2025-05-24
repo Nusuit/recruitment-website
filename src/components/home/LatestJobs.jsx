@@ -1,129 +1,111 @@
-import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+// src/components/home/LatestJobs.jsx
+import React, { useContext } from "react";
+import { Link } from "react-router-dom";
+import { JobsContext } from "../../contexts/JobsContext";
+import JobCard from "../jobs/JobCard"; // Assuming JobCard is updated
+import LoadingSpinner from "../common/LoadingSpinner";
+import EmptyState from "../common/EmptyState";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-const LatestJobs = () => {
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  
-  useEffect(() => {
-    const fetchLatestJobs = async () => {
-      try {
-        setLoading(true);
-        
-        // In a real app, this would be an API call
-        // For now, we'll use sample data
-        const sampleJobs = [
-          {
-            id: 1,
-            title: 'Sale Associate',
-            company: 'MyaCorp',
-            location: 'HCM, Vietnam',
-            type: 'Full Time',
-            salary: '$5k-8k/month',
-            daysRemaining: 4,
-            featured: true
-          },
-          {
-            id: 2,
-            title: 'Sale Associate',
-            company: 'MyaCorp',
-            location: 'Da Nang, Vietnam',
-            type: 'Full Time',
-            salary: '$5k-8k/month',
-            daysRemaining: 4
-          },
-          {
-            id: 3,
-            title: 'Designer',
-            company: 'MyaCorp',
-            location: 'Hanoi, Vietnam',
-            type: 'Full Time',
-            salary: '$7k-9k/month',
-            daysRemaining: 6
-          },
-          {
-            id: 4,
-            title: 'Designer',
-            company: 'MyaCorp',
-            location: 'HCM, Vietnam',
-            type: 'Remote',
-            salary: '$7k-9k/month',
-            daysRemaining: 8
-          }
-        ];
-        
-        // Simulate API delay
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        setJobs(sampleJobs);
-        setError(null);
-      } catch (err) {
-        console.error('Error fetching latest jobs:', err);
-        setError('Failed to load latest jobs. Please try again later.');
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchLatestJobs();
-  }, []);
-  
-  if (loading) {
-    return <div className="loading-container">Loading latest jobs...</div>;
-  }
-  
-  if (error) {
-    return <div className="error-message">{error}</div>;
-  }
-  
-  return (
-    <div className="latest-jobs-grid">
-      {jobs.map(job => (
-        <div key={job.id} className="job-card">
-          <div className="job-card-logo">
-            {job.featured && <div className="featured-tag">Featured</div>}
-            <img src="/assets/images/icons/job-icon.png" alt="Job Icon" />
+const LatestJobs = ({ limit = 4 }) => {
+  // Default limit to 4 jobs
+  const {
+    jobs,
+    loading: jobsLoading,
+    error: jobsError,
+  } = useContext(JobsContext);
+
+  if (jobsLoading) {
+    // Skeleton loader for latest jobs section
+    return (
+      <div className="py-12">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center mb-8">
+            <div className="h-8 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+            <div className="h-6 bg-gray-200 rounded w-1/6 animate-pulse"></div>
           </div>
-          <div className="job-card-content">
-            <h3 className="job-title">
-              <Link to={`/jobs/${job.id}`}>{job.title}</Link>
-            </h3>
-            
-            <div className="job-info">
-              <div className="job-meta">
-                <span className="company">{job.company}</span>
-                <span className="location">
-                  <i className="location-icon"></i>
-                  {job.location}
-                </span>
-                <span className="job-type">{job.type}</span>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {[...Array(limit)].map((_, i) => (
+              <div
+                key={i}
+                className="bg-white p-6 rounded-lg shadow-md animate-pulse"
+              >
+                <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+                <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+                <div className="flex justify-between">
+                  <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+                  <div className="h-8 bg-gray-300 rounded w-1/3"></div>
+                </div>
               </div>
-              
-              <div className="job-salary">
-                <i className="salary-icon"></i>
-                <span>{job.salary}</span>
-              </div>
-            </div>
-            
-            <div className="job-deadline">
-              <span className="deadline-label">{job.daysRemaining} days remaining</span>
-            </div>
-          </div>
-          
-          <div className="job-card-actions">
-            <button className="save-job-btn">
-              <i className="bookmark-icon"></i>
-            </button>
-            
-            <Link to={`/jobs/${job.id}`} className="apply-now-btn">
-              Apply Now
-            </Link>
+            ))}
           </div>
         </div>
-      ))}
-    </div>
+      </div>
+    );
+  }
+
+  if (jobsError) {
+    return (
+      <div className="py-12 text-center">
+        <p className="text-red-500 bg-red-50 p-4 rounded-md">
+          Error loading jobs: {jobsError}
+        </p>
+      </div>
+    );
+  }
+
+  // Filter for active jobs and sort by postedDate (most recent first), then take the limit
+  const latestActiveJobs = jobs
+    .filter((job) => job.status === "ACTIVE" || !job.status) // Assuming 'ACTIVE' or no status means active
+    .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate))
+    .slice(0, limit);
+
+  if (latestActiveJobs.length === 0) {
+    return (
+      <div className="py-12">
+        <div className="container mx-auto px-4">
+          <EmptyState
+            icon="folder-open"
+            title="No Recent Jobs"
+            description="There are no new job openings at the moment. Please check back later!"
+          />
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <section className="latest-jobs-section py-16 md:py-20 bg-white">
+      <div className="container mx-auto px-4">
+        <div className="flex flex-col sm:flex-row justify-between items-center mb-10 md:mb-12">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 sm:mb-0">
+            Latest Job Openings
+          </h2>
+          <Link
+            to="/jobs"
+            className="text-blue-600 font-semibold hover:text-blue-800 transition-colors duration-200 flex items-center group"
+          >
+            View All Openings
+            <FontAwesomeIcon
+              icon="arrow-right"
+              className="ml-2 transform group-hover:translate-x-1 transition-transform duration-200"
+            />
+          </Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {latestActiveJobs.map((job) => (
+            <JobCard key={job.id} job={job} />
+          ))}
+        </div>
+      </div>
+    </section>
   );
+};
+
+LatestJobs.propTypes = {
+  limit: PropTypes.number,
 };
 
 export default LatestJobs;

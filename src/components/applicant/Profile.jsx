@@ -1,497 +1,396 @@
-import React, { useState, useContext, useEffect } from 'react';
-import AuthContext from '../../contexts/AuthContext';
-import useForm from '../../hooks/useForm';
-import { validateProfileForm } from '../../utils/validators';
-import { updateProfile } from '../../api/auth';
+// src/components/applicant/Profile.jsx
+// This is a sub-component, likely used within ProfilePage.jsx or ApplicantDashboard.jsx
+// It focuses on displaying and allowing edits for specific parts of the profile.
 
-const Profile = () => {
-  const { user } = useContext(AuthContext);
-  const [activeTab, setActiveTab] = useState('personal');
+import React, { useState, useEffect, useContext } from "react";
+import PropTypes from "prop-types";
+import { AuthContext } from "../../contexts/AuthContext";
+// import { candidateAPI } from '../../api/candidate'; // If this component makes direct API calls
+import LoadingSpinner from "../common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+const ProfileSectionCard = ({
+  title,
+  children,
+  onEdit,
+  isEditing,
+  onSave,
+  onCancel,
+  isSaving,
+}) => (
+  <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
+    <div className="flex justify-between items-center mb-4 pb-3 border-b border-gray-200">
+      <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+      {onEdit && !isEditing && (
+        <button
+          onClick={onEdit}
+          className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+        >
+          <FontAwesomeIcon icon="pen" /> Edit
+        </button>
+      )}
+    </div>
+    {children}
+    {isEditing && onSave && onCancel && (
+      <div className="mt-6 flex justify-end gap-3 pt-4 border-t border-gray-200">
+        <button
+          onClick={onCancel}
+          type="button"
+          className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={onSave}
+          type="button"
+          disabled={isSaving}
+          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 disabled:bg-gray-400"
+        >
+          {isSaving ? <LoadingSpinner size="sm" /> : "Save Changes"}
+        </button>
+      </div>
+    )}
+  </div>
+);
+
+ProfileSectionCard.propTypes = {
+  title: PropTypes.string.isRequired,
+  children: PropTypes.node.isRequired,
+  onEdit: PropTypes.func,
+  isEditing: PropTypes.bool,
+  onSave: PropTypes.func,
+  onCancel: PropTypes.func,
+  isSaving: PropTypes.bool,
+};
+
+const ApplicantProfileComponent = ({
+  profileData: initialProfile,
+  onProfileUpdate,
+}) => {
+  const { user } = useContext(AuthContext); // Get user from context for initial data if needed
   const [isEditing, setIsEditing] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
-  const [submitError, setSubmitError] = useState('');
-  const [profileImage, setProfileImage] = useState(null);
-  const [previewUrl, setPreviewUrl] = useState('');
-  
-  const initialValues = {
-    firstName: user?.firstName || '',
-    lastName: user?.lastName || '',
-    email: user?.email || '',
-    phone: user?.phone || '',
-    location: user?.location || '',
-    title: user?.title || '',
-    bio: user?.bio || '',
-    website: user?.website || '',
-    resumeUrl: user?.resumeUrl || '',
-    linkedIn: user?.linkedIn || '',
-    twitter: user?.twitter || '',
-    github: user?.github || ''
-  };
-  
-  const { values, setValues, errors, handleChange, validateForm, setErrors } = useForm(
-    initialValues,
-    validateProfileForm
-  );
-  
-  // Set user data when component mounts or user changes
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    address: "",
+    bio: "",
+    education: "",
+    experience: "",
+    skills: [],
+    linkedin: "",
+    portfolio: "",
+    // Add other fields as necessary
+  });
+  const [loading, setLoading] = useState(false); // For individual section save
+  const [error, setError] = useState("");
+
   useEffect(() => {
-    if (user) {
-      setValues({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        location: user.location || '',
-        title: user.title || '',
-        bio: user.bio || '',
-        website: user.website || '',
-        resumeUrl: user.resumeUrl || '',
-        linkedIn: user.linkedIn || '',
-        twitter: user.twitter || '',
-        github: user.github || ''
-      });
-      
-      if (user.profileImageUrl) {
-        setPreviewUrl(user.profileImageUrl);
-      }
-    }
-  }, [user, setValues]);
-  
-  // Handle profile image change
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    
-    if (file) {
-      setProfileImage(file);
-      
-      // Create preview URL
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreviewUrl(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
+    // Initialize formData from initialProfile or user context
+    const dataToUse = initialProfile || user || {};
+    setFormData({
+      firstName: dataToUse.firstName || "",
+      lastName: dataToUse.lastName || "",
+      phone: dataToUse.phone || "",
+      address: dataToUse.address || "",
+      bio: dataToUse.bio || "",
+      education: dataToUse.education || "",
+      experience: dataToUse.experience || "",
+      skills: Array.isArray(dataToUse.skills)
+        ? dataToUse.skills
+        : dataToUse.skills
+        ? String(dataToUse.skills)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+      linkedin: dataToUse.linkedin || "",
+      portfolio: dataToUse.portfolio || "",
+    });
+  }, [initialProfile, user]);
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (error) setError("");
   };
-  
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    
-    if (!validateForm()) {
-      return;
-    }
-    
-    setIsSubmitting(true);
-    setSubmitError('');
-    setSubmitSuccess(false);
-    
+
+  const handleSkillsChange = (e) => {
+    // Basic comma-separated skills
+    setFormData((prev) => ({
+      ...prev,
+      skills: e.target.value
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean),
+    }));
+  };
+
+  const handleSave = async () => {
+    setLoading(true);
+    setError("");
     try {
-      // Prepare form data with image if provided
-      const formData = new FormData();
-      
-      // Add text fields
-      Object.keys(values).forEach(key => {
-        formData.append(key, values[key]);
-      });
-      
-      // Add profile image if changed
-      if (profileImage) {
-        formData.append('profileImage', profileImage);
+      // In a real app, call API to update profile section
+      // await candidateAPI.updateProfileSection(formData); // Example
+      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API
+      if (onProfileUpdate) {
+        onProfileUpdate(formData); // Notify parent about the update
       }
-      
-      // Call API to update profile
-      const result = await updateProfile(formData);
-      
-      if (result.success) {
-        setSubmitSuccess(true);
-        setIsEditing(false);
-        
-        // Reset success message after 3 seconds
-        setTimeout(() => {
-          setSubmitSuccess(false);
-        }, 3000);
-      } else {
-        setSubmitError(result.error);
-      }
-    } catch (error) {
-      console.error('Profile update error:', error);
-      setSubmitError('An unexpected error occurred. Please try again later.');
+      setIsEditing(false);
+    } catch (err) {
+      setError("Failed to save changes. Please try again.");
+      console.error("Profile save error:", err);
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-  
-  // Cancel edit mode
+
   const handleCancel = () => {
-    // Reset form to original values
-    if (user) {
-      setValues({
-        firstName: user.firstName || '',
-        lastName: user.lastName || '',
-        email: user.email || '',
-        phone: user.phone || '',
-        location: user.location || '',
-        title: user.title || '',
-        bio: user.bio || '',
-        website: user.website || '',
-        resumeUrl: user.resumeUrl || '',
-        linkedIn: user.linkedIn || '',
-        twitter: user.twitter || '',
-        github: user.github || ''
-      });
-    }
-    
-    // Reset image preview
-    if (user?.profileImageUrl) {
-      setPreviewUrl(user.profileImageUrl);
-    } else {
-      setPreviewUrl('');
-    }
-    
-    // Reset file input
-    setProfileImage(null);
-    
-    // Exit edit mode
+    // Reset formData to original (initialProfile or user)
+    const dataToUse = initialProfile || user || {};
+    setFormData({
+      firstName: dataToUse.firstName || "",
+      lastName: dataToUse.lastName || "",
+      phone: dataToUse.phone || "",
+      address: dataToUse.address || "",
+      bio: dataToUse.bio || "",
+      education: dataToUse.education || "",
+      experience: dataToUse.experience || "",
+      skills: Array.isArray(dataToUse.skills)
+        ? dataToUse.skills
+        : dataToUse.skills
+        ? String(dataToUse.skills)
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean)
+        : [],
+      linkedin: dataToUse.linkedin || "",
+      portfolio: dataToUse.portfolio || "",
+    });
     setIsEditing(false);
-    setErrors({});
+    setError("");
   };
-  
+
+  if (!user && !initialProfile) {
+    // Or some other loading condition
+    return <LoadingSpinner message="Loading profile information..." />;
+  }
+
   return (
-    <div className="profile-component">
-      {/* Profile Header */}
-      <div className="profile-header">
-        <div className="profile-image-container">
-          {isEditing ? (
-            <>
-              <div className="profile-image">
-                {previewUrl ? (
-                  <img src={previewUrl} alt="Profile Preview" />
-                ) : (
-                  <div className="profile-placeholder">
-                    {user?.firstName?.charAt(0) || ''}
-                    {user?.lastName?.charAt(0) || ''}
-                  </div>
-                )}
-              </div>
-              <input
-                type="file"
-                id="profileImage"
-                accept="image/*"
-                onChange={handleImageChange}
-                className="file-input"
-              />
-              <label htmlFor="profileImage" className="change-image-btn">
-                Change Image
-              </label>
-            </>
-          ) : (
-            <div className="profile-image">
-              {user?.profileImageUrl ? (
-                <img src={user.profileImageUrl} alt={`${user.firstName} ${user.lastName}`} />
-              ) : (
-                <div className="profile-placeholder">
-                  {user?.firstName?.charAt(0) || ''}
-                  {user?.lastName?.charAt(0) || ''}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
-        
-        <div className="profile-info">
-          <div className="profile-name">
-            {isEditing ? (
-              <div className="edit-name">
-                <input
-                  type="text"
-                  name="firstName"
-                  value={values.firstName}
-                  onChange={handleChange}
-                  placeholder="First Name"
-                  className="edit-firstname"
-                />
-                <input
-                  type="text"
-                  name="lastName"
-                  value={values.lastName}
-                  onChange={handleChange}
-                  placeholder="Last Name"
-                  className="edit-lastname"
-                />
-                {(errors.firstName || errors.lastName) && (
-                  <div className="field-error">Name fields are required</div>
-                )}
-              </div>
-            ) : (
-              <h2>{user?.firstName} {user?.lastName}</h2>
-            )}
-          </div>
-          
-          <div className="profile-title">
-            {isEditing ? (
-              <input
-                type="text"
-                name="title"
-                value={values.title}
-                onChange={handleChange}
-                placeholder="Professional Title"
-              />
-            ) : (
-              <p>{user?.title || 'Professional Title'}</p>
-            )}
-          </div>
-          
-          {!isEditing && (
-            <button
-              className="edit-profile-btn"
-              onClick={() => setIsEditing(true)}
-            >
-              Edit Profile
-            </button>
-          )}
-        </div>
-      </div>
-      
-      {/* Success/Error Messages */}
-      {submitSuccess && (
-        <div className="success-message">
-          Profile updated successfully!
+    <div className="applicant-profile-component space-y-6">
+      {error && (
+        <div className="bg-red-100 text-red-700 p-3 rounded-md text-sm">
+          {error}
         </div>
       )}
-      
-      {submitError && (
-        <div className="error-message">
-          {submitError}
+
+      <ProfileSectionCard
+        title="Personal Information"
+        isEditing={isEditing}
+        onEdit={() => setIsEditing(true)}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isSaving={loading}
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+          <InfoDisplay
+            label="First Name"
+            value={formData.firstName}
+            name="firstName"
+            isEditing={isEditing}
+            onChange={handleChange}
+          />
+          <InfoDisplay
+            label="Last Name"
+            value={formData.lastName}
+            name="lastName"
+            isEditing={isEditing}
+            onChange={handleChange}
+          />
+          <InfoDisplay
+            label="Email"
+            value={user?.email || initialProfile?.email}
+            name="email"
+            isEditing={false}
+          />{" "}
+          {/* Email usually not editable here */}
+          <InfoDisplay
+            label="Phone"
+            value={formData.phone}
+            name="phone"
+            isEditing={isEditing}
+            onChange={handleChange}
+          />
+          <InfoDisplay
+            label="Address"
+            value={formData.address}
+            name="address"
+            isEditing={isEditing}
+            onChange={handleChange}
+            className="md:col-span-2"
+          />
+          <InfoDisplay
+            label="Bio"
+            value={formData.bio}
+            name="bio"
+            isEditing={isEditing}
+            onChange={handleChange}
+            type="textarea"
+            rows="3"
+            className="md:col-span-2"
+          />
         </div>
-      )}
-      
-      {/* Profile Tabs */}
-      <div className="profile-tabs">
-        <button
-          className={`tab-btn ${activeTab === 'personal' ? 'active' : ''}`}
-          onClick={() => setActiveTab('personal')}
-        >
-          Personal Information
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'professional' ? 'active' : ''}`}
-          onClick={() => setActiveTab('professional')}
-        >
-          Professional Details
-        </button>
-        <button
-          className={`tab-btn ${activeTab === 'social' ? 'active' : ''}`}
-          onClick={() => setActiveTab('social')}
-        >
-          Social Profiles
-        </button>
-      </div>
-      
-      {/* Profile Form */}
-      <form onSubmit={handleSubmit} className="profile-form">
-        {/* Personal Information Tab */}
-        <div className={`tab-content ${activeTab === 'personal' ? 'active' : ''}`}>
-          <div className="form-section">
-            <h3>Contact Details</h3>
-            
-            <div className="form-row">
-              <div className="form-group">
-                <label htmlFor="email">Email Address</label>
-                <input
-                  type="email"
-                  id="email"
-                  name="email"
-                  value={values.email}
-                  onChange={handleChange}
-                  placeholder="your.email@example.com"
-                  disabled={!isEditing || true} // Email usually can't be edited
-                />
-                {errors.email && <div className="field-error">{errors.email}</div>}
-              </div>
-              
-              <div className="form-group">
-                <label htmlFor="phone">Phone Number</label>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={values.phone}
-                  onChange={handleChange}
-                  placeholder="Your phone number"
-                  disabled={!isEditing}
-                />
-                {errors.phone && <div className="field-error">{errors.phone}</div>}
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="location">Location</label>
+      </ProfileSectionCard>
+
+      <ProfileSectionCard
+        title="Professional Summary"
+        isEditing={isEditing}
+        onEdit={() => setIsEditing(true)}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isSaving={loading}
+      >
+        <div className="space-y-4 text-sm">
+          <InfoDisplay
+            label="Education"
+            value={formData.education}
+            name="education"
+            isEditing={isEditing}
+            onChange={handleChange}
+            type="textarea"
+            rows="3"
+            placeholder="e.g., Bachelor's in Design - XYZ University"
+          />
+          <InfoDisplay
+            label="Work Experience"
+            value={formData.experience}
+            name="experience"
+            isEditing={isEditing}
+            onChange={handleChange}
+            type="textarea"
+            rows="4"
+            placeholder="e.g., Fashion Designer at ABC Corp (2020-2023)"
+          />
+          <div>
+            <label className="block text-xs font-medium text-gray-500 uppercase">
+              Skills
+            </label>
+            {isEditing ? (
               <input
                 type="text"
-                id="location"
-                name="location"
-                value={values.location}
-                onChange={handleChange}
-                placeholder="City, Country"
-                disabled={!isEditing}
+                name="skills"
+                value={formData.skills.join(", ")}
+                onChange={handleSkillsChange}
+                placeholder="Comma-separated skills, e.g., Sketching, Adobe CS"
+                className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
               />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="bio">About Me</label>
-              <textarea
-                id="bio"
-                name="bio"
-                value={values.bio}
-                onChange={handleChange}
-                rows="4"
-                placeholder="Tell us about yourself"
-                disabled={!isEditing}
-              ></textarea>
-            </div>
+            ) : formData.skills.length > 0 ? (
+              <div className="flex flex-wrap gap-2 mt-1">
+                {formData.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="px-2.5 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full"
+                  >
+                    {skill}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-gray-700">Not specified</p>
+            )}
           </div>
         </div>
-        
-        {/* Professional Details Tab */}
-        <div className={`tab-content ${activeTab === 'professional' ? 'active' : ''}`}>
-          <div className="form-section">
-            <h3>Career Information</h3>
-            
-            <div className="form-group">
-              <label htmlFor="title">Professional Title</label>
-              <input
-                type="text"
-                id="title"
-                name="title"
-                value={values.title}
-                onChange={handleChange}
-                placeholder="e.g. Senior Fashion Designer"
-                disabled={!isEditing}
-              />
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="resumeUrl">Resume</label>
-              {isEditing ? (
-                <div className="resume-upload">
-                  <input
-                    type="file"
-                    id="resume"
-                    accept=".pdf,.doc,.docx"
-                    className="file-input"
-                  />
-                  <label htmlFor="resume" className="file-label">
-                    {values.resumeUrl ? 'Replace Current Resume' : 'Upload Resume'}
-                  </label>
-                  <span className="file-info">PDF, DOC, or DOCX (max 5MB)</span>
-                </div>
-              ) : (
-                values.resumeUrl ? (
-                  <div className="resume-link">
-                    <a href={values.resumeUrl} target="_blank" rel="noopener noreferrer">
-                      View Resume
-                    </a>
-                  </div>
-                ) : (
-                  <span className="no-resume">No resume uploaded</span>
-                )
-              )}
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="website">Personal Website</label>
-              <input
-                type="url"
-                id="website"
-                name="website"
-                value={values.website}
-                onChange={handleChange}
-                placeholder="https://yourwebsite.com"
-                disabled={!isEditing}
-              />
-              {errors.website && <div className="field-error">{errors.website}</div>}
-            </div>
-          </div>
+      </ProfileSectionCard>
+      <ProfileSectionCard
+        title="Online Presence"
+        isEditing={isEditing}
+        onEdit={() => setIsEditing(true)}
+        onSave={handleSave}
+        onCancel={handleCancel}
+        isSaving={loading}
+      >
+        <div className="space-y-4 text-sm">
+          <InfoDisplay
+            label="LinkedIn Profile"
+            value={formData.linkedin}
+            name="linkedin"
+            isEditing={isEditing}
+            onChange={handleChange}
+            placeholder="linkedin.com/in/yourname"
+          />
+          <InfoDisplay
+            label="Portfolio/Website"
+            value={formData.portfolio}
+            name="portfolio"
+            isEditing={isEditing}
+            onChange={handleChange}
+            placeholder="yourportfolio.com"
+          />
         </div>
-        
-        {/* Social Profiles Tab */}
-        <div className={`tab-content ${activeTab === 'social' ? 'active' : ''}`}>
-          <div className="form-section">
-            <h3>Social Media Profiles</h3>
-            
-            <div className="form-group">
-              <label htmlFor="linkedIn">LinkedIn</label>
-              <div className="social-input">
-                <span className="social-prefix">linkedin.com/in/</span>
-                <input
-                  type="text"
-                  id="linkedIn"
-                  name="linkedIn"
-                  value={values.linkedIn}
-                  onChange={handleChange}
-                  placeholder="username"
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="twitter">Twitter</label>
-              <div className="social-input">
-                <span className="social-prefix">twitter.com/</span>
-                <input
-                  type="text"
-                  id="twitter"
-                  name="twitter"
-                  value={values.twitter}
-                  onChange={handleChange}
-                  placeholder="username"
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-            
-            <div className="form-group">
-              <label htmlFor="github">GitHub</label>
-              <div className="social-input">
-                <span className="social-prefix">github.com/</span>
-                <input
-                  type="text"
-                  id="github"
-                  name="github"
-                  value={values.github}
-                  onChange={handleChange}
-                  placeholder="username"
-                  disabled={!isEditing}
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-        
-        {/* Form Actions */}
-        {isEditing && (
-          <div className="form-actions">
-            <button
-              type="button"
-              className="cancel-btn"
-              onClick={handleCancel}
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              className="save-btn"
-              disabled={isSubmitting}
-            >
-              {isSubmitting ? 'Saving...' : 'Save Changes'}
-            </button>
-          </div>
-        )}
-      </form>
+      </ProfileSectionCard>
     </div>
   );
 };
 
-export default Profile;
+ApplicantProfileComponent.propTypes = {
+  profileData: PropTypes.object, // Optional: if profile data is passed from a parent page
+  onProfileUpdate: PropTypes.func, // Optional: callback after a successful update
+};
+
+// Helper for displaying info or input field
+const InfoDisplay = ({
+  label,
+  value,
+  name,
+  isEditing,
+  onChange,
+  type = "text",
+  rows,
+  className = "",
+  placeholder,
+}) => (
+  <div className={className}>
+    <label className="block text-xs font-medium text-gray-500 uppercase mb-0.5">
+      {label}
+    </label>
+    {isEditing ? (
+      type === "textarea" ? (
+        <textarea
+          name={name}
+          value={value || ""}
+          onChange={onChange}
+          rows={rows || 3}
+          placeholder={placeholder}
+          className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+        />
+      ) : (
+        <input
+          type={type}
+          name={name}
+          value={value || ""}
+          onChange={onChange}
+          placeholder={placeholder}
+          className="mt-1 w-full p-2 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 text-sm"
+        />
+      )
+    ) : (
+      <p className="text-gray-800 break-words">
+        {value || <span className="text-gray-400 italic">Not specified</span>}
+      </p>
+    )}
+  </div>
+);
+
+InfoDisplay.propTypes = {
+  label: PropTypes.string.isRequired,
+  value: PropTypes.any,
+  name: PropTypes.string,
+  isEditing: PropTypes.bool,
+  onChange: PropTypes.func,
+  type: PropTypes.string,
+  rows: PropTypes.number,
+  className: PropTypes.string,
+  placeholder: PropTypes.string,
+};
+
+export default ApplicantProfileComponent;

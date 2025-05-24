@@ -1,245 +1,191 @@
-import React, { Component } from "react";
-import { Link, withRouter } from "react-router-dom"; // Import withRouter
-import useForm from "../../hooks/useForm"; // Keep useForm if it's a functional hook
+// src/components/auth/ResetPasswordForm.jsx
+import React, { useState, useEffect } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import authAPI from "../../api/auth"; // Using authAPI directly for this specific action
 import { validateResetPasswordForm } from "../../utils/validators";
-import authAPI from "../../api/auth"; // Import authAPI default export
+import Button from "../common/Button";
+import Input from "../common/Input";
+import LoadingSpinner from "../common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-class ResetPasswordForm extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      values: {
-        password: "",
-        confirmPassword: "",
-      },
-      errors: {},
-      isSubmitting: false,
-      submitError: "",
-    };
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.validateForm = this.validateForm.bind(this);
-  }
+const ResetPasswordForm = ({ onFormSubmitSuccess }) => {
+  const navigate = useNavigate();
+  const location = useLocation();
 
-  handleChange(e) {
+  const [formData, setFormData] = useState({
+    password: "",
+    confirmPassword: "",
+  });
+  const [token, setToken] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    const queryParams = new URLSearchParams(location.search);
+    const urlToken = queryParams.get("token");
+    if (urlToken) {
+      setToken(urlToken);
+    } else {
+      setSubmitError(
+        "Invalid or missing password reset token. Please request a new link if needed."
+      );
+    }
+  }, [location.search]);
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    this.setState((prevState) => ({
-      values: {
-        ...prevState.values,
-        [name]: value,
-      },
-      errors: {
-        ...prevState.errors,
-        [name]: "",
-      },
-    }));
-  }
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) setErrors((prev) => ({ ...prev, [name]: "" }));
+    setSubmitError("");
+  };
 
-  validateForm() {
-    const errors = validateResetPasswordForm(this.state.values);
-    this.setState({ errors });
-    return Object.keys(errors).length === 0;
-  }
+  const toggleShowPassword = () => setShowPassword(!showPassword);
+  const toggleShowConfirmPassword = () =>
+    setShowConfirmPassword(!showConfirmPassword);
 
-  async handleSubmit(e) {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
-    const queryParams = new URLSearchParams(this.props.location.search);
-    const token = queryParams.get("token");
+    setSubmitError("");
 
     if (!token) {
-      this.setState({
-        submitError:
-          "Mã đặt lại không hợp lệ hoặc bị thiếu. Vui lòng yêu cầu một liên kết đặt lại mật khẩu mới.",
-      });
+      setSubmitError("Password reset token is missing or invalid.");
       return;
     }
 
-    if (!this.validateForm()) {
+    const validationErrors = validateResetPasswordForm(formData);
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
       return;
     }
 
-    this.setState({ isSubmitting: true, submitError: "" });
-
+    setIsSubmitting(true);
     try {
-      // Access resetPassword through authAPI object
-      const result = await authAPI.resetPassword(
-        token,
-        this.state.values.password
-      );
-
+      const result = await authAPI.resetPassword(token, formData.password); // Using direct API call
       if (result.success) {
-        this.props.history.push("/login", {
-          state: {
-            success: true,
-            message:
-              "Mật khẩu của bạn đã được đặt lại thành công. Bây giờ bạn có thể đăng nhập bằng mật khẩu mới.",
-          },
-        });
+        setSubmitSuccess(true);
+        if (onFormSubmitSuccess) {
+          onFormSubmitSuccess();
+        } else {
+          setTimeout(() => {
+            navigate("/login", {
+              state: {
+                successMessage:
+                  "Password has been reset successfully! You can now log in.",
+              },
+            });
+          }, 3000);
+        }
       } else {
-        this.setState({ submitError: result.error });
+        setSubmitError(
+          result.error ||
+            "Failed to reset password. The link may be invalid, expired, or the password does not meet requirements."
+        );
       }
-    } catch (error) {
-      console.error("Lỗi đặt lại mật khẩu:", error);
-      this.setState({
-        submitError: "Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.",
-      });
+    } catch (err) {
+      console.error("Reset password submission error:", err);
+      setSubmitError("An unexpected error occurred. Please try again later.");
     } finally {
-      this.setState({ isSubmitting: false });
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  render() {
-    const { values, errors, isSubmitting, submitError } = this.state;
-    const queryParams = new URLSearchParams(this.props.location.search);
-    const token = queryParams.get("token");
-    const isTokenMissing = !token;
-
+  if (submitSuccess && !onFormSubmitSuccess) {
     return (
-      <div className="password-form-section">
-        <div className="brand-logo">
-          <img
-            src="/assets/images/logo.png"
-            alt="MyJob"
-            className="h-10 w-auto"
-          />
-          <span className="text-2xl font-bold text-blue-600">MyJob</span>
-        </div>
-
-        <div className="password-header">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Đặt lại mật khẩu
-          </h2>
-          <p className="text-gray-600">Nhập mật khẩu mới của bạn bên dưới</p>
-        </div>
-
-        {isTokenMissing ? (
-          <div className="bg-red-100 text-red-700 p-4 rounded mb-4 text-center">
-            <div className="text-2xl mb-2">!</div>
-            <h3 className="text-xl font-semibold mb-2">
-              Liên kết đặt lại không hợp lệ
-            </h3>
-            <p className="text-gray-700 mb-4">
-              Liên kết đặt lại mật khẩu không hợp lệ hoặc đã hết hạn.
-            </p>
-            <div className="flex flex-col space-y-2">
-              <Link
-                to="/forgot-password"
-                className="px-4 py-2 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors duration-200"
-              >
-                Yêu cầu liên kết đặt lại mới
-              </Link>
-              <Link
-                to="/login"
-                className="px-4 py-2 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors duration-200"
-              >
-                Về trang đăng nhập
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <>
-            {submitError && (
-              <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-                {submitError}
-              </div>
-            )}
-
-            <form onSubmit={this.handleSubmit} className="flex flex-col">
-              <div className="mb-4">
-                <label
-                  htmlFor="password"
-                  className="block text-gray-800 font-medium mb-1"
-                >
-                  Mật khẩu mới
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    id="password"
-                    name="password"
-                    value={values.password}
-                    onChange={this.handleChange}
-                    required
-                    placeholder="••••••••"
-                    className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
-                  >
-                    <i className="fa-solid fa-eye text-lg"></i>
-                  </button>
-                </div>
-                {errors.password && (
-                  <div className="text-red-600 text-sm mt-1">
-                    {errors.password}
-                  </div>
-                )}
-                <div className="text-gray-600 text-xs mt-1 bg-gray-50 p-2 rounded border-l-2 border-blue-600">
-                  Mật khẩu phải có ít nhất 8 ký tự và bao gồm chữ cái và số
-                </div>
-              </div>
-
-              <div className="mb-4">
-                <label
-                  htmlFor="confirmPassword"
-                  className="block text-gray-800 font-medium mb-1"
-                >
-                  Xác nhận mật khẩu mới
-                </label>
-                <div className="relative">
-                  <input
-                    type="password"
-                    id="confirmPassword"
-                    name="confirmPassword"
-                    value={values.confirmPassword}
-                    onChange={this.handleChange}
-                    required
-                    placeholder="••••••••"
-                    className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                  />
-                  <button
-                    type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer text-gray-500"
-                  >
-                    <i className="fa-solid fa-eye text-lg"></i>
-                  </button>
-                </div>
-                {errors.confirmPassword && (
-                  <div className="text-red-600 text-sm mt-1">
-                    {errors.confirmPassword}
-                  </div>
-                )}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 text-white border-none rounded text-base font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Đang đặt lại..." : "Đặt lại mật khẩu"}
-              </button>
-
-              <div className="mt-4 text-center">
-                <Link
-                  to="/login"
-                  className="text-blue-600 font-medium hover:underline"
-                >
-                  Về trang đăng nhập
-                </Link>
-              </div>
-            </form>
-          </>
-        )}
+      <div className="text-center p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+        <FontAwesomeIcon
+          icon="check-circle"
+          className="text-4xl text-green-500 mb-3"
+        />
+        <h3 className="text-xl font-semibold text-green-700 mb-2">
+          Password Reset Successfully!
+        </h3>
+        <p className="text-gray-600 text-sm">Redirecting to login page...</p>
       </div>
     );
   }
-}
 
-ResetPasswordForm.propTypes = {
-  location: PropTypes.object.isRequired, // Injected by withRouter
-  history: PropTypes.object.isRequired, // Injected by withRouter
+  if (!token && !isSubmitting) {
+    // Show error if token is missing and not currently submitting
+    return (
+      <div className="text-center p-6 bg-red-50 border border-red-200 rounded-lg shadow-sm">
+        <FontAwesomeIcon
+          icon="exclamation-triangle"
+          className="text-4xl text-red-500 mb-3"
+        />
+        <h3 className="text-xl font-semibold text-red-700 mb-2">
+          Invalid Link
+        </h3>
+        <p className="text-gray-600 text-sm">
+          {submitError || "This password reset link is invalid or has expired."}
+        </p>
+        <Button
+          onClick={() => navigate("/forgot-password")}
+          variant="outline-primary"
+          className="mt-4"
+        >
+          Request New Link
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {submitError && (
+        <div
+          className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md text-sm"
+          role="alert"
+        >
+          {submitError}
+        </div>
+      )}
+      <Input
+        label="New Password"
+        name="password"
+        type={showPassword ? "text" : "password"}
+        value={formData.password}
+        onChange={handleChange}
+        error={errors.password}
+        required
+        placeholder="Enter your new password"
+        iconRight={showPassword ? "eye-slash" : "eye"}
+        onIconRightClick={toggleShowPassword}
+      />
+      <Input
+        label="Confirm New Password"
+        name="confirmPassword"
+        type={showConfirmPassword ? "text" : "password"}
+        value={formData.confirmPassword}
+        onChange={handleChange}
+        error={errors.confirmPassword}
+        required
+        placeholder="Confirm your new password"
+        iconRight={showConfirmPassword ? "eye-slash" : "eye"}
+        onIconRightClick={toggleShowConfirmPassword}
+      />
+      <p className="text-xs text-gray-500">
+        Password must be at least 8 characters long and include a mix of
+        letters, numbers, and symbols.
+      </p>
+      <Button
+        type="submit"
+        fullWidth
+        isLoading={isSubmitting}
+        disabled={isSubmitting || !token}
+        variant="primary"
+      >
+        {isSubmitting ? "Resetting Password..." : "Reset Password"}
+      </Button>
+    </form>
+  );
 };
 
-export default withRouter(ResetPasswordForm);
+ResetPasswordForm.propTypes = {
+  onFormSubmitSuccess: PropTypes.func, // Optional callback for parent page
+};
+
+export default ResetPasswordForm;

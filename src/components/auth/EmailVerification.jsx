@@ -1,284 +1,252 @@
-import React, { Component, createRef } from "react";
-import { Link, withRouter } from "react-router-dom"; // Import withRouter
-import authAPI from "../../api/auth";
+// src/components/auth/EmailVerification.jsx
+// This is the component, not the page. The page `src/pages/guest/EmailVerificationPage.jsx` wraps this.
+import React, { useState, useEffect, useRef, useContext } from "react";
+import { Link, useNavigate, useLocation } from "react-router-dom";
+import { AuthContext } from "../../contexts/AuthContext"; // Assuming context handles OTP
+import authAPI from "../../api/auth"; // Or use API directly
+import LoadingSpinner from "../common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-class EmailVerification extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      verificationCode: ["", "", "", "", "", ""],
-      isSubmitting: false,
-      submitError: "",
-      submitSuccess: false,
-      timer: 0,
-      canResend: false,
-      resendSuccess: false,
-    };
-    this.inputRefs = Array(6)
-      .fill()
-      .map(() => createRef()); // Create refs for each input
+const EmailVerificationComponent = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  // const { verifyOtp, resendOtp } = useContext(AuthContext); // Get functions from context if available
 
-    this.handleChange = this.handleChange.bind(this);
-    this.handleKeyDown = this.handleKeyDown.bind(this);
-    this.handlePaste = this.handlePaste.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleResend = this.handleResend.bind(this);
-    this.startTimer = this.startTimer.bind(this);
-  }
+  const [otp, setOtp] = useState(new Array(6).fill(""));
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [timer, setTimer] = useState(60);
+  const [canResend, setCanResend] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
-  componentDidMount() {
-    this.startTimer();
-    // Focus first input
-    if (this.inputRefs[0].current) {
-      this.inputRefs[0].current.focus();
+  const inputRefs = useRef([]);
+  inputRefs.current = otp.map(
+    (_, i) => inputRefs.current[i] ?? React.createRef()
+  );
+
+  const emailToVerify = location.state?.email || "your email address";
+
+  useEffect(() => {
+    if (timer > 0 && !canResend) {
+      const interval = setInterval(() => setTimer((prev) => prev - 1), 1000);
+      return () => clearInterval(interval);
+    } else if (timer === 0) {
+      setCanResend(true);
     }
-  }
+  }, [timer, canResend]);
 
-  componentWillUnmount() {
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
+  useEffect(() => {
+    inputRefs.current[0]?.current?.focus();
+  }, []);
+
+  const handleChange = (element, index) => {
+    const value = element.value;
+    if (!/^[0-9]$/.test(value) && value !== "") return;
+
+    const newOtp = [...otp];
+    newOtp[index] = value;
+    setOtp(newOtp);
+
+    if (value && index < otp.length - 1) {
+      inputRefs.current[index + 1].current.focus();
     }
-  }
+  };
 
-  startTimer() {
-    this.setState({ timer: 60, canResend: false });
-    if (this.timerInterval) {
-      clearInterval(this.timerInterval);
-    }
-    this.timerInterval = setInterval(() => {
-      this.setState((prevState) => {
-        if (prevState.timer > 0) {
-          return { timer: prevState.timer - 1 };
-        } else {
-          clearInterval(this.timerInterval);
-          return { canResend: true };
-        }
-      });
-    }, 1000);
-  }
-
-  handleChange(index, value) {
-    if (!/^\d*$/.test(value)) return;
-
-    const newCode = [...this.state.verificationCode];
-    newCode[index] = value;
-    this.setState({ verificationCode: newCode });
-
-    if (value !== "" && index < 5) {
-      this.inputRefs[index + 1].current.focus();
-    }
-  }
-
-  handleKeyDown(index, e) {
-    if (
-      e.key === "Backspace" &&
-      this.state.verificationCode[index] === "" &&
-      index > 0
-    ) {
-      this.inputRefs[index - 1].current.focus();
-    }
-  }
-
-  handlePaste(e) {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text");
-    const pastedCode = pastedData.replace(/\D/g, "").slice(0, 6);
-
-    if (pastedCode.length > 0) {
-      const newCode = [...this.state.verificationCode];
-      for (let i = 0; i < pastedCode.length; i++) {
-        if (i < 6) {
-          newCode[i] = pastedCode[i];
-        }
+  const handleKeyDown = (e, index) => {
+    if (e.key === "Backspace") {
+      e.preventDefault();
+      const newOtp = [...otp];
+      newOtp[index] = "";
+      setOtp(newOtp);
+      if (index > 0) {
+        inputRefs.current[index - 1].current.focus();
       }
-      this.setState({ verificationCode: newCode });
-
-      if (pastedCode.length < 6 && this.inputRefs[pastedCode.length].current) {
-        this.inputRefs[pastedCode.length].current.focus();
-      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1].current.focus();
+    } else if (e.key === "ArrowRight" && index < otp.length - 1) {
+      inputRefs.current[index + 1].current.focus();
     }
-  }
+  };
 
-  async handleSubmit(e) {
+  const handlePaste = (e) => {
     e.preventDefault();
-    this.setState({ isSubmitting: true, submitError: "" });
+    const paste = e.clipboardData.getData("text").replace(/\D/g, "");
+    if (paste.length === otp.length) {
+      setOtp(paste.split(""));
+      inputRefs.current[otp.length - 1].current.focus();
+    } else if (paste.length > 0) {
+      const newOtp = [...otp];
+      for (let i = 0; i < Math.min(paste.length, otp.length); i++) {
+        newOtp[i] = paste[i];
+      }
+      setOtp(newOtp);
+      const focusIndex = Math.min(paste.length, otp.length - 1);
+      inputRefs.current[focusIndex].current.focus();
+    }
+  };
 
-    const email = this.props.location.state?.email || "your email";
-    const code = this.state.verificationCode.join("");
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSubmitError("");
+    setResendMessage("");
+    const enteredOtp = otp.join("");
 
+    if (enteredOtp.length !== 6) {
+      setSubmitError("Please enter the complete 6-digit code.");
+      return;
+    }
+    setIsSubmitting(true);
     try {
-      const result = await authAPI.verifyOTP(email, code);
-
+      const result = await authAPI.verifyOTP(emailToVerify, enteredOtp);
       if (result.success) {
-        this.setState({ submitSuccess: true });
+        setSubmitSuccess(true);
         setTimeout(() => {
-          this.props.history.push("/login", {
+          navigate("/login", {
             state: {
-              success: true,
-              message:
-                "Email đã được xác minh thành công. Bây giờ bạn có thể đăng nhập.",
+              successMessage:
+                "Email verified successfully! You can now log in.",
             },
           });
         }, 3000);
       } else {
-        this.setState({ submitError: result.message || "Xác minh thất bại" });
+        setSubmitError(
+          result.error || result.message || "Invalid or expired OTP."
+        );
+        setOtp(new Array(6).fill(""));
+        inputRefs.current[0]?.current?.focus();
       }
     } catch (error) {
-      console.error("Lỗi xác minh:", error);
-      this.setState({
-        submitError: "Không thể xác minh email. Vui lòng thử lại.",
-      });
+      setSubmitError("An unexpected error occurred.");
     } finally {
-      this.setState({ isSubmitting: false });
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  async handleResend() {
-    if (!this.state.canResend) return;
-
-    this.setState({ submitError: "", canResend: false, resendSuccess: false });
-    this.startTimer(); // Reset timer
-
-    const email = this.props.location.state?.email || "your email";
-
+  const handleResendCode = async () => {
+    if (!canResend) return;
+    setIsSubmitting(true); // Disable resend while processing
+    setSubmitError("");
+    setResendMessage("");
     try {
-      const result = await authAPI.resendOTP(email);
-
+      const result = await authAPI.resendOTP(emailToVerify);
       if (result.success) {
-        this.setState({ resendSuccess: true });
-        setTimeout(() => this.setState({ resendSuccess: false }), 3000);
+        setResendMessage("A new verification code has been sent.");
+        setTimer(60);
+        setCanResend(false);
       } else {
-        this.setState({ submitError: result.error });
-        this.setState({ canResend: true, timer: 0 }); // Allow resend immediately if API fails
+        setSubmitError(
+          result.error || result.message || "Failed to resend code."
+        );
       }
     } catch (error) {
-      console.error("Lỗi gửi lại OTP:", error);
-      this.setState({ submitError: "Không thể gửi lại mã xác minh" });
-      this.setState({ canResend: true, timer: 0 });
+      setSubmitError("An error occurred while resending the code.");
+    } finally {
+      setIsSubmitting(false);
     }
-  }
+  };
 
-  render() {
-    const {
-      verificationCode,
-      isSubmitting,
-      submitError,
-      submitSuccess,
-      timer,
-      canResend,
-      resendSuccess,
-    } = this.state;
-    const email = this.props.location.state?.email || "your email";
-
+  if (submitSuccess) {
     return (
-      <div className="verification-form-section">
-        <div className="brand-logo">
-          <img
-            src="/assets/images/logo.png"
-            alt="MyJob"
-            className="h-10 w-auto"
-          />
-          <span className="text-2xl font-bold text-blue-600">MyJob</span>
-        </div>
-
-        <div className="password-header">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Xác minh Email
-          </h2>
-          <p className="text-gray-600">
-            Chúng tôi đã gửi mã xác minh đến{" "}
-            <span className="font-semibold">{email}</span>
-          </p>
-        </div>
-
-        {submitSuccess ? (
-          <div className="bg-green-100 text-green-700 p-4 rounded mb-4 text-center">
-            <div className="text-2xl mb-2">✓</div>
-            <h3 className="text-xl font-semibold mb-2">
-              Email đã được xác minh
-            </h3>
-            <p className="text-gray-700">
-              Email của bạn đã được xác minh thành công!
-            </p>
-            <p className="text-gray-700">
-              Đang chuyển hướng đến trang đăng nhập...
-            </p>
-          </div>
-        ) : (
-          <>
-            {submitError && (
-              <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-                {submitError}
-              </div>
-            )}
-            {resendSuccess && (
-              <div className="bg-green-100 text-green-700 p-3 rounded mb-4">
-                Mã xác minh mới đã được gửi đến email của bạn
-              </div>
-            )}
-
-            <form onSubmit={this.handleSubmit} className="flex flex-col">
-              <div className="flex justify-center gap-2 mb-6">
-                {verificationCode.map((digit, index) => (
-                  <input
-                    key={index}
-                    type="text"
-                    maxLength={1}
-                    value={digit}
-                    onChange={(e) => this.handleChange(index, e.target.value)}
-                    onKeyDown={(e) => this.handleKeyDown(index, e)}
-                    onPaste={index === 0 ? this.handlePaste : undefined}
-                    ref={this.inputRefs[index]}
-                    required
-                    className="w-12 h-16 text-center text-2xl font-semibold border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                  />
-                ))}
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-3 bg-blue-600 text-white border-none rounded text-base font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                disabled={isSubmitting}
-              >
-                {isSubmitting ? "Đang xác minh..." : "Xác minh Email"}
-              </button>
-
-              <div className="mt-4 text-center">
-                {canResend ? (
-                  <button
-                    type="button"
-                    onClick={this.handleResend}
-                    className="text-blue-600 font-medium hover:underline"
-                  >
-                    Gửi lại mã
-                  </button>
-                ) : (
-                  <span className="text-gray-600 text-sm">
-                    Gửi lại mã sau{" "}
-                    <span className="font-semibold">{timer}</span> giây
-                  </span>
-                )}
-              </div>
-
-              <div className="mt-4 text-center">
-                <Link
-                  to="/login"
-                  className="text-blue-600 font-medium hover:underline"
-                >
-                  Về trang đăng nhập
-                </Link>
-              </div>
-            </form>
-          </>
-        )}
+      <div className="text-center p-6">
+        <FontAwesomeIcon
+          icon="check-circle"
+          className="text-5xl text-green-500 mb-4"
+        />
+        <h3 className="text-xl font-semibold text-green-700 mb-2">
+          Email Verified!
+        </h3>
+        <p className="text-gray-600">Redirecting to login...</p>
       </div>
     );
   }
-}
 
-EmailVerification.propTypes = {
-  location: PropTypes.object.isRequired,
-  history: PropTypes.object.isRequired,
+  return (
+    <div className="verification-form-section w-full p-8 flex flex-col justify-center">
+      {" "}
+      {/* Styles from AuthForms.scss */}
+      <div className="brand-logo mb-8 text-center md:text-left">
+        <Link to="/" className="inline-flex items-center gap-2">
+          <img
+            src="/assets/images/logo.png"
+            alt="MyaCorp Logo"
+            className="h-10 w-auto"
+          />
+          <span className="text-2xl font-bold text-blue-600">MyaCorp</span>
+        </Link>
+      </div>
+      <div className="mb-6 text-center md:text-left">
+        <h2 className="text-3xl font-bold text-gray-800 mb-2">
+          Verify Your Email
+        </h2>
+        <p className="text-gray-600">
+          A 6-digit code was sent to{" "}
+          <strong className="text-gray-700">{emailToVerify}</strong>.
+        </p>
+      </div>
+      {submitError && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md text-sm mb-4">
+          {submitError}
+        </div>
+      )}
+      {resendMessage && (
+        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-md text-sm mb-4">
+          {resendMessage}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div
+          className="flex justify-center space-x-2 sm:space-x-3"
+          onPaste={handlePaste}
+        >
+          {otp.map((data, index) => (
+            <input
+              key={index}
+              type="text"
+              maxLength="1"
+              className="w-10 h-12 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-semibold border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+              value={data}
+              onChange={(e) => handleChange(e.target, index)}
+              onKeyDown={(e) => handleKeyDown(e, index)}
+              ref={inputRefs.current[index]}
+              autoComplete="off"
+            />
+          ))}
+        </div>
+        <button
+          type="submit"
+          disabled={isSubmitting}
+          className="w-full py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-md disabled:bg-gray-400"
+        >
+          {isSubmitting ? <LoadingSpinner size="sm" /> : "Verify Email"}
+        </button>
+      </form>
+      <div className="mt-6 text-center text-sm">
+        <p className="text-gray-600">
+          Didn't receive code?{" "}
+          {canResend ? (
+            <button
+              onClick={handleResendCode}
+              disabled={isSubmitting}
+              className="font-medium text-blue-600 hover:underline disabled:text-gray-400"
+            >
+              Resend Code
+            </button>
+          ) : (
+            <span className="text-gray-500">Resend in {timer}s</span>
+          )}
+        </p>
+        <p className="mt-2">
+          <Link
+            to="/login"
+            className="font-medium text-blue-600 hover:underline"
+          >
+            Back to Login
+          </Link>
+        </p>
+      </div>
+    </div>
+  );
 };
 
-export default withRouter(EmailVerification);
+export default EmailVerificationComponent; // Renamed to avoid conflict with page

@@ -1,650 +1,579 @@
-import React, { Component } from "react";
-import { withRouter } from "react-router-dom"; // Import withRouter
-import { validateJobPostingForm } from "../../../utils/validators";
-import { recruiterAPI } from "../../../api/recruiter"; // Use recruiterAPI
+// src/pages/admin/jobs/CreateJobPage.jsx
+import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { recruiterAPI } from "../../../api/recruiter"; // Assuming recruiterAPI is correctly set up
+import { validateJobPostingForm } from "../../../utils/validators"; // Ensure this validator is appropriate
+import LoadingSpinner from "../../../components/common/LoadingSpinner";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-class CreateJobPage extends Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      formData: {
-        title: "",
-        department: "",
-        location: "",
-        type: "FULL_TIME",
-        description: "",
-        requirements: "",
-        benefits: "",
-        salaryMin: "",
-        salaryMax: "",
-        experienceLevel: "",
-        educationLevel: "",
-        deadline: "",
-        status: "DRAFT",
-        selectedSkills: [],
-      },
-      errors: {},
-      isSubmitting: false,
-      isLoading: props.isEditing, // Set loading state based on isEditing prop
-      error: null,
-      skills: [], // Available skills from API
-    };
-    this.handleChange = this.handleChange.bind(this);
-    this.handleSkillChange = this.handleSkillChange.bind(this);
-    this.validateForm = this.validateForm.bind(this);
-    this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleSaveAsDraft = this.handleSaveAsDraft.bind(this);
-    this.fetchJobDetails = this.fetchJobDetails.bind(this);
-    this.fetchSkills = this.fetchSkills.bind(this);
-  }
+const CreateJobPage = ({ isEditing = false }) => {
+  const navigate = useNavigate();
+  const { jobId } = useParams(); // jobId from URL for editing
 
-  componentDidMount() {
-    this.fetchSkills();
-    if (this.props.isEditing && this.props.match.params.jobId) {
-      this.fetchJobDetails(this.props.match.params.jobId);
-    }
-  }
+  const initialFormData = {
+    title: "",
+    department: "",
+    location: "",
+    type: "FULL_TIME", // Default value
+    description: "",
+    requirements: "", // Store as string, split by newline for display/editing if needed
+    benefits: "", // Store as string
+    salaryMin: "",
+    salaryMax: "",
+    experienceLevel: "", // e.g., "ENTRY", "MID", "SENIOR"
+    educationLevel: "", // e.g., "BACHELOR", "MASTER"
+    deadline: "",
+    status: "DRAFT", // Default status
+    selectedSkills: [], // Array of skill IDs or skill objects
+  };
 
-  async fetchSkills() {
+  const [formData, setFormData] = useState(initialFormData);
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(isEditing); // True if editing, to fetch data
+  const [apiError, setApiError] = useState(null);
+  const [availableSkills, setAvailableSkills] = useState([]); // Skills fetched from API
+
+  // Fetch skills and job details (if editing)
+  const fetchData = useCallback(async () => {
+    setLoading(true);
+    setApiError(null);
     try {
-      const response = await recruiterAPI.getSkills();
-      this.setState({ skills: response.skills });
-    } catch (err) {
-      console.error("Lỗi khi lấy kỹ năng:", err);
-      this.setState({ error: "Không thể tải kỹ năng. Vui lòng thử lại." });
-    }
-  }
+      const skillsResponse = await recruiterAPI.getSkills(); // Assuming this API exists
+      setAvailableSkills(skillsResponse.skills || []);
 
-  async fetchJobDetails(jobId) {
-    this.setState({ isLoading: true, error: null });
-    try {
-      const response = await recruiterAPI.getJobDetail(jobId);
-      const job = response.job;
-
-      this.setState((prevState) => ({
-        formData: {
-          ...prevState.formData,
+      if (isEditing && jobId) {
+        const jobResponse = await recruiterAPI.getJobDetail(jobId);
+        const job = jobResponse.job;
+        setFormData({
           title: job.title || "",
           department: job.department || "",
           location: job.location || "",
           type: job.type || "FULL_TIME",
           description: job.description || "",
-          requirements: job.requirements || "",
-          benefits: job.benefits || "",
-          salaryMin: job.salaryMin || "",
-          salaryMax: job.salaryMax || "",
+          requirements: job.requirements || "", // Keep as string
+          benefits: job.benefits || "", // Keep as string
+          salaryMin: job.salaryMin?.toString() || "", // Ensure string
+          salaryMax: job.salaryMax?.toString() || "", // Ensure string
           experienceLevel: job.experienceLevel || "",
           educationLevel: job.educationLevel || "",
-          deadline: job.deadline ? job.deadline.split("T")[0] : "", // Format date
+          deadline: job.deadline ? job.deadline.split("T")[0] : "",
           status: job.status || "DRAFT",
-          selectedSkills: job.skills ? job.skills.map((s) => s.id) : [],
-        },
-        isLoading: false,
-      }));
+          selectedSkills: job.skills ? job.skills.map((s) => s.id) : [], // Assuming skills are objects with id
+        });
+      }
     } catch (err) {
-      console.error("Lỗi khi lấy chi tiết công việc:", err);
-      this.setState({
-        error: "Không thể tải chi tiết công việc. Vui lòng thử lại.",
-        isLoading: false,
-      });
+      console.error("Error fetching data for job form:", err);
+      setApiError(
+        "Failed to load necessary data. Please try refreshing the page."
+      );
+    } finally {
+      setLoading(false);
     }
-  }
+  }, [isEditing, jobId]);
 
-  handleChange(e) {
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleChange = (e) => {
     const { name, value } = e.target;
-    this.setState((prevState) => ({
-      formData: {
-        ...prevState.formData,
-        [name]: value,
-      },
-      errors: {
-        ...prevState.errors,
-        [name]: "",
-      },
-    }));
-  }
-
-  handleSkillChange(skillId) {
-    this.setState((prevState) => {
-      const selectedSkills = prevState.formData.selectedSkills.includes(skillId)
-        ? prevState.formData.selectedSkills.filter((id) => id !== skillId)
-        : [...prevState.formData.selectedSkills, skillId];
-
-      return {
-        formData: {
-          ...prevState.formData,
-          selectedSkills,
-        },
-      };
-    });
-  }
-
-  validateForm() {
-    const errors = validateJobPostingForm(this.state.formData);
-    this.setState({ errors });
-    if (Object.keys(errors).length > 0) {
-      this.setState({
-        error: "Vui lòng điền đầy đủ các trường bắt buộc và hợp lệ.",
-      });
-      return false;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    if (errors[name]) {
+      setErrors((prev) => ({ ...prev, [name]: "" }));
     }
-    this.setState({ error: null }); // Clear general error if validation passes
-    return true;
-  }
+    setApiError(null);
+  };
 
-  async handleSubmit(e) {
+  const handleSkillChange = (skillId) => {
+    setFormData((prev) => {
+      const newSelectedSkills = prev.selectedSkills.includes(skillId)
+        ? prev.selectedSkills.filter((id) => id !== skillId)
+        : [...prev.selectedSkills, skillId];
+      return { ...prev, selectedSkills: newSelectedSkills };
+    });
+    if (errors.selectedSkills) {
+      setErrors((prev) => ({ ...prev, selectedSkills: "" }));
+    }
+  };
+
+  const handleSubmit = async (e, targetStatus = null) => {
     e.preventDefault();
+    setApiError(null);
 
-    if (!this.validateForm()) {
+    const validationErrors = validateJobPostingForm(formData); // Use your validator
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      setApiError("Please correct the errors in the form.");
       return;
     }
 
-    this.setState({ isSubmitting: true, error: null });
+    setIsSubmitting(true);
+    const jobPayload = {
+      ...formData,
+      salaryMin: formData.salaryMin ? parseInt(formData.salaryMin, 10) : null,
+      salaryMax: formData.salaryMax ? parseInt(formData.salaryMax, 10) : null,
+      skills: formData.selectedSkills, // Send array of skill IDs
+      status: targetStatus || formData.status, // Use targetStatus if provided (for "Save Draft")
+    };
 
     try {
-      const { formData } = this.state;
-      const jobData = {
-        ...formData,
-        salaryMin: parseInt(formData.salaryMin),
-        salaryMax: parseInt(formData.salaryMax),
-        skills: formData.selectedSkills, // Send only selected skill IDs
-      };
-
-      let response;
-      if (this.props.isEditing) {
-        response = await recruiterAPI.updateJob(
-          this.props.match.params.jobId,
-          jobData
-        );
+      if (isEditing && jobId) {
+        await recruiterAPI.updateJob(jobId, jobPayload);
       } else {
-        response = await recruiterAPI.createJob(jobData);
+        await recruiterAPI.createJob(jobPayload);
       }
-
-      // Update skills for the job
-      if (response.job && response.job.id) {
-        await recruiterAPI.updateJobSkills(
-          response.job.id,
-          formData.selectedSkills
-        );
-      }
-
-      this.props.history.push("/admin/jobs", {
+      navigate("/admin/jobs", {
         state: {
-          success: true,
-          message: this.props.isEditing
-            ? "Công việc đã được cập nhật thành công!"
-            : "Công việc đã được đăng thành công!",
+          successMessage: isEditing
+            ? "Job updated successfully!"
+            : "Job created successfully!",
         },
       });
     } catch (err) {
-      this.setState({
-        error:
-          err.message || "Không thể tạo/cập nhật công việc. Vui lòng thử lại.",
-      });
-      console.error("Lỗi khi tạo/cập nhật công việc:", err);
-    } finally {
-      this.setState({ isSubmitting: false });
-    }
-  }
-
-  async handleSaveAsDraft() {
-    this.setState({ isSubmitting: true, error: null });
-    try {
-      const { formData } = this.state;
-      const jobData = {
-        ...formData,
-        status: "DRAFT", // Explicitly set status to DRAFT
-        salaryMin: parseInt(formData.salaryMin),
-        salaryMax: parseInt(formData.salaryMax),
-        skills: formData.selectedSkills,
-      };
-
-      // If editing, update existing job as draft. If creating, create new as draft.
-      if (this.props.isEditing && this.props.match.params.jobId) {
-        await recruiterAPI.updateJob(this.props.match.params.jobId, jobData);
-      } else {
-        await recruiterAPI.createJob(jobData);
-      }
-
-      this.props.history.push("/admin/jobs", {
-        state: {
-          success: true,
-          message: "Công việc đã được lưu dưới dạng bản nháp!",
-        },
-      });
-    } catch (err) {
-      this.setState({
-        error: err.message || "Không thể lưu bản nháp. Vui lòng thử lại.",
-      });
-      console.error("Lỗi khi lưu bản nháp:", err);
-    } finally {
-      this.setState({ isSubmitting: false });
-    }
-  }
-
-  render() {
-    const { formData, errors, isSubmitting, isLoading, error, skills } =
-      this.state;
-    const { isEditing } = this.props;
-
-    if (isLoading) {
-      return (
-        <div className="text-center py-8">Đang tải chi tiết công việc...</div>
+      console.error("Error submitting job:", err);
+      setApiError(
+        err.message ||
+          (isEditing ? "Failed to update job." : "Failed to create job.")
       );
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
+  const handleSaveAsDraft = (e) => {
+    handleSubmit(e, "DRAFT");
+  };
+
+  if (loading) {
     return (
-      <div className="p-6 bg-white rounded-lg shadow-md">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-gray-900">
-            {isEditing ? "Chỉnh sửa đăng tuyển" : "Tạo đăng tuyển mới"}
+      <LoadingSpinner
+        fullPage
+        message={isEditing ? "Loading job details..." : "Loading form..."}
+      />
+    );
+  }
+
+  return (
+    <div className="create-job-page p-4 md:p-6 lg:p-8 bg-gray-50 min-h-screen">
+      <div className="max-w-4xl mx-auto bg-white p-6 md:p-8 rounded-xl shadow-lg">
+        <div className="mb-8 text-center">
+          <h1 className="text-3xl font-bold text-gray-800">
+            {isEditing ? "Edit Job Posting" : "Create New Job Posting"}
           </h1>
+          <p className="text-gray-600">
+            Fill in the details below to{" "}
+            {isEditing ? "update the" : "create a new"} job.
+          </p>
         </div>
 
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4">
-            {error}
+        {apiError && (
+          <div
+            className="bg-red-100 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded-md"
+            role="alert"
+          >
+            <p className="font-bold">Error</p>
+            <p>{apiError}</p>
           </div>
         )}
 
-        <form onSubmit={this.handleSubmit}>
-          {/* Basic Information */}
-          <div className="mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Thông tin cơ bản
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* Section 1: Basic Information */}
+          <section className="p-6 border border-gray-200 rounded-lg">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Basic Information
             </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
                   htmlFor="title"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Chức danh công việc*
+                  Job Title*
                 </label>
                 <input
                   type="text"
                   id="title"
                   name="title"
                   value={formData.title}
-                  onChange={this.handleChange}
+                  onChange={handleChange}
                   required
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                    errors.title
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
                 />
                 {errors.title && (
-                  <div className="text-red-600 text-sm mt-1">
-                    {errors.title}
-                  </div>
+                  <p className="text-xs text-red-600 mt-1">{errors.title}</p>
                 )}
               </div>
-
               <div>
                 <label
                   htmlFor="department"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Phòng ban
+                  Department
                 </label>
                 <input
                   type="text"
                   id="department"
                   name="department"
                   value={formData.department}
-                  onChange={this.handleChange}
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                  onChange={handleChange}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
                 />
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label
                   htmlFor="location"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Địa điểm*
+                  Location*
                 </label>
                 <input
                   type="text"
                   id="location"
                   name="location"
                   value={formData.location}
-                  onChange={this.handleChange}
+                  onChange={handleChange}
                   required
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                    errors.location
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
                 />
                 {errors.location && (
-                  <div className="text-red-600 text-sm mt-1">
-                    {errors.location}
-                  </div>
+                  <p className="text-xs text-red-600 mt-1">{errors.location}</p>
                 )}
               </div>
-
               <div>
                 <label
                   htmlFor="type"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Loại hình làm việc*
+                  Employment Type*
                 </label>
                 <select
                   id="type"
                   name="type"
                   value={formData.type}
-                  onChange={this.handleChange}
+                  onChange={handleChange}
                   required
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
-                  <option value="FULL_TIME">Toàn thời gian</option>
-                  <option value="PART_TIME">Bán thời gian</option>
-                  <option value="CONTRACT">Hợp đồng</option>
-                  <option value="INTERNSHIP">Thực tập</option>
-                  <option value="TEMPORARY">Tạm thời</option>
+                  <option value="FULL_TIME">Full Time</option>
+                  <option value="PART_TIME">Part Time</option>
+                  <option value="CONTRACT">Contract</option>
+                  <option value="INTERNSHIP">Internship</option>
+                  <option value="TEMPORARY">Temporary</option>
                 </select>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label
                   htmlFor="salaryMin"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Lương tối thiểu (Tháng)
+                  Minimum Salary (Monthly)
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    id="salaryMin"
-                    name="salaryMin"
-                    value={formData.salaryMin}
-                    onChange={this.handleChange}
-                    placeholder="Ví dụ: 2000"
-                    min="0"
-                    className="w-full p-3 pl-8 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                  />
-                </div>
+                <input
+                  type="number"
+                  id="salaryMin"
+                  name="salaryMin"
+                  value={formData.salaryMin}
+                  onChange={handleChange}
+                  placeholder="e.g., 1500"
+                  min="0"
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                    errors.salaryMin
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
+                />
                 {errors.salaryMin && (
-                  <div className="text-red-600 text-sm mt-1">
+                  <p className="text-xs text-red-600 mt-1">
                     {errors.salaryMin}
-                  </div>
+                  </p>
                 )}
               </div>
-
               <div>
                 <label
                   htmlFor="salaryMax"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Lương tối đa (Tháng)
+                  Maximum Salary (Monthly)
                 </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                    $
-                  </span>
-                  <input
-                    type="number"
-                    id="salaryMax"
-                    name="salaryMax"
-                    value={formData.salaryMax}
-                    onChange={this.handleChange}
-                    placeholder="Ví dụ: 2800"
-                    min="0"
-                    className="w-full p-3 pl-8 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                  />
-                </div>
+                <input
+                  type="number"
+                  id="salaryMax"
+                  name="salaryMax"
+                  value={formData.salaryMax}
+                  onChange={handleChange}
+                  placeholder="e.g., 2500"
+                  min="0"
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                    errors.salaryMax
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
+                />
                 {errors.salaryMax && (
-                  <div className="text-red-600 text-sm mt-1">
+                  <p className="text-xs text-red-600 mt-1">
                     {errors.salaryMax}
-                  </div>
+                  </p>
                 )}
               </div>
             </div>
-          </div>
+          </section>
 
-          {/* Job Details */}
-          <div className="mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Chi tiết công việc
+          {/* Section 2: Job Details */}
+          <section className="p-6 border border-gray-200 rounded-lg">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Job Details
             </h2>
-
-            <div className="mb-4">
+            <div>
               <label
                 htmlFor="description"
-                className="block text-gray-800 font-medium mb-1"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Mô tả công việc*
+                Description*
               </label>
               <textarea
                 id="description"
                 name="description"
                 value={formData.description}
-                onChange={this.handleChange}
+                onChange={handleChange}
                 required
                 rows="5"
-                placeholder="Mô tả vai trò và trách nhiệm của công việc"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              ></textarea>
+                className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                  errors.description
+                    ? "border-red-500 ring-red-200"
+                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                }`}
+                placeholder="Provide a detailed description of the job role and responsibilities."
+              />
               {errors.description && (
-                <div className="text-red-600 text-sm mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {errors.description}
-                </div>
+                </p>
               )}
             </div>
-
-            <div className="mb-4">
+            <div className="mt-4">
               <label
                 htmlFor="requirements"
-                className="block text-gray-800 font-medium mb-1"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Yêu cầu*
+                Requirements*
               </label>
               <textarea
                 id="requirements"
                 name="requirements"
                 value={formData.requirements}
-                onChange={this.handleChange}
+                onChange={handleChange}
                 required
                 rows="5"
-                placeholder="Liệt kê các yêu cầu công việc (mỗi dòng một yêu cầu)"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              ></textarea>
+                className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                  errors.requirements
+                    ? "border-red-500 ring-red-200"
+                    : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                }`}
+                placeholder="List key requirements. Enter each on a new line, starting with '-' or '*'."
+              />
               {errors.requirements && (
-                <div className="text-red-600 text-sm mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {errors.requirements}
-                </div>
+                </p>
               )}
-              <div className="text-gray-600 text-xs mt-1">
-                Nhập mỗi yêu cầu trên một dòng mới, bắt đầu bằng dấu gạch ngang
-                (-)
-              </div>
             </div>
-
-            <div className="mb-4">
+            <div className="mt-4">
               <label
                 htmlFor="benefits"
-                className="block text-gray-800 font-medium mb-1"
+                className="block text-sm font-medium text-gray-700 mb-1"
               >
-                Phúc lợi
+                Benefits
               </label>
               <textarea
                 id="benefits"
                 name="benefits"
                 value={formData.benefits}
-                onChange={this.handleChange}
-                rows="5"
-                placeholder="Liệt kê các phúc lợi được cung cấp (mỗi dòng một phúc lợi)"
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              ></textarea>
-              <div className="text-gray-600 text-xs mt-1">
-                Nhập mỗi phúc lợi trên một dòng mới, bắt đầu bằng dấu gạch ngang
-                (-)
-              </div>
+                onChange={handleChange}
+                rows="4"
+                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
+                placeholder="List benefits. Enter each on a new line, starting with '-' or '*'."
+              />
             </div>
-          </div>
+          </section>
 
-          {/* Qualifications */}
-          <div className="mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Trình độ
+          {/* Section 3: Qualifications */}
+          <section className="p-6 border border-gray-200 rounded-lg">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Qualifications
             </h2>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
                 <label
                   htmlFor="experienceLevel"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Cấp độ kinh nghiệm
+                  Experience Level
                 </label>
                 <select
                   id="experienceLevel"
                   name="experienceLevel"
                   value={formData.experienceLevel}
-                  onChange={this.handleChange}
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                  onChange={handleChange}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
-                  <option value="">Chọn cấp độ kinh nghiệm</option>
-                  <option value="ENTRY">Mới vào</option>
+                  <option value="">Select experience level</option>
+                  <option value="ENTRY">Entry Level</option>
                   <option value="JUNIOR">Junior</option>
-                  <option value="MID">Trung cấp</option>
-                  <option value="SENIOR">Cao cấp</option>
-                  <option value="EXPERT">Chuyên gia</option>
+                  <option value="MID">Mid-Level</option>
+                  <option value="SENIOR">Senior</option>
+                  <option value="EXPERT">Expert</option>
                 </select>
               </div>
-
               <div>
                 <label
                   htmlFor="educationLevel"
-                  className="block text-gray-800 font-medium mb-1"
+                  className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Trình độ học vấn
+                  Education Level
                 </label>
                 <select
                   id="educationLevel"
                   name="educationLevel"
                   value={formData.educationLevel}
-                  onChange={this.handleChange}
-                  className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
+                  onChange={handleChange}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
-                  <option value="">Chọn trình độ học vấn</option>
-                  <option value="HIGH_SCHOOL">Trung học phổ thông</option>
-                  <option value="ASSOCIATE">Bằng cao đẳng</option>
-                  <option value="BACHELOR">Bằng cử nhân</option>
-                  <option value="MASTER">Bằng thạc sĩ</option>
-                  <option value="DOCTORATE">Bằng tiến sĩ</option>
+                  <option value="">Select education level</option>
+                  <option value="HIGH_SCHOOL">High School</option>
+                  <option value="ASSOCIATE">Associate Degree</option>
+                  <option value="BACHELOR">Bachelor's Degree</option>
+                  <option value="MASTER">Master's Degree</option>
+                  <option value="DOCTORATE">PhD</option>
                 </select>
               </div>
             </div>
-
-            <div className="mb-4">
-              <label className="block text-gray-800 font-medium mb-1">
-                Kỹ năng bắt buộc*
+            <div className="mt-4">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Required Skills*
               </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-                {skills.map((skill) => (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                {availableSkills.map((skill) => (
                   <label
                     key={skill.id}
-                    className="flex items-center space-x-2 text-gray-800"
+                    className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer p-2 border border-gray-200 rounded-md hover:bg-gray-50"
                   >
                     <input
                       type="checkbox"
+                      value={skill.id}
                       checked={formData.selectedSkills.includes(skill.id)}
-                      onChange={() => this.handleSkillChange(skill.id)}
-                      className="rounded text-blue-600 focus:ring-blue-500"
+                      onChange={() => handleSkillChange(skill.id)}
+                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                     />
                     <span>{skill.name}</span>
                   </label>
                 ))}
               </div>
               {errors.selectedSkills && (
-                <div className="text-red-600 text-sm mt-1">
+                <p className="text-xs text-red-600 mt-1">
                   {errors.selectedSkills}
-                </div>
+                </p>
               )}
             </div>
-          </div>
+          </section>
 
-          {/* Posting Details */}
-          <div className="mb-6 pb-4 border-b border-gray-200">
-            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
-              Chi tiết đăng tuyển
+          {/* Section 4: Posting Details */}
+          <section className="p-6 border border-gray-200 rounded-lg">
+            <h2 className="text-xl font-semibold text-gray-700 mb-4">
+              Posting Details
             </h2>
-
-            <div className="mb-4">
-              <label
-                htmlFor="deadline"
-                className="block text-gray-800 font-medium mb-1"
-              >
-                Hạn chót nộp đơn*
-              </label>
-              <input
-                type="date"
-                id="deadline"
-                name="deadline"
-                value={formData.deadline}
-                onChange={this.handleChange}
-                required
-                min={new Date().toISOString().split("T")[0]}
-                className="w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-              {errors.deadline && (
-                <div className="text-red-600 text-sm mt-1">
-                  {errors.deadline}
-                </div>
-              )}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  htmlFor="deadline"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Application Deadline*
+                </label>
+                <input
+                  type="date"
+                  id="deadline"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleChange}
+                  required
+                  min={new Date().toISOString().split("T")[0]}
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                    errors.deadline
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
+                />
+                {errors.deadline && (
+                  <p className="text-xs text-red-600 mt-1">{errors.deadline}</p>
+                )}
+              </div>
+              <div>
+                <label
+                  htmlFor="status"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Job Status
+                </label>
+                <select
+                  id="status"
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
+                >
+                  <option value="DRAFT">Draft</option>
+                  <option value="ACTIVE">Active / Published</option>
+                  <option value="PAUSED">Paused</option>
+                  <option value="CLOSED">Closed</option>
+                </select>
+              </div>
             </div>
-          </div>
+          </section>
 
-          <div className="flex justify-end space-x-4 mt-6">
+          {/* Form Actions */}
+          <div className="flex justify-end space-x-4 mt-8 pt-6 border-t border-gray-200">
             <button
               type="button"
-              className="px-6 py-3 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors duration-200"
-              onClick={() => this.props.history.push("/admin/jobs")}
+              onClick={() => navigate("/admin/jobs")}
+              className="px-6 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
             >
-              Hủy
+              Cancel
             </button>
-
             <button
               type="button"
-              className="px-6 py-3 bg-gray-200 text-gray-800 rounded font-medium hover:bg-gray-300 transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-              onClick={this.handleSaveAsDraft}
+              onClick={handleSaveAsDraft}
               disabled={isSubmitting}
+              className="px-6 py-2.5 text-sm font-medium text-blue-700 bg-blue-100 border border-blue-300 rounded-md hover:bg-blue-200 transition-colors disabled:opacity-50"
             >
-              Lưu bản nháp
+              {isSubmitting ? "Saving..." : "Save as Draft"}
             </button>
-
             <button
               type="submit"
-              className="px-6 py-3 bg-blue-600 text-white rounded font-medium hover:bg-blue-700 transition-colors duration-200 disabled:bg-gray-400 disabled:cursor-not-allowed"
               disabled={isSubmitting}
+              className="px-6 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-400"
             >
               {isSubmitting
                 ? isEditing
-                  ? "Đang cập nhật..."
-                  : "Đang tạo..."
+                  ? "Updating..."
+                  : "Creating..."
                 : isEditing
-                ? "Cập nhật công việc"
-                : "Tạo công việc"}
+                ? "Update Job"
+                : "Publish Job"}
             </button>
           </div>
         </form>
       </div>
-    );
-  }
-}
-
-CreateJobPage.propTypes = {
-  isEditing: PropTypes.bool,
-  match: PropTypes.object.isRequired, // Injected by withRouter
-  history: PropTypes.object.isRequired, // Injected by withRouter
+    </div>
+  );
 };
 
-CreateJobPage.defaultProps = {
-  isEditing: false,
-};
-
-export default withRouter(CreateJobPage);
+export default CreateJobPage;

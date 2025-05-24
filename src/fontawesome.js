@@ -1,6 +1,5 @@
+// src/fontawesome.js
 import { library } from "@fortawesome/fontawesome-svg-core";
-// Import các icon từ free-solid-svg-icons.
-// Đảm bảo chỉ import các icon có sẵn trong Font Awesome 5.x.x và sử dụng tên chính xác.
 import {
   faBriefcase,
   faEye,
@@ -8,45 +7,86 @@ import {
   faChartLine,
   faLightbulb,
   faGift,
-  faFileAlt,
+  faFileLines, // Đã thay faFileAlt
   faCheckCircle,
-  faSignOutAlt,
+  faRightFromBracket, // Đã thay faSignOutAlt
   faIndustry,
   faGraduationCap,
   faUser,
-  faSearch, // Sử dụng faSearch
-  faMapMarkerAlt, // Sử dụng faMapMarkerAlt
-  faDollarSign, // Sử dụng faDollarSign
-  faTachometerAlt, // Sử dụng faTachometerAlt
-  faBookmark as faSolidBookmark, // faBookmark solid
+  faSearch,
+  faLocationDot, // Đã thay faMapMarkerAlt
+  faDollarSign,
+  faGaugeHigh, // Đã thay faTachometerAlt
+  faBookmark as faSolidBookmark,
+  faBars, // Icon cho mobile menu (hamburger)
+  faTimes, // Icon cho nút đóng mobile menu (X)
+  // Thêm các icon khác nếu cần cho v6
+  faUsers, // Ví dụ: cho UserManagement
+  faUserShield, // Ví dụ: cho RoleManagement
+  faCog, // Ví dụ: cho Settings
+  faBuilding, // Ví dụ: cho CompanyProfile
+  faChartPie, // Ví dụ: cho Analytics
+  faFileInvoice, // Ví dụ: cho Applications
+  faTachometerAltFast, // Một biến thể khác cho Dashboard
+  faPlus, // Cho nút "Create"
+  faPen, // Cho nút "Edit"
+  faTrash, // Cho nút "Delete"
+  faEyeSlash, // Cho toggle password
+  faEnvelope, // Cho email
+  faPhone, // Cho phone
+  faMapMarkedAlt, // Một biến thể khác cho location
+  faCalendarAlt, // Cho date/deadline
+  faChevronDown, // Cho dropdown
+  faChevronLeft, // Cho sidebar collapse
+  faChevronRight, // Cho sidebar expand
+  faBell, // Cho notifications
+  faSignOutAlt, // Giữ lại nếu vẫn dùng, hoặc thay bằng faRightFromBracket
 } from "@fortawesome/free-solid-svg-icons";
 
-// Import icon regular
 import { faBookmark as farBookmark } from "@fortawesome/free-regular-svg-icons";
+import { faGoogle, faFacebookF } from "@fortawesome/free-brands-svg-icons"; // faFacebookF thường được dùng hơn faFacebook
 
-// Import icon brands
-import { faGoogle, faFacebook } from "@fortawesome/free-brands-svg-icons";
-
-// Thêm các icon bạn muốn sử dụng vào thư viện
 library.add(
-  faSearch, // Sử dụng faSearch
-  faMapMarkerAlt, // Sử dụng faMapMarkerAlt
+  faSearch,
+  faLocationDot,
   faBriefcase,
   faEye,
   faHandshake,
   faChartLine,
   faLightbulb,
   faGift,
-  faFileAlt,
+  faFileLines,
   faCheckCircle,
   faDollarSign,
-  faSignOutAlt,
+  faRightFromBracket,
   faIndustry,
   faGraduationCap,
-  faTachometerAlt,
+  faGaugeHigh,
   faUser,
-  faSolidBookmark, // Icon bookmark solid
-  farBookmark, // Icon bookmark regular
+  faSolidBookmark,
+  farBookmark,
   faGoogle,
-  faFacebook
+  faFacebookF,
+  faBars,
+  faTimes,
+  faUsers,
+  faUserShield,
+  faCog,
+  faBuilding,
+  faChartPie,
+  faFileInvoice,
+  faTachometerAltFast,
+  faPlus,
+  faPen,
+  faTrash,
+  faEyeSlash,
+  faEnvelope,
+  faPhone,
+  faMapMarkedAlt,
+  faCalendarAlt,
+  faChevronDown,
+  faChevronLeft,
+  faChevronRight,
+  faBell,
+  faSignOutAlt // Giữ lại nếu vẫn dùng
 );

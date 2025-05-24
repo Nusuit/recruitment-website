@@ -1,226 +1,206 @@
-import React, { useState, useContext } from 'react';
-import { Link } from 'react-router-dom';
-import AuthContext from '../../contexts/AuthContext';
-import JobsContext from '../../contexts/JobsContext';
-import Modal from '../common/Modal';
-import ApplyForm from './ApplyForm';
-import { formatDate } from '../../utils/formatters';
+// src/components/jobs/JobDetails.jsx
+// This is a reusable component for displaying job details, distinct from the full JobDetailsPage.
+// It might be used in modals or previews.
 
-const JobDetails = ({ job, showApplyButton = true }) => {
-  const { user } = useContext(AuthContext);
-  const { isJobSaved, toggleSaveJob, hasAppliedToJob } = useContext(JobsContext);
-  const [showApplyModal, setShowApplyModal] = useState(false);
-  const [isSaved, setIsSaved] = useState(isJobSaved(job.id));
-  const [hasApplied, setHasApplied] = useState(hasAppliedToJob(job.id));
+import React, { useContext } from "react";
+import PropTypes from "prop-types";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../../contexts/AuthContext";
+import { JobsContext } from "../../contexts/JobsContext";
+// import Modal from '../common/Modal'; // Not used directly here, but parent might use it
+// import ApplyForm from './ApplyForm'; // ApplyForm might be used in a modal triggered by parent
+import { formatDate, formatRelativeTime } from "../../utils/formatters";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-  // Parse lists from text with line breaks
-  const parseList = (text) => {
-    if (!text) return [];
-    return text.split('\n')
-      .map(line => line.trim())
-      .filter(line => line.length > 0);
-  };
+const JobDetailsComponent = ({
+  job,
+  showApplyButton = true,
+  onApplyClick,
+  onSaveClick,
+}) => {
+  const { isAuthenticated, user } = useContext(AuthContext);
+  const { isJobSaved, hasAppliedToJob } = useContext(JobsContext);
+  const navigate = useNavigate();
 
-  const responsibilities = parseList(job.responsibilities);
-  const requirements = parseList(job.requirements);
-  const benefits = parseList(job.benefits);
+  if (!job) {
+    return (
+      <p className="text-center text-gray-500 p-4">
+        Job details not available.
+      </p>
+    );
+  }
 
-  // Parse skills as array
-  const skills = job.skills ? job.skills.split(',').map(skill => skill.trim()) : [];
+  const isSaved = isJobSaved(job.id);
+  const alreadyApplied = hasAppliedToJob(job.id);
+  const canSaveOrApply =
+    isAuthenticated && user?.role?.toLowerCase() === "candidate";
 
-  // Handle save job toggle
-  const handleSaveJob = () => {
-    toggleSaveJob(job.id);
-    setIsSaved(!isSaved);
-  };
-
-  // Handle apply click
-  const handleApplyClick = () => {
-    if (!user) {
-      // If not logged in, redirect to login page
-      window.location.href = `/login?redirect=/jobs/${job.id}`;
-    } else {
-      setShowApplyModal(true);
+  const handleInternalApplyClick = () => {
+    if (onApplyClick) {
+      onApplyClick(job.id); // Let parent handle modal or navigation
+    } else if (canSaveOrApply) {
+      navigate(`/applicant/jobs/${job.id}/apply`);
+    } else if (!isAuthenticated) {
+      navigate("/login", { state: { from: { pathname: `/jobs/${job.id}` } } });
     }
   };
 
-  // Handle application submission
-  const handleApplySubmit = (formData) => {
-    // In a real app, formData would be sent to an API
-    console.log('Application submitted:', formData);
-    setShowApplyModal(false);
-    setHasApplied(true);
-    // Show success message or redirect
+  const handleInternalSaveClick = () => {
+    if (onSaveClick) {
+      onSaveClick(job.id); // Let parent handle context update
+    } else if (!isAuthenticated) {
+      navigate("/login", { state: { from: { pathname: `/jobs/${job.id}` } } });
+    }
+    // If no onSaveClick, JobCard itself (if used) would handle context via its own save button
   };
 
+  const parseListToArray = (text) => {
+    if (!text || typeof text !== "string") return [];
+    return text
+      .split("\n")
+      .map((line) => line.trim().replace(/^[-*]\s*/, ""))
+      .filter(Boolean);
+  };
+
+  const responsibilities = parseListToArray(job.responsibilities);
+  const requirements = parseListToArray(job.requirements);
+  const benefits = parseListToArray(job.benefits);
+  const skills = job.skills
+    ? Array.isArray(job.skills)
+      ? job.skills
+      : String(job.skills)
+          .split(",")
+          .map((s) => s.trim())
+    : [];
+
   return (
-    <div className="job-details">
-      <div className="job-header">
-        <div className="job-title-section">
-          <div className="job-company-logo">
-            <img src="/assets/images/logo.png" alt={job.company} />
-          </div>
-          <div className="job-title-info">
-            <h1>{job.title}</h1>
-            <div className="job-meta">
-              <span className="company-name">{job.company}</span>
-              <span className="job-location">
-                <i className="location-icon"></i>
-                {job.location}
-              </span>
-              <span className="job-type">{job.type}</span>
-              <span className="job-posted">Posted: {formatDate(job.postedDate)}</span>
-            </div>
-          </div>
-        </div>
-        
-        {showApplyButton && (
-          <div className="job-actions">
-            <button 
-              className={`save-job-btn ${isSaved ? 'saved' : ''}`}
-              onClick={handleSaveJob}
-            >
-              <i className={`bookmark-icon ${isSaved ? 'filled' : ''}`}></i>
-              {isSaved ? 'Saved' : 'Save Job'}
-            </button>
-            
-            {hasApplied ? (
-              <button className="already-applied-btn" disabled>
-                Applied
-              </button>
-            ) : (
-              <button 
-                className="apply-now-btn"
-                onClick={handleApplyClick}
+    <div className="job-details-component p-6 bg-white rounded-lg shadow-md">
+      {/* Job Header */}
+      <div className="pb-6 mb-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-3">
+          <h2 className="text-2xl font-bold text-gray-800 mb-1 sm:mb-0">
+            {job.title}
+          </h2>
+          {showApplyButton && canSaveOrApply && (
+            <div className="flex items-center space-x-3 mt-2 sm:mt-0">
+              <button
+                onClick={handleInternalSaveClick}
+                className={`p-2.5 rounded-full border text-lg transition-colors ${
+                  isSaved
+                    ? "bg-blue-100 text-blue-600 border-blue-500"
+                    : "text-gray-500 border-gray-300 hover:text-blue-600 hover:border-blue-500"
+                }`}
+                aria-label={isSaved ? "Unsave Job" : "Save Job"}
               >
-                Apply Now
+                <FontAwesomeIcon
+                  icon={isSaved ? ["fas", "bookmark"] : ["far", "bookmark"]}
+                />
               </button>
-            )}
-          </div>
-        )}
-      </div>
-      
-      <div className="job-content">
-        <div className="job-main-content">
-          <div className="job-description">
-            <h2>Job Description</h2>
-            <div dangerouslySetInnerHTML={{ __html: job.description }} />
-          </div>
-          
-          {responsibilities.length > 0 && (
-            <div className="job-responsibilities">
-              <h2>Responsibilities</h2>
-              <ul>
-                {responsibilities.map((responsibility, index) => (
-                  <li key={index}>{responsibility}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {requirements.length > 0 && (
-            <div className="job-requirements">
-              <h2>Requirements</h2>
-              <ul>
-                {requirements.map((requirement, index) => (
-                  <li key={index}>{requirement}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {benefits.length > 0 && (
-            <div className="job-benefits">
-              <h2>Benefits</h2>
-              <ul>
-                {benefits.map((benefit, index) => (
-                  <li key={index}>{benefit}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {skills.length > 0 && (
-            <div className="skills-required">
-              <h2>Skills</h2>
-              <div className="skills-list">
-                {skills.map((skill, index) => (
-                  <span key={index} className="skill-tag">{skill}</span>
-                ))}
-              </div>
+              <button
+                onClick={handleInternalApplyClick}
+                disabled={alreadyApplied}
+                className="px-5 py-2 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400"
+              >
+                {alreadyApplied ? "Applied" : "Apply Now"}
+              </button>
             </div>
           )}
         </div>
-        
-        <div className="job-sidebar">
-          <div className="job-overview">
-            <h3>Job Overview</h3>
-            <ul className="job-overview-list">
-              <li>
-                <i className="industry-icon"></i>
-                <div>
-                  <span className="label">Industry</span>
-                  <span className="value">{job.industry || 'Fashion / Retail'}</span>
-                </div>
-              </li>
-              <li>
-                <i className="experience-icon"></i>
-                <div>
-                  <span className="label">Experience</span>
-                  <span className="value">{job.experience}</span>
-                </div>
-              </li>
-              <li>
-                <i className="education-icon"></i>
-                <div>
-                  <span className="label">Education</span>
-                  <span className="value">{job.education}</span>
-                </div>
-              </li>
-              <li>
-                <i className="salary-icon"></i>
-                <div>
-                  <span className="label">Salary</span>
-                  <span className="value">{job.salary}</span>
-                </div>
-              </li>
-              <li>
-                <i className="deadline-icon"></i>
-                <div>
-                  <span className="label">Deadline</span>
-                  <span className="value">{formatDate(job.deadline)}</span>
-                </div>
-              </li>
-            </ul>
-          </div>
-          
-          <div className="company-overview">
-            <h3>Company Info</h3>
-            <div className="company-logo">
-              <img src="/assets/images/logo.png" alt={job.company} />
-            </div>
-            <h4>{job.company}</h4>
-            <p>MyaCorp is a leading fashion retailer specializing in high-quality apparel and accessories.</p>
-            <Link to="/about" className="view-company-btn">View Company Profile</Link>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1 text-sm text-gray-600">
+          <span className="flex items-center">
+            <FontAwesomeIcon icon="building" className="mr-1.5 text-gray-400" />
+            {job.company}
+          </span>
+          <span className="flex items-center">
+            <FontAwesomeIcon
+              icon="map-marker-alt"
+              className="mr-1.5 text-gray-400"
+            />
+            {job.location}
+          </span>
+          <span className="flex items-center">
+            <FontAwesomeIcon icon="clock" className="mr-1.5 text-gray-400" />
+            {job.type}
+          </span>
+          <span className="flex items-center">
+            <FontAwesomeIcon
+              icon="dollar-sign"
+              className="mr-1.5 text-gray-400"
+            />
+            {job.salary || "Competitive"}
+          </span>
         </div>
+        <p className="text-xs text-gray-500 mt-2">
+          Posted: {formatRelativeTime(job.postedDate)} | Deadline:{" "}
+          {formatDate(job.deadline)}
+        </p>
       </div>
-      
-      {/* Apply Form Modal */}
-      {showApplyModal && (
-        <Modal 
-          title={`Apply for ${job.title}`}
-          onClose={() => setShowApplyModal(false)}
-        >
-          <ApplyForm 
-            jobId={job.id} 
-            jobTitle={job.title}
-            onSubmit={handleApplySubmit}
-          />
-        </Modal>
+
+      {/* Job Content Sections */}
+      <DetailSection title="Job Description">
+        <p className="whitespace-pre-line leading-relaxed">{job.description}</p>
+      </DetailSection>
+
+      {responsibilities.length > 0 && (
+        <DetailSection title="Key Responsibilities">
+          <ul className="list-disc list-inside space-y-1.5">
+            {responsibilities.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </DetailSection>
       )}
+      {requirements.length > 0 && (
+        <DetailSection title="Qualifications & Requirements">
+          <ul className="list-disc list-inside space-y-1.5">
+            {requirements.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </DetailSection>
+      )}
+      {benefits.length > 0 && (
+        <DetailSection title="Benefits & Perks">
+          <ul className="list-disc list-inside space-y-1.5">
+            {benefits.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </DetailSection>
+      )}
+      {skills.length > 0 && (
+        <DetailSection title="Required Skills">
+          <div className="flex flex-wrap gap-2">
+            {skills.map((skill, index) => (
+              <span
+                key={index}
+                className="px-3 py-1 bg-indigo-100 text-indigo-700 text-xs font-medium rounded-full"
+              >
+                {skill}
+              </span>
+            ))}
+          </div>
+        </DetailSection>
+      )}
+      {/* Add more sections like "About the Company" if needed */}
     </div>
   );
 };
 
-export default JobDetails;
+const DetailSection = ({ title, children }) => (
+  <section className="mb-6">
+    <h3 className="text-lg font-semibold text-gray-700 mb-2 pb-1 border-b border-gray-100">
+      {title}
+    </h3>
+    <div className="text-sm text-gray-600 leading-relaxed">{children}</div>
+  </section>
+);
+
+JobDetailsComponent.propTypes = {
+  job: PropTypes.object.isRequired,
+  showApplyButton: PropTypes.bool,
+  onApplyClick: PropTypes.func, // Callback for parent to handle apply action (e.g., open modal)
+  onSaveClick: PropTypes.func, // Callback for parent to handle save action
+};
+
+export default JobDetailsComponent;

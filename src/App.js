@@ -1,404 +1,435 @@
-import React, { Component } from "react";
+// src/App.js
+import React, { useContext, useEffect, Suspense, lazy } from "react";
 import {
   BrowserRouter as Router,
+  Routes,
   Route,
-  Switch,
-  Redirect,
+  Navigate,
+  useNavigate,
+  useLocation,
+  Outlet, // Dùng cho nested routes trong layout
 } from "react-router-dom";
 import { AuthProvider, AuthContext } from "./contexts/AuthContext";
 import { JobsProvider } from "./contexts/JobsContext";
-import { ThemeProvider, createMuiTheme } from "@mui/material/styles"; // Use createMuiTheme for MUI v4 with React 17
+import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
-import { withRouter } from "react-router-dom"; // Import withRouter
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link } from "react-router-dom"; // Import Link
 
-// Import SCSS files (global.scss will handle all other imports)
-import "./styles/global.scss"; // Đảm bảo KHÔNG CÓ import 'postcss-loader' ở đây
-
-// Auth Pages
-import SignUpForm from "./components/auth/SignUpForm";
-import LoginForm from "./components/auth/LoginForm";
-import EmailVerification from "./components/auth/EmailVerification";
-import ForgotPasswordPage from "./pages/guest/ForgotPasswordPage"; // Add ForgotPasswordPage
-import ResetPasswordPage from "./pages/guest/ResetPasswordPage"; // Add ResetPasswordPage
-
-// Guest Pages
-import HomePage from "./pages/guest/HomePage";
-import AboutPage from "./pages/guest/AboutPage";
-import JobsPage from "./pages/guest/JobsPage";
-import ContactPage from "./pages/guest/ContactPage";
-
-// Applicant Pages
-import ApplicantDashboard from "./pages/applicant/Dashboard";
-import JobSearchPage from "./pages/applicant/JobSearchPage";
-import JobDetailsPage from "./pages/applicant/JobDetailsPage";
-import SavedJobsPage from "./pages/applicant/SavedJobsPage";
-import ApplicationsPage from "./pages/applicant/ApplicationsPage";
-import ProfilePage from "./pages/applicant/profile/ProfilePage";
-import InterviewDetailsPage from "./pages/applicant/InterviewDetailsPage";
-import InterviewFeedbackPage from "./pages/applicant/InterviewFeedbackPage";
-
-// Admin Pages
-import AdminDashboard from "./pages/admin/Dashboard";
-import JobManagement from "./pages/admin/JobManagement";
-import ApplicantsManagement from "./pages/admin/ApplicantsManagement";
-import CompanyProfilePage from "./pages/admin/CompanyProfilePage";
-import ReportsPage from "./pages/admin/ReportsPage";
-import SettingsPage from "./pages/admin/SettingsPage"; // Add SettingsPage
-import UserManagement from "./pages/admin/users/UserManagement"; // Add UserManagement
-import RoleManagement from "./pages/admin/users/RoleManagement"; // Add RoleManagement
-import CreateJobPage from "./pages/admin/jobs/CreateJobPage"; // Add CreateJobPage
-import AdminJobDetailsPage from "./pages/admin/jobs/JobDetailsPage"; // Admin's Job Details Page
-import ApplicationDetailPage from "./pages/admin/ApplicationDetailPage"; // Admin's Application Detail Page
-import JobAnalytics from "./pages/admin/analytics/JobAnalytics"; // Add JobAnalytics
-import ApplicantAnalytics from "./pages/admin/analytics/ApplicantAnalytics"; // Add ApplicantAnalytics
-import RecruitmentAnalytics from "./pages/admin/analytics/RecruitmentAnalytics"; // Add RecruitmentAnalytics
+import "./styles/global.scss";
 
 // Layouts
 import GuestLayout from "./components/layouts/GuestLayout";
 import ApplicantLayout from "./components/layouts/ApplicantLayout";
 import AdminLayout from "./components/layouts/AdminLayout";
+import LoadingSpinner from "./components/common/LoadingSpinner"; // Import LoadingSpinner
 
-// Guards (converted to class components)
-class GuestGuard extends Component {
-  static contextType = AuthContext;
-  render() {
-    const { isAuthenticated, loading } = this.context;
-    console.log("Guard đang tải:", loading, "context:", this.context);
-    if (loading) return null; // Or a loading spinner
-    return isAuthenticated ? (
-      <Redirect to="/applicant/dashboard" />
-    ) : (
-      this.props.children
-    );
+// --- Lazy load các trang ---
+// Guest Pages
+const HomePage = lazy(() => import("./pages/guest/HomePage"));
+const AboutPage = lazy(() => import("./pages/guest/AboutPage"));
+const GuestJobsPage = lazy(() => import("./pages/guest/JobsPage")); // Đổi tên để tránh trùng
+const ContactPage = lazy(() => import("./pages/guest/ContactPage"));
+const CheckEmailPage = lazy(() => import("./pages/guest/CheckEmailPage"));
+
+// Auth Pages
+const SignUpForm = lazy(() => import("./components/auth/SignUpForm"));
+const LoginForm = lazy(() => import("./components/auth/LoginForm"));
+const EmailVerificationPage = lazy(() =>
+  import("./pages/guest/EmailVerificationPage")
+); // Sử dụng Page
+const ForgotPasswordPage = lazy(() =>
+  import("./pages/guest/ForgotPasswordPage")
+);
+const ResetPasswordPage = lazy(() => import("./pages/guest/ResetPasswordPage"));
+
+// Applicant Pages
+const ApplicantDashboard = lazy(() => import("./pages/applicant/Dashboard"));
+const ApplicantJobSearchPage = lazy(() =>
+  import("./pages/applicant/JobSearchPage")
+); // Đổi tên
+const ApplicantJobDetailsPage = lazy(() =>
+  import("./pages/applicant/JobDetailsPage")
+); // Đổi tên
+const SavedJobsPage = lazy(() => import("./pages/applicant/SavedJobsPage"));
+const ApplicationsPage = lazy(() =>
+  import("./pages/applicant/ApplicationsPage")
+);
+const ApplicantApplicationDetailsPage = lazy(() =>
+  import("./pages/applicant/ApplicationDetailsPage")
+); // Đổi tên
+const ProfilePage = lazy(() => import("./pages/applicant/profile/ProfilePage"));
+const InterviewDetailsPage = lazy(() =>
+  import("./pages/applicant/InterviewDetailsPage")
+);
+const InterviewFeedbackPage = lazy(() =>
+  import("./pages/applicant/InterviewFeedbackPage")
+);
+const JobApplyPage = lazy(() => import("./pages/applicant/JobApplyPage"));
+
+// Admin Pages
+const AdminDashboard = lazy(() => import("./pages/admin/Dashboard"));
+const JobManagement = lazy(() => import("./pages/admin/JobManagement"));
+const ApplicantsManagement = lazy(() =>
+  import("./pages/admin/ApplicantsManagement")
+);
+const CompanyProfilePage = lazy(() =>
+  import("./pages/admin/CompanyProfilePage")
+);
+const ReportsPage = lazy(() => import("./pages/admin/ReportsPage"));
+const SettingsPage = lazy(() => import("./pages/admin/SettingsPage"));
+const UserManagement = lazy(() => import("./pages/admin/users/UserManagement"));
+const RoleManagement = lazy(() => import("./pages/admin/users/RoleManagement"));
+const CreateJobPage = lazy(() => import("./pages/admin/jobs/CreateJobPage"));
+const AdminJobDetailsPage = lazy(() =>
+  import("./pages/admin/jobs/JobDetailsPage")
+);
+const AdminApplicationDetailPage = lazy(() =>
+  import("./pages/admin/ApplicationDetailPage")
+); // Đổi tên
+const JobAnalytics = lazy(() => import("./pages/admin/analytics/JobAnalytics"));
+const ApplicantAnalytics = lazy(() =>
+  import("./pages/admin/analytics/ApplicantAnalytics")
+);
+const RecruitmentAnalytics = lazy(() =>
+  import("./pages/admin/analytics/RecruitmentAnalytics")
+);
+const AdminProfilePage = lazy(() => import("./pages/admin/ProfilePage"));
+
+// --- Guards ---
+const GuestGuard = ({ children }) => {
+  const { isAuthenticated, loading, user } = useContext(AuthContext);
+  if (loading) return <LoadingSpinner fullPage />;
+  if (isAuthenticated) {
+    const role = user?.role?.toLowerCase();
+    if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (role === "candidate")
+      return <Navigate to="/applicant/dashboard" replace />;
+    return <Navigate to="/" replace />; // Fallback nếu có role lạ
   }
-}
+  return children;
+};
 
-class AuthGuard extends Component {
-  static contextType = AuthContext;
-  render() {
-    const { isAuthenticated, loading, user } = this.context;
-    const { requiredRole, children } = this.props;
+const AuthGuard = ({ children, requiredRole }) => {
+  const { isAuthenticated, loading, user } = useContext(AuthContext);
+  const location = useLocation();
 
-    console.log("Guard đang tải:", loading, "context:", this.context);
-    if (loading) return null;
+  if (loading) return <LoadingSpinner fullPage />;
 
-    if (!isAuthenticated) {
-      return <Redirect to="/login" />;
-    }
-
-    if (requiredRole && user?.role !== requiredRole) {
-      return <Redirect to="/" />; // Redirect if role doesn't match
-    }
-
-    return children;
+  if (!isAuthenticated) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
   }
-}
 
-// OAuth2 Callback Handler Component
-class OAuth2CallbackHandler extends Component {
-  static contextType = AuthContext;
+  if (
+    requiredRole &&
+    user?.role?.toLowerCase() !== requiredRole?.toLowerCase()
+  ) {
+    // console.warn(`Role mismatch: User role is "${user?.role}", required is "${requiredRole}". Redirecting.`);
+    return <Navigate to="/" replace />;
+  }
+  return children;
+};
 
-  async componentDidMount() {
-    const { location, history } = this.props;
-    const { handleGoogleOAuthCallback } = this.context;
-    const queryParams = new URLSearchParams(location.search);
-    const code = queryParams.get("code");
+// --- OAuth2 Callback Handler ---
+const OAuth2CallbackHandler = () => {
+  const { handleGoogleOAuthCallback, loading: authLoading } =
+    useContext(AuthContext);
+  const location = useLocation();
+  const navigate = useNavigate();
 
-    if (code) {
-      const result = await handleGoogleOAuthCallback(code);
-      if (result.success) {
-        const role = result.user.role?.toLowerCase();
-        if (role === "admin") {
-          history.push("/admin/dashboard");
-        } else if (role === "candidate") {
-          history.push("/applicant/dashboard");
+  useEffect(() => {
+    const processOAuth = async () => {
+      const queryParams = new URLSearchParams(location.search);
+      const code = queryParams.get("code");
+      const error = queryParams.get("error");
+
+      if (error) {
+        console.error("OAuth2 callback error (from URL):", error);
+        navigate("/login", {
+          replace: true,
+          state: { error: `Đăng nhập Google thất bại: ${error}` },
+        });
+        return;
+      }
+
+      if (code) {
+        const result = await handleGoogleOAuthCallback(code);
+        if (result.success && result.user) {
+          const role = result.user.role?.toLowerCase();
+          if (role === "admin") {
+            navigate("/admin/dashboard", { replace: true });
+          } else if (role === "candidate") {
+            navigate("/applicant/dashboard", { replace: true });
+          } else {
+            navigate("/", { replace: true });
+          }
         } else {
-          history.push("/");
+          console.error("OAuth2 callback processing error:", result.error);
+          navigate("/login", {
+            replace: true,
+            state: { error: result.error || "Đăng nhập Google thất bại." },
+          });
         }
-      } else {
-        console.error("OAuth2 callback error:", result.error);
-        history.push("/login", {
-          state: { error: result.error || "Đăng nhập Google thất bại." },
+      } else if (!authLoading) {
+        // Chỉ redirect nếu không có code VÀ auth không loading
+        console.warn("OAuth2 callback: No code found in URL.");
+        navigate("/login", {
+          replace: true,
+          state: { error: "Không tìm thấy mã xác thực Google." },
         });
       }
-    } else {
-      history.push("/login", {
-        state: { error: "Không tìm thấy mã xác thực Google." },
-      });
+    };
+
+    if (!authLoading) {
+      // Đảm bảo context đã load xong trước khi xử lý
+      processOAuth();
     }
+  }, [location.search, handleGoogleOAuthCallback, navigate, authLoading]);
+
+  if (authLoading) {
+    return <LoadingSpinner fullPage message="Đang xử lý đăng nhập Google..." />;
   }
 
-  render() {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50">
-        <div className="text-xl font-semibold text-gray-700">
-          Đang xử lý đăng nhập Google...
-        </div>
-        {/* You can add a loading spinner here */}
-      </div>
-    );
-  }
-}
+  return <LoadingSpinner fullPage message="Đang hoàn tất đăng nhập..." />;
+};
 
-// Wrap OAuth2CallbackHandler with withRouter to get access to history/location
-const WrappedOAuth2CallbackHandler = withRouter(OAuth2CallbackHandler);
+// --- Auth Layout (cho các trang login, signup, etc.) ---
+const AuthLayoutWrapper = () => {
+  return (
+    <div className="auth-layout min-h-screen flex items-center justify-center bg-gray-100">
+      <Outlet /> {/* Các trang con của AuthLayout sẽ được render ở đây */}
+    </div>
+  );
+};
 
-// AuthLayout for login/signup pages (converted to class component for consistency)
-class AuthLayout extends Component {
-  render() {
-    return (
-      <div className="auth-layout">
-        {this.props.children} {/* Render children directly */}
-      </div>
-    );
-  }
-}
+// --- Not Found Page ---
+const NotFoundPage = () => (
+  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4 text-center">
+    <FontAwesomeIcon
+      icon="triangle-exclamation"
+      className="text-6xl text-yellow-500 mb-6"
+    />
+    <h1 className="text-4xl md:text-6xl font-bold text-gray-800 mb-4">404</h1>
+    <h2 className="text-2xl md:text-3xl font-semibold text-gray-700 mb-4">
+      Không tìm thấy trang
+    </h2>
+    <p className="text-md md:text-lg text-gray-600 mb-8 max-w-md">
+      Xin lỗi, trang bạn đang tìm kiếm không tồn tại hoặc đã được di chuyển.
+    </p>
+    <Link
+      to="/"
+      className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200 text-lg"
+    >
+      <FontAwesomeIcon icon="home" className="mr-2" />
+      Về trang chủ
+    </Link>
+  </div>
+);
 
-class App extends Component {
-  render() {
-    return (
-      <ThemeProvider theme={createMuiTheme()}>
-        {" "}
-        {/* Use createMuiTheme() for MUI v4 */}
-        <CssBaseline />
-        <AuthProvider>
-          <JobsProvider>
-            <Router>
-              <Switch>
-                {" "}
-                {/* Use Switch for React Router v5 */}
-                {/* Auth Routes - No Header/Footer */}
-                <Route
-                  path={[
-                    "/login",
-                    "/signup",
-                    "/verify-email",
-                    "/forgot-password",
-                    "/reset-password",
-                    "/oauth2/callback",
-                  ]}
-                >
-                  <AuthLayout>
-                    <Switch>
-                      <Route
-                        path="/login"
-                        render={(props) => (
-                          <GuestGuard>
-                            <LoginForm {...props} />
-                          </GuestGuard>
-                        )}
-                      />
-                      <Route
-                        path="/signup"
-                        render={(props) => (
-                          <GuestGuard>
-                            <SignUpForm {...props} />
-                          </GuestGuard>
-                        )}
-                      />
-                      <Route
-                        path="/verify-email"
-                        component={EmailVerification}
-                      />
-                      <Route
-                        path="/forgot-password"
-                        component={ForgotPasswordPage}
-                      />
-                      <Route
-                        path="/reset-password"
-                        component={ResetPasswordPage}
-                      />
-                      <Route
-                        path="/oauth2/callback"
-                        component={WrappedOAuth2CallbackHandler}
-                      />
-                    </Switch>
-                  </AuthLayout>
+// --- Main App Component ---
+function App() {
+  const muiTheme = createTheme({
+    // Bạn có thể tùy chỉnh theme MUI ở đây nếu cần
+    palette: {
+      primary: {
+        main: "#00BFA6", // Màu teal từ variables.scss
+      },
+      secondary: {
+        main: "#6c757d", // Màu secondary từ variables.scss
+      },
+    },
+    typography: {
+      fontFamily: "Inter, sans-serif",
+    },
+  });
+
+  return (
+    <ThemeProvider theme={muiTheme}>
+      <CssBaseline />
+      <AuthProvider>
+        <JobsProvider>
+          <Router>
+            <Suspense fallback={<LoadingSpinner fullPage />}>
+              <Routes>
+                {/* Auth Routes */}
+                <Route element={<AuthLayoutWrapper />}>
+                  <Route
+                    path="/login"
+                    element={
+                      <GuestGuard>
+                        <LoginForm />
+                      </GuestGuard>
+                    }
+                  />
+                  <Route
+                    path="/signup"
+                    element={
+                      <GuestGuard>
+                        <SignUpForm />
+                      </GuestGuard>
+                    }
+                  />
+                  <Route
+                    path="/verify-email"
+                    element={<EmailVerificationPage />}
+                  />
+                  <Route
+                    path="/forgot-password"
+                    element={<ForgotPasswordPage />}
+                  />
+                  <Route
+                    path="/reset-password"
+                    element={<ResetPasswordPage />}
+                  />
+                  <Route
+                    path="/oauth2/callback"
+                    element={<OAuth2CallbackHandler />}
+                  />
                 </Route>
-                {/* Guest Routes - With Header/Footer */}
-                <Route path={["/", "/about", "/jobs", "/jobs/:id", "/contact"]}>
-                  <GuestLayout>
-                    <Switch>
-                      <Route exact path="/" component={HomePage} />
-                      <Route path="/about" component={AboutPage} />
-                      <Route exact path="/jobs" component={JobsPage} />
-                      <Route path="/jobs/:id" component={JobDetailsPage} />
-                      <Route path="/contact" component={ContactPage} />
-                    </Switch>
-                  </GuestLayout>
+
+                {/* Guest Routes */}
+                <Route element={<GuestLayout />}>
+                  <Route path="/" element={<HomePage />} />
+                  <Route path="/about" element={<AboutPage />} />
+                  <Route path="/jobs" element={<GuestJobsPage />} />
+                  <Route
+                    path="/jobs/:id"
+                    element={<ApplicantJobDetailsPage />}
+                  />{" "}
+                  {/* Dùng chung JobDetailsPage cho guest và applicant */}
+                  <Route path="/contact" element={<ContactPage />} />
+                  <Route path="/check-email" element={<CheckEmailPage />} />
                 </Route>
+
                 {/* Applicant Routes */}
                 <Route
-                  path={[
-                    "/applicant/dashboard",
-                    "/applicant/jobs",
-                    "/applicant/jobs/:id",
-                    "/applicant/saved-jobs",
-                    "/applicant/applications",
-                    "/applicant/applications/:id",
-                    "/applicant/applications/:id/interview",
-                    "/applicant/applications/:id/feedback",
-                    "/applicant/profile",
-                  ]}
-                >
-                  <AuthGuard requiredRole="candidate">
-                    {" "}
-                    {/* Role is 'candidate' for applicants */}
-                    <ApplicantLayout>
-                      <Switch>
-                        <Route
-                          path="/applicant/dashboard"
-                          component={ApplicantDashboard}
-                        />
-                        <Route
-                          exact
-                          path="/applicant/jobs"
-                          component={JobSearchPage}
-                        />
-                        <Route
-                          path="/applicant/jobs/:id"
-                          component={JobDetailsPage}
-                        />
-                        <Route
-                          path="/applicant/saved-jobs"
-                          component={SavedJobsPage}
-                        />
-                        <Route
-                          exact
-                          path="/applicant/applications"
-                          component={ApplicationsPage}
-                        />
-                        <Route
-                          path="/applicant/applications/:id"
-                          component={ApplicationDetailPage}
-                        />{" "}
-                        {/* This might need to be ApplicationDetailsPage */}
-                        <Route
-                          path="/applicant/applications/:id/interview"
-                          component={InterviewDetailsPage}
-                        />
-                        <Route
-                          path="/applicant/applications/:id/feedback"
-                          component={InterviewFeedbackPage}
-                        />
-                        <Route
-                          path="/applicant/profile"
-                          component={ProfilePage}
-                        />
-                      </Switch>
-                    </ApplicantLayout>
-                  </AuthGuard>
-                </Route>
+                  path="/applicant/*"
+                  element={
+                    <AuthGuard requiredRole="candidate">
+                      <ApplicantLayout>
+                        <Routes>
+                          <Route
+                            path="dashboard"
+                            element={<ApplicantDashboard />}
+                          />
+                          <Route
+                            path="jobs"
+                            element={<ApplicantJobSearchPage />}
+                          />
+                          <Route
+                            path="jobs/:id"
+                            element={<ApplicantJobDetailsPage />}
+                          />
+                          <Route
+                            path="jobs/:jobId/apply"
+                            element={<JobApplyPage />}
+                          />
+                          <Route
+                            path="saved-jobs"
+                            element={<SavedJobsPage />}
+                          />
+                          <Route
+                            path="applications"
+                            element={<ApplicationsPage />}
+                          />
+                          <Route
+                            path="applications/:id"
+                            element={<ApplicantApplicationDetailsPage />}
+                          />
+                          <Route
+                            path="applications/:applicationId/interview"
+                            element={<InterviewDetailsPage />}
+                          />
+                          <Route
+                            path="applications/:applicationId/feedback"
+                            element={<InterviewFeedbackPage />}
+                          />
+                          <Route path="profile" element={<ProfilePage />} />
+                          <Route
+                            index
+                            element={<Navigate to="dashboard" replace />}
+                          />
+                        </Routes>
+                      </ApplicantLayout>
+                    </AuthGuard>
+                  }
+                />
+
                 {/* Admin Routes */}
                 <Route
-                  path={[
-                    "/admin/dashboard",
-                    "/admin/jobs",
-                    "/admin/jobs/create",
-                    "/admin/jobs/:jobId",
-                    "/admin/jobs/:jobId/edit",
-                    "/admin/applicants",
-                    "/admin/applications/:id",
-                    "/admin/company-profile",
-                    "/admin/reports",
-                    "/admin/settings",
-                    "/admin/users",
-                    "/admin/roles",
-                    "/admin/analytics/jobs",
-                    "/admin/analytics/applicants",
-                    "/admin/analytics/recruitment",
-                  ]}
-                >
-                  <AuthGuard requiredRole="admin">
-                    <AdminLayout>
-                      <Switch>
-                        <Route
-                          path="/admin/dashboard"
-                          component={AdminDashboard}
-                        />
-                        <Route
-                          exact
-                          path="/admin/jobs"
-                          component={JobManagement}
-                        />
-                        <Route
-                          path="/admin/jobs/create"
-                          component={CreateJobPage}
-                        />
-                        <Route
-                          exact
-                          path="/admin/jobs/:jobId"
-                          component={AdminJobDetailsPage}
-                        />
-                        <Route
-                          path="/admin/jobs/:jobId/edit"
-                          render={(props) => (
-                            <CreateJobPage isEditing={true} {...props} />
-                          )}
-                        />
-                        <Route
-                          exact
-                          path="/admin/applicants"
-                          component={ApplicantsManagement}
-                        />
-                        <Route
-                          path="/admin/applications/:id"
-                          component={ApplicationDetailPage}
-                        />
-                        <Route
-                          path="/admin/company-profile"
-                          component={CompanyProfilePage}
-                        />
-                        <Route path="/admin/reports" component={ReportsPage} />
-                        <Route
-                          path="/admin/settings"
-                          component={SettingsPage}
-                        />
-                        <Route path="/admin/users" component={UserManagement} />
-                        <Route path="/admin/roles" component={RoleManagement} />
-                        <Route
-                          path="/admin/analytics/jobs"
-                          component={JobAnalytics}
-                        />
-                        <Route
-                          path="/admin/analytics/applicants"
-                          component={ApplicantAnalytics}
-                        />
-                        <Route
-                          path="/admin/analytics/recruitment"
-                          component={RecruitmentAnalytics}
-                        />
-                      </Switch>
-                    </AdminLayout>
-                  </AuthGuard>
-                </Route>
+                  path="/admin/*"
+                  element={
+                    <AuthGuard requiredRole="admin">
+                      <AdminLayout>
+                        <Routes>
+                          <Route
+                            path="dashboard"
+                            element={<AdminDashboard />}
+                          />
+                          <Route path="jobs" element={<JobManagement />} />
+                          <Route
+                            path="jobs/create"
+                            element={<CreateJobPage />}
+                          />
+                          <Route
+                            path="jobs/:jobId/edit"
+                            element={<CreateJobPage isEditing />}
+                          />
+                          <Route
+                            path="jobs/:jobId"
+                            element={<AdminJobDetailsPage />}
+                          />
+                          <Route
+                            path="applicants"
+                            element={<ApplicantsManagement />}
+                          />
+                          <Route
+                            path="applications/:id"
+                            element={<AdminApplicationDetailPage />}
+                          />
+                          <Route
+                            path="company-profile"
+                            element={<CompanyProfilePage />}
+                          />
+                          <Route path="reports" element={<ReportsPage />} />
+                          <Route path="settings" element={<SettingsPage />} />
+                          <Route path="users" element={<UserManagement />} />
+                          <Route path="roles" element={<RoleManagement />} />
+                          <Route
+                            path="profile"
+                            element={<AdminProfilePage />}
+                          />
+                          <Route
+                            path="analytics/jobs"
+                            element={<JobAnalytics />}
+                          />
+                          <Route
+                            path="analytics/applicants"
+                            element={<ApplicantAnalytics />}
+                          />
+                          <Route
+                            path="analytics/recruitment"
+                            element={<RecruitmentAnalytics />}
+                          />
+                          <Route
+                            index
+                            element={<Navigate to="dashboard" replace />}
+                          />
+                        </Routes>
+                      </AdminLayout>
+                    </AuthGuard>
+                  }
+                />
+
                 {/* 404 Route */}
-                <Route path="*">
-                  <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-                    <h1 className="text-6xl font-bold text-blue-600 mb-4">
-                      404
-                    </h1>
-                    <h2 className="text-3xl font-semibold text-gray-800 mb-4">
-                      Không tìm thấy trang
-                    </h2>
-                    <p className="text-lg text-gray-600 mb-8">
-                      Trang bạn đang tìm kiếm không tồn tại.
-                    </p>
-                    <Link
-                      to="/"
-                      className="px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors duration-200"
-                    >
-                      Về trang chủ
-                    </Link>
-                  </div>
-                </Route>
-              </Switch>
-            </Router>
-          </JobsProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    );
-  }
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
+          </Router>
+        </JobsProvider>
+      </AuthProvider>
+    </ThemeProvider>
+  );
 }
 
 export default App;

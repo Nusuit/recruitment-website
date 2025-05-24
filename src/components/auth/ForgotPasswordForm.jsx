@@ -1,19 +1,19 @@
-// src/components/auth/ForgotPasswordForm.jsx
+// src/pages/guest/ForgotPasswordPage.jsx
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { AuthContext } from "../../contexts/AuthContext"; // Assuming AuthContext provides resetPassword
-import { validateForgotPasswordForm } from "../../utils/validators"; // Assuming this validator exists
-import Button from "../common/Button"; // Using the updated Button component
-import Input from "../common/Input"; // Using the updated Input component
-import LoadingSpinner from "../common/LoadingSpinner";
+import { AuthContext } from "../../contexts/AuthContext";
+import { validateForgotPasswordForm } from "../../utils/validators";
+import Button from "../../components/common/Button";
+import Input from "../../components/common/Input";
+// import "../../styles/AuthForms.scss"; // SCSS chung cho các form auth đã được import ở AuthLayoutWrapper hoặc App.js
 
-const ForgotPasswordForm = ({ onFormSubmitSuccess }) => {
-  const { resetPassword } = useContext(AuthContext);
+const ForgotPasswordPage = () => {
+  const { forgotPassword, loading: authLoading } = useContext(AuthContext); // Giả sử có hàm forgotPassword trong context
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [error, setError] = useState(""); // For API errors
-  const [validationError, setValidationError] = useState(""); // For form validation errors
+  const [error, setError] = useState(""); // Lỗi từ API
+  const [validationError, setValidationError] = useState(""); // Lỗi từ client-side validation
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitSuccess, setSubmitSuccess] = useState(false);
 
@@ -35,22 +35,18 @@ const ForgotPasswordForm = ({ onFormSubmitSuccess }) => {
 
     setIsSubmitting(true);
     try {
-      const result = await resetPassword(email); // Call context function
+      const result = await forgotPassword(email);
       if (result.success) {
         setSubmitSuccess(true);
-        if (onFormSubmitSuccess) {
-          onFormSubmitSuccess(email); // Callback for parent page
-        } else {
-          // Default behavior: navigate to a confirmation page
-          navigate("/check-email", {
-            state: {
-              email: email,
-              message:
-                "If an account with that email exists, we've sent instructions to reset your password.",
-              purpose: "passwordReset",
-            },
-          });
-        }
+        // Chuyển hướng đến trang thông báo kiểm tra email, truyền email và thông điệp
+        navigate("/check-email", {
+          state: {
+            email: email,
+            message:
+              "If an account with that email exists, we've sent instructions to reset your password.",
+            purpose: "passwordReset", // Để CheckEmailPage biết mục đích
+          },
+        });
       } else {
         setError(
           result.error ||
@@ -58,74 +54,114 @@ const ForgotPasswordForm = ({ onFormSubmitSuccess }) => {
         );
       }
     } catch (err) {
-      console.error("Forgot password submission error:", err);
+      console.error("Forgot password error:", err);
       setError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (submitSuccess && !onFormSubmitSuccess) {
-    // Only show this if parent doesn't handle success
-    return (
-      <div className="text-center p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm">
-        <FontAwesomeIcon
-          icon="check-circle"
-          className="text-4xl text-green-500 mb-3"
-        />
-        <h3 className="text-xl font-semibold text-green-700 mb-2">
-          Reset Link Sent
-        </h3>
-        <p className="text-gray-600 text-sm">
-          Please check your email{" "}
-          <strong className="font-medium">{email}</strong> for instructions.
-        </p>
-        <Link
-          to="/login"
-          className="mt-4 inline-block text-sm text-blue-600 hover:underline"
-        >
-          Back to Login
-        </Link>
-      </div>
-    );
-  }
-
+  // Layout này sẽ được render bên trong AuthLayoutWrapper (phần single-column)
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {error && (
-        <div
-          className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded-md text-sm"
-          role="alert"
-        >
-          {error}
+    <>
+      <div className="text-left mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+          Forget Password
+        </h2>
+        <p className="text-gray-500 text-sm">
+          Go back to{" "}
+          <Link
+            to="/login"
+            className="text-teal-500 font-semibold hover:underline"
+          >
+            Log in
+          </Link>
+          . Don't have account?{" "}
+          <Link
+            to="/signup"
+            className="text-teal-500 font-semibold hover:underline"
+          >
+            Create Account
+          </Link>
+        </p>
+      </div>
+
+      {submitSuccess ? (
+        <div className="text-center p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm">
+          {/* Thông báo thành công sẽ hiển thị trên trang CheckEmailPage */}
+          <p className="text-gray-700">
+            Redirecting you to check your email...
+          </p>
         </div>
+      ) : (
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 border border-red-300 text-red-600 px-4 py-2.5 rounded text-xs">
+              {error}
+            </div>
+          )}
+          <Input
+            name="email"
+            type="email"
+            value={email}
+            onChange={handleChange}
+            error={validationError}
+            required
+            placeholder="Email address"
+            inputClassName="p-3 text-sm"
+          />
+          <Button
+            type="submit"
+            fullWidth
+            isLoading={isSubmitting || authLoading}
+            disabled={isSubmitting || authLoading}
+            className="bg-teal-500 hover:bg-teal-600 text-white py-3 text-sm font-semibold"
+            iconRight="arrow-right"
+          >
+            Reset Password
+          </Button>
+        </form>
       )}
-      <Input
-        label="Email Address"
-        name="email"
-        type="email"
-        value={email}
-        onChange={handleChange}
-        error={validationError}
-        required
-        placeholder="Enter your registered email"
-        iconLeft="envelope"
-      />
-      <Button
-        type="submit"
-        fullWidth
-        isLoading={isSubmitting}
-        disabled={isSubmitting}
-        variant="primary"
-      >
-        {isSubmitting ? "Sending Link..." : "Send Password Reset Link"}
-      </Button>
-    </form>
+
+      {!submitSuccess && (
+        <>
+          <div className="relative my-6">
+            <div
+              className="absolute inset-0 flex items-center"
+              aria-hidden="true"
+            >
+              <div className="w-full border-t border-gray-200"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-2 bg-white text-xs text-gray-400">or</span>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              // onClick={handleGoogleLogin} // Không phù hợp ở đây
+              disabled={true} // Tạm disable
+              variant="outline-primary"
+              className="border-gray-300 text-gray-600 hover:bg-gray-50 py-2.5 text-xs font-medium"
+              iconLeft={["fab", "google"]}
+            >
+              Sign in with Google
+            </Button>
+            <Button
+              type="button"
+              // onClick={handleFacebookLogin} // Không phù hợp ở đây
+              disabled={true} // Tạm disable
+              variant="outline-primary"
+              className="border-gray-300 text-gray-600 hover:bg-gray-50 py-2.5 text-xs font-medium"
+              iconLeft={["fab", "facebook-f"]}
+            >
+              Sign in with Facebook
+            </Button>
+          </div>
+        </>
+      )}
+    </>
   );
 };
 
-ForgotPasswordForm.propTypes = {
-  onFormSubmitSuccess: PropTypes.func, // Optional callback for parent page to handle success
-};
-
-export default ForgotPasswordForm;
+export default ForgotPasswordPage;

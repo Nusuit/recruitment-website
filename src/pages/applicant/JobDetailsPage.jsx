@@ -6,7 +6,7 @@ import { AuthContext } from "../../contexts/AuthContext";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import EmptyState from "../../components/common/EmptyState";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { formatRelativeTime } from "../../utils/formatters"; // Assumes this formatter exists
+import { formatTimeAgo } from "../../utils/formatters"; // Assumes this formatter exists
 
 const JobDetailsPage = () => {
   const { id } = useParams(); // Get job ID from URL
@@ -146,7 +146,7 @@ const JobDetailsPage = () => {
             </div>
           </div>
           <div className="text-sm text-gray-500 mt-3">
-            <span>Posted {formatRelativeTime(job.postedDate)}</span>
+            <span>Posted {formatTimeAgo(job.postedDate)}</span>
             <span className="mx-2">|</span>
             <span>
               Apply before {new Date(job.deadline).toLocaleDateString()}

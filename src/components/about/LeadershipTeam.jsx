@@ -1,45 +1,46 @@
 // src/components/about/LeadershipTeam.jsx
 import React, { useState } from "react";
-import Modal from "../common/Modal"; // Assuming Modal is refactored
+import Modal from "../common/Modal";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faLinkedin } from '@fortawesome/free-brands-svg-icons'; // Ensure this is in fontawesome.js
 
 const LeadershipTeam = () => {
   const [selectedLeader, setSelectedLeader] = useState(null);
 
+  // Dữ liệu mẫu, bạn cần thay thế bằng dữ liệu thật hoặc fetch từ API
   const leaders = [
     {
       id: 1,
-      name: "David Chen",
+      name: "Alex Johnson", // Thay tên theo design nếu có
       role: "Chief Executive Officer",
-      image: "/assets/images/team/ceo.jpg",
-      bio: "David brings over 20 years of experience in the fashion industry, driving MyaCorp's vision and growth with strategic leadership and a passion for innovation.",
-      linkedin: "davidchen-myacorp",
+      image: "/assets/images/team/leader-1.jpg", // Thay bằng ảnh thật
+      bio: "Alex has over 20 years of experience in the fashion retail sector, with a strong focus on sustainable growth and brand development. He is passionate about fostering innovation and leading MyaCorp to new heights.",
+      linkedin: "alexjohnson-myacorp", // Giả sử link LinkedIn
     },
     {
       id: 2,
-      name: "Sarah Johnson",
-      role: "Chief Creative Officer",
-      image: "/assets/images/team/cco.jpg",
-      bio: "An award-winning designer, Sarah leads MyaCorp's creative direction, focusing on sustainable materials and groundbreaking fashion concepts.",
-      linkedin: "sarahjohnson-myacorp",
+      name: "Maria Garcia",
+      role: "Head of Design",
+      image: "/assets/images/team/leader-2.jpg", // Thay bằng ảnh thật
+      bio: "Maria is an award-winning designer known for her unique aesthetic and commitment to ethical fashion. She leads MyaCorp's creative vision, blending timeless style with contemporary trends.",
+      linkedin: "mariagarcia-myacorp",
     },
     {
       id: 3,
-      name: "Michael Rodriguez",
-      role: "Chief Operating Officer",
-      image: "/assets/images/team/coo.jpg",
-      bio: "Michael oversees MyaCorp's global operations, ensuring efficiency and quality from supply chain to customer delivery.",
-      linkedin: "michaelrodriguez-myacorp",
+      name: "Samuel Lee",
+      role: "Chief Operations Officer",
+      image: "/assets/images/team/leader-3.jpg", // Thay bằng ảnh thật
+      bio: "With a background in global supply chain management, Samuel ensures MyaCorp's operations are efficient, sustainable, and capable of delivering quality products worldwide.",
+      linkedin: "samuellee-myacorp",
     },
     {
       id: 4,
-      name: "Emily Zhang",
-      role: "Chief Marketing Officer",
-      image: "/assets/images/team/cmo.jpg",
-      bio: "Emily crafts MyaCorp's brand narrative and customer engagement strategies, leveraging digital innovation to expand our global reach.",
-      linkedin: "emilyzhang-myacorp",
+      name: "Priya Sharma",
+      role: "Marketing Director",
+      image: "/assets/images/team/leader-4.jpg", // Thay bằng ảnh thật
+      bio: "Priya is a dynamic marketing leader who excels at building brand narratives and connecting with customers through innovative digital strategies and campaigns.",
+      linkedin: "priyasharma-myacorp",
     },
+    // Bạn có thể thêm hoặc bớt thành viên cho phù hợp
   ];
 
   const openLeaderBioModal = (leader) => setSelectedLeader(leader);
@@ -47,90 +48,40 @@ const LeadershipTeam = () => {
 
   return (
     <section className="leadership-team-section py-16 md:py-24 bg-white">
+      {" "}
+      {/* Nền trắng */}
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-            Meet Our Visionary Leadership
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Our experienced executive team is dedicated to guiding MyaCorp
-            towards a future of innovation, sustainability, and global impact in
-            the fashion world.
-          </p>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-10">
-          {leaders.map((leader) => (
-            <div
-              key={leader.id}
-              className="leader-card bg-gray-50 rounded-xl shadow-lg overflow-hidden group text-center p-6 transform hover:-translate-y-2 transition-all duration-300 hover:shadow-2xl"
-            >
-              <div className="relative w-32 h-32 md:w-40 md:h-40 mx-auto mb-6">
-                <img
-                  src={leader.image}
-                  alt={leader.name}
-                  className="w-full h-full rounded-full object-cover border-4 border-white shadow-md group-hover:border-blue-400 transition-colors"
-                />
-                <div className="absolute inset-0 rounded-full ring-2 ring-blue-500 ring-offset-2 ring-offset-gray-50 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-              </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-1">
-                {leader.name}
-              </h3>
-              <p className="text-blue-600 font-medium text-sm mb-4">
-                {leader.role}
-              </p>
-              <button
-                onClick={() => openLeaderBioModal(leader)}
-                className="text-xs text-gray-500 hover:text-blue-600 font-medium transition-colors group-hover:underline"
-              >
-                View Bio{" "}
-                <FontAwesomeIcon
-                  icon="arrow-right"
-                  size="xs"
-                  className="ml-1"
-                />
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {selectedLeader && (
-        <Modal
-          title={`${selectedLeader.name} - ${selectedLeader.role}`}
-          isOpen={!!selectedLeader}
-          onClose={closeLeaderBioModal}
-          size="lg" // Or 'xl' for more content
-        >
-          <div className="leader-bio-modal-content p-2 md:p-4 text-sm">
-            <div className="flex flex-col sm:flex-row gap-6 items-center mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Phần hình ảnh bên trái (ảnh lớn của team) */}
+          <div className="flex justify-center md:justify-start">
+            <div className="relative w-full max-w-lg rounded-lg shadow-xl overflow-hidden group">
               <img
-                src={selectedLeader.image}
-                alt={selectedLeader.name}
-                className="w-28 h-28 rounded-full object-cover border-2 border-gray-200 flex-shrink-0"
+                src="/assets/images/company/leadership-team-group.jpg" // Đảm bảo bạn có ảnh này
+                alt="MyaCorp Leadership Team Group" // Cập nhật alt text nếu cần
+                className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-300"
               />
-              <p className="text-gray-600 leading-relaxed italic sm:text-left text-center">
-                "{selectedLeader.bio.substring(0, 150)}
-                {selectedLeader.bio.length > 150 ? "..." : ""}"{" "}
-                {/* Short bio preview */}
-              </p>
+              {/* Lớp phủ gradient có thể bỏ nếu design mới không có */}
+              {/* <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent"></div> */}
             </div>
-            <h4 className="font-semibold text-gray-700 mb-1">Full Bio:</h4>
-            <p className="text-gray-600 leading-relaxed whitespace-pre-line mb-6 text-xs">
-              {selectedLeader.bio}
-            </p>
-            <a
-              href={`https://linkedin.com/in/${selectedLeader.linkedin}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-xs font-medium rounded-md hover:bg-blue-600 transition-colors"
-            >
-              <FontAwesomeIcon icon={["fab", "linkedin-in"]} /> Connect on
-              LinkedIn
-            </a>
           </div>
-        </Modal>
-      )}
+
+          {/* Phần text bên phải */}
+          <div className="text-center md:text-left">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+              Leadership Team
+            </h2>
+            <p className="text-gray-600 text-md md:text-lg leading-relaxed">
+              Our leadership team consists of seasoned professionals with years
+              of experience in the fashion industry. Together, they are guiding
+              our company toward success with innovative ideas and strategic
+              vision.
+            </p>
+            {/* Không có nút "Meet the Team" trong design mới này */}
+          </div>
+        </div>
+        {/* Không còn phần hiển thị card cá nhân của leader */}
+      </div>
+      {/* Không còn Modal */}
     </section>
   );
 };

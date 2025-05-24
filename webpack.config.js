@@ -1,96 +1,99 @@
 // webpack.config.js
 const path = require("path");
-// Nếu bạn muốn tách CSS ra file riêng thay vì inject vào <style>
-// const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const HtmlWebpackPlugin = require("html-webpack-plugin");
+const webpack = require("webpack"); // Import webpack
+require("dotenv").config(); // Tải biến môi trường từ file .env (nếu có)
 
 module.exports = {
-  // ... (entry, output, devServer, etc. của bạn)
-  entry: "./src/index.js", // Điểm bắt đầu của ứng dụng
+  mode: "development", // Chỉ định mode (nên có)
+  entry: "./src/index.js",
   output: {
     filename: "bundle.js",
-    path: path.resolve(__dirname, "dist"), // Thư mục output
-    publicPath: "/", // Quan trọng cho devServer và routing
+    path: path.resolve(__dirname, "dist"),
+    publicPath: "/",
+    clean: true, // Tự động dọn dẹp thư mục dist trước khi build
   },
   devServer: {
     static: {
-      directory: path.join(__dirname, "public"), // Phục vụ file tĩnh từ thư mục public
+      directory: path.join(__dirname, "public"),
     },
     compress: true,
     port: 3000,
-    hot: true, // Bật Hot Module Replacement
-    historyApiFallback: true, // Quan trọng cho Single Page Applications
+    hot: true,
+    historyApiFallback: true,
+    // Hiển thị lỗi trực tiếp trên trình duyệt (overlay)
+    client: {
+      overlay: {
+        errors: true,
+        warnings: false, // Đặt là true nếu muốn xem cả cảnh báo
+      },
+    },
   },
   module: {
     rules: [
       {
-        test: /\.(js|jsx)$/, // Xử lý các file .js và .jsx
+        test: /\.(js|jsx)$/,
         exclude: /node_modules/,
         use: {
-          loader: "babel-loader", // Sử dụng Babel để biên dịch JavaScript hiện đại
+          loader: "babel-loader",
           options: {
-            presets: ["@babel/preset-env", "@babel/preset-react"], // Preset cho React và ES6+
+            presets: ["@babel/preset-env", "@babel/preset-react"],
           },
         },
       },
       {
-        test: /\.(scss|css)$/, // Xử lý cả file .scss và .css
+        test: /\.(scss|css)$/,
         use: [
-          // MiniCssExtractPlugin.loader, // Sử dụng thay cho 'style-loader' nếu muốn tách CSS
-          "style-loader", // 3. Inject CSS vào DOM (thông qua thẻ <style>)
-
+          "style-loader",
           {
-            loader: "css-loader", // 2. Phiên dịch @import và url() thành require/import
+            loader: "css-loader",
             options: {
-              importLoaders: 2, // Số lượng loader được áp dụng trước css-loader trên @imported resources
-              // (postcss-loader, sass-loader)
-              sourceMap: true, // Bật source map cho CSS để dễ debug
-            },
-          },
-          {
-            loader: "postcss-loader", // 1.b. Xử lý CSS với PostCSS (bao gồm Tailwind)
-            options: {
-              postcssOptions: {
-                // Không cần khai báo plugins ở đây nữa nếu đã có postcss.config.js
-                // config: path.resolve(__dirname, 'postcss.config.js'), // Hoặc chỉ định đường dẫn tường minh
-              },
+              importLoaders: 2, // 2 = postcss-loader + sass-loader
               sourceMap: true,
             },
           },
           {
-            loader: "sass-loader", // 1.a. Biên dịch SCSS sang CSS
+            loader: "postcss-loader",
             options: {
-              implementation: require("sass"), // Ưu tiên dùng Dart Sass
+              postcssOptions: {}, // Sẽ tự động tìm postcss.config.js
               sourceMap: true,
-              // sassOptions: {
-              //   includePaths: [path.resolve(__dirname, 'src/styles/some-other-path')], // Thêm đường dẫn tìm kiếm cho @import
-              // },
+            },
+          },
+          {
+            loader: "sass-loader",
+            options: {
+              implementation: require("sass"), // Dùng Dart Sass
+              sourceMap: true,
             },
           },
         ],
       },
       {
-        test: /\.(png|svg|jpg|jpeg|gif)$/i, // Xử lý các file hình ảnh
+        test: /\.(png|svg|jpg|jpeg|gif)$/i,
         type: "asset/resource",
       },
       {
-        test: /\.(woff|woff2|eot|ttf|otf)$/i, // Xử lý các file font
+        test: /\.(woff|woff2|eot|ttf|otf)$/i,
         type: "asset/resource",
       },
     ],
   },
-  // plugins: [
-  //   new MiniCssExtractPlugin({ // Nếu bạn dùng MiniCssExtractPlugin
-  //     filename: 'styles/[name].[contenthash].css',
-  //   }),
-  //   // ... (các plugin khác như HtmlWebpackPlugin)
-  // ],
+  plugins: [
+    new HtmlWebpackPlugin({
+      template: "./public/index.html",
+      inject: "body",
+    }),
+    // Plugin để định nghĩa biến môi trường cho phía client
+    new webpack.DefinePlugin({
+      "process.env.REACT_APP_API_URL": JSON.stringify(
+        process.env.REACT_APP_API_URL || "http://localhost:8080/api"
+      ),
+      // Bạn có thể định nghĩa thêm các biến khác nếu cần
+      // 'process.env.NODE_ENV': JSON.stringify('development'),
+    }),
+  ],
   resolve: {
-    extensions: [".js", ".jsx", ".scss", ".css"], // Cho phép import không cần ghi phần mở rộng
-    // alias: { // Tạo alias cho đường dẫn import dễ dàng hơn
-    //   '@components': path.resolve(__dirname, 'src/components'),
-    //   '@styles': path.resolve(__dirname, 'src/styles'),
-    // }
+    extensions: [".js", ".jsx", ".scss", ".css"],
   },
-  // ... (các cấu hình khác như optimization, devtool)
-  devtool: "eval-source-map", // Hoặc 'source-map' cho production
+  devtool: "eval-source-map", // Bật source map để dễ debug
 };

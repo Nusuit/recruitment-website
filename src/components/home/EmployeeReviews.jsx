@@ -1,172 +1,210 @@
 // src/components/home/EmployeeReviews.jsx
 import React, { useState, useEffect } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-// import { faChevronLeft, faChevronRight, faStar as fasStar } from '@fortawesome/free-solid-svg-icons';
-// import { faStar as farStar } from '@fortawesome/free-regular-svg-icons'; // For empty stars if needed
 
 const EmployeeReviews = () => {
   const reviewsData = [
     {
       id: 1,
       quote:
-        "Working at MyaCorp has been an incredible journey. The company truly values innovation and provides a supportive environment for creative minds to flourish. I feel empowered every day.",
-      author: "Sarah Thompson",
-      position: "Senior Fashion Designer",
-      avatar: "/assets/images/team/employee-1.jpg", // Replace with actual or placeholder path
+        "I love the freedom to design with creativity and focus on user experience. It's where design and innovation thrive.",
+      author: "Robert Fox",
+      position: "Designer",
+      avatar: "/assets/images/avatars/robert-fox.png",
       rating: 5,
     },
     {
       id: 2,
       quote:
-        "I've grown so much professionally since joining the team. The mentorship opportunities and collaborative culture make MyaCorp a truly special place to work. Highly recommended!",
-      author: "David Lee",
-      position: "Marketing Manager",
-      avatar: "/assets/images/team/employee-2.jpg",
+        "Being part of this team is an exciting journey of creativity and innovation. It's a great place for anyone passionate about fashion!",
+      author: "Bessie Cooper",
+      position: "Creative Director",
+      avatar: "/assets/images/avatars/bessie-cooper.png",
       rating: 5,
     },
     {
       id: 3,
       quote:
-        "The work-life balance here is exceptional. Management understands that happy employees are productive employees, and it genuinely shows in the quality of our work and team morale.",
-      author: "Emma Rodriguez",
-      position: "Product Developer",
-      avatar: "/assets/images/team/employee-3.jpg",
-      rating: 4,
+        "Capturing fashion through my lens here has been a dream come true. The team is supportive and passionate!",
+      author: "Jane Cooper",
+      position: "Photographer",
+      avatar: "/assets/images/avatars/jane-cooper.png",
+      rating: 5,
     },
     {
       id: 4,
       quote:
-        "Being part of a company that's so committed to sustainability and ethical practices is inspiring. MyaCorp walks the talk, and I'm proud to contribute to that mission.",
-      author: "Michael Chen",
-      position: "Supply Chain Analyst",
-      avatar: "/assets/images/team/employee-4.jpg", // Add more diverse avatars
+        "The collaborative environment at MyaCorp is fantastic. We are constantly pushing boundaries and supporting each other's growth.",
+      author: "Alex Green",
+      position: "UX Researcher",
+      avatar: "/assets/images/avatars/alex-green.png", // Thêm avatar mới
+      rating: 4,
+    },
+    {
+      id: 5,
+      quote:
+        "MyaCorp's commitment to sustainability is what drew me in, and the innovative projects keep me excited every day.",
+      author: "Maria Rodriguez",
+      position: "Sustainability Lead",
+      avatar: "/assets/images/avatars/maria-rodriguez.png", // Thêm avatar mới
       rating: 5,
     },
   ];
 
-  const [activeIndex, setActiveIndex] = useState(0);
+  const itemsPerPage = 3; // Số review hiển thị mỗi lần trên desktop
+  const totalPages = Math.ceil(reviewsData.length / itemsPerPage);
+  const [currentPage, setCurrentPage] = useState(0); // Index của "trang" hiện tại
 
   const handlePrev = () => {
-    setActiveIndex((prevIndex) =>
-      prevIndex === 0 ? reviewsData.length - 1 : prevIndex - 1
+    setCurrentPage((prevPage) =>
+      prevPage === 0 ? totalPages - 1 : prevPage - 1
     );
   };
 
   const handleNext = () => {
-    setActiveIndex((prevIndex) =>
-      prevIndex === reviewsData.length - 1 ? 0 : prevIndex + 1
+    setCurrentPage((prevPage) =>
+      prevPage === totalPages - 1 ? 0 : prevPage + 1
     );
   };
 
-  // Auto-slide functionality (optional)
+  // Optional: Auto-slide functionality
   useEffect(() => {
+    if (reviewsData.length <= itemsPerPage) return; // Không auto-slide nếu không đủ item để trượt
     const timer = setTimeout(() => {
       handleNext();
     }, 7000); // Change slide every 7 seconds
     return () => clearTimeout(timer);
-  }, [activeIndex]);
+  }, [currentPage, reviewsData.length]);
 
-  const currentReview = reviewsData[activeIndex];
+  const renderStars = (rating) => {
+    const stars = [];
+    for (let i = 1; i <= 5; i++) {
+      stars.push(
+        <FontAwesomeIcon
+          key={i}
+          icon={i <= rating ? ["fas", "star"] : ["far", "star"]}
+          className="text-yellow-400"
+        />
+      );
+    }
+    return stars;
+  };
+
+  // Chunk reviewsData into pages of 3 (or less for the last page)
+  const paginatedReviews = [];
+  for (let i = 0; i < reviewsData.length; i += itemsPerPage) {
+    paginatedReviews.push(reviewsData.slice(i, i + itemsPerPage));
+  }
 
   return (
-    <section className="employee-reviews-section py-16 md:py-24 bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50">
+    <section className="employee-reviews-section py-16 md:py-24 bg-white">
       <div className="container mx-auto px-4">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-            Voices from Our Team
+            Employee Reviews
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Hear what our talented employees have to say about their experience
-            at MyaCorp.
-          </p>
         </div>
 
-        <div className="relative max-w-3xl mx-auto bg-white p-8 md:p-12 rounded-xl shadow-2xl border border-gray-100 overflow-hidden">
-          {/* Previous Button */}
-          <button
-            onClick={handlePrev}
-            className="absolute left-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/70 hover:bg-white rounded-full shadow-lg transition-all text-gray-600 hover:text-blue-600"
-            aria-label="Previous review"
-          >
-            <FontAwesomeIcon icon="chevron-left" />
-          </button>
-
-          {/* Review Content - with transition */}
-          <div
-            className="review-content-slider"
-            style={{ transform: `translateX(-${activeIndex * 100}%)` }}
-          >
-            {reviewsData.map((review) => (
-              <div
-                key={review.id}
-                className="review-slide w-full flex-shrink-0 text-center"
-              >
-                <img
-                  src={review.avatar}
-                  alt={review.author}
-                  className="w-24 h-24 md:w-28 md:h-28 rounded-full mx-auto mb-6 border-4 border-blue-200 shadow-md object-cover"
-                />
-                <div className="flex justify-center mb-4">
-                  {[...Array(5)].map((_, i) => (
-                    <FontAwesomeIcon
-                      key={i}
-                      icon={
-                        i < review.rating ? ["fas", "star"] : ["far", "star"]
-                      } // Assuming fas for solid, far for regular
-                      className="text-yellow-400 text-xl"
-                    />
-                  ))}
+        <div className="relative max-w-6xl mx-auto">
+          {" "}
+          {/* Increased max-width for 3 cards */}
+          <div className="overflow-hidden relative">
+            <div
+              className="flex transition-transform duration-500 ease-in-out"
+              style={{ transform: `translateX(-${currentPage * 100}%)` }}
+            >
+              {paginatedReviews.map((pageItems, pageIndex) => (
+                <div
+                  key={pageIndex}
+                  className="page-slide w-full flex-shrink-0"
+                >
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
+                    {" "}
+                    {/* Grid for 3 cards */}
+                    {pageItems.map((review) => (
+                      <div
+                        key={review.id}
+                        className="review-card bg-gray-50 p-6 md:p-8 rounded-xl shadow-lg border border-gray-100 min-h-[280px] flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex justify-center mb-4 text-lg">
+                            {renderStars(review.rating)}
+                          </div>
+                          <blockquote className="text-sm md:text-md italic text-gray-700 mb-6 leading-relaxed text-center">
+                            "{review.quote}"
+                          </blockquote>
+                        </div>
+                        <div className="text-center mt-auto">
+                          <img
+                            src={
+                              review.avatar ||
+                              "/assets/images/default-avatar.png"
+                            }
+                            alt={review.author}
+                            className="w-14 h-14 rounded-full mx-auto mb-3 border-2 border-teal-300 object-cover"
+                          />
+                          <h4 className="font-semibold text-gray-800 text-sm md:text-base">
+                            {review.author}
+                          </h4>
+                          <p className="text-xs text-gray-500">
+                            {review.position}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {/* Fill empty spots if last page has less than 3 items for consistent height */}
+                    {pageItems.length < itemsPerPage &&
+                      Array(itemsPerPage - pageItems.length)
+                        .fill(null)
+                        .map((_, i) => (
+                          <div
+                            key={`empty-${i}`}
+                            className="hidden md:block"
+                          ></div> // Hidden on mobile, placeholder on desktop
+                        ))}
+                  </div>
                 </div>
-                <blockquote className="text-lg md:text-xl italic text-gray-700 mb-6 leading-relaxed">
-                  "{review.quote}"
-                </blockquote>
-                <h4 className="font-semibold text-gray-800 text-lg">
-                  {review.author}
-                </h4>
-                <p className="text-sm text-gray-500">{review.position}</p>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-
-          {/* Next Button */}
-          <button
-            onClick={handleNext}
-            className="absolute right-4 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/70 hover:bg-white rounded-full shadow-lg transition-all text-gray-600 hover:text-blue-600"
-            aria-label="Next review"
-          >
-            <FontAwesomeIcon icon="chevron-right" />
-          </button>
-
-          {/* Dots Navigation */}
-          <div className="flex justify-center mt-8 space-x-2">
-            {reviewsData.map((_, index) => (
+          {reviewsData.length > itemsPerPage && (
+            <>
               <button
-                key={index}
-                onClick={() => setActiveIndex(index)}
-                className={`w-2.5 h-2.5 rounded-full transition-all duration-300
+                onClick={handlePrev}
+                className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 hover:bg-white rounded-full shadow-md transition-all text-gray-600 hover:text-teal-600 -ml-4 md:-ml-8"
+                aria-label="Previous review page"
+              >
+                <FontAwesomeIcon icon="chevron-left" />
+              </button>
+              <button
+                onClick={handleNext}
+                className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 hover:bg-white rounded-full shadow-md transition-all text-gray-600 hover:text-teal-600 -mr-4 md:-mr-8"
+                aria-label="Next review page"
+              >
+                <FontAwesomeIcon icon="chevron-right" />
+              </button>
+            </>
+          )}
+          {reviewsData.length > itemsPerPage && (
+            <div className="flex justify-center mt-8 space-x-2">
+              {paginatedReviews.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentPage(index)}
+                  className={`w-2.5 h-2.5 rounded-full transition-all duration-300 focus:outline-none
                                     ${
-                                      activeIndex === index
-                                        ? "bg-blue-600 scale-125"
+                                      currentPage === index
+                                        ? "bg-teal-500 scale-125"
                                         : "bg-gray-300 hover:bg-gray-400"
                                     }
                                 `}
-                aria-label={`Go to review ${index + 1}`}
-              />
-            ))}
-          </div>
+                  aria-label={`Go to review page ${index + 1}`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </div>
-      {/* Basic styling for slider effect (can be moved to SCSS) */}
-      <style jsx>{`
-        .review-content-slider {
-          display: flex;
-          transition: transform 0.5s ease-in-out;
-        }
-        .review-slide {
-          min-width: 100%;
-          box-sizing: border-box;
-        }
-      `}</style>
     </section>
   );
 };

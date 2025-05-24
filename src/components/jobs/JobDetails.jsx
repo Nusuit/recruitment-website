@@ -9,7 +9,7 @@ import { AuthContext } from "../../contexts/AuthContext";
 import { JobsContext } from "../../contexts/JobsContext";
 // import Modal from '../common/Modal'; // Not used directly here, but parent might use it
 // import ApplyForm from './ApplyForm'; // ApplyForm might be used in a modal triggered by parent
-import { formatDate, formatRelativeTime } from "../../utils/formatters";
+import { formatDate, formatTimeAgo } from "../../utils/formatters";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const JobDetailsComponent = ({
@@ -131,7 +131,7 @@ const JobDetailsComponent = ({
           </span>
         </div>
         <p className="text-xs text-gray-500 mt-2">
-          Posted: {formatRelativeTime(job.postedDate)} | Deadline:{" "}
+          Posted: {formatTimeAgo(job.postedDate)} | Deadline:{" "}
           {formatDate(job.deadline)}
         </p>
       </div>

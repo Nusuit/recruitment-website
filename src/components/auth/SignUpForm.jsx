@@ -2,21 +2,25 @@
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
-import { validateSignUpForm } from "../../utils/validators"; // Assumes this function exists and is updated
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { validateSignUpForm } from "../../utils/validators"; // Đổi tên hàm validate cho phù hợp
 import "../../styles/AuthForms.scss";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Button from "../common/Button";
+import Input from "../common/Input";
 
 const SignUpForm = () => {
-  const { signup } = useContext(AuthContext);
+  const { signup, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
+    // Thêm firstName, lastName nếu design yêu cầu ở bước này
+    // Hoặc chúng có thể được thu thập sau khi xác thực email.
+    // Giả sử design hiện tại chỉ yêu cầu email, password, role.
     email: "",
     password: "",
     confirmPassword: "",
-    role: "candidate", // Default role
+    role: "candidate", // Mặc định là 'candidate' hoặc 'EMPLOYERS' theo design
+    agreeTerms: false, // Thêm trường này
   });
 
   const [errors, setErrors] = useState({});
@@ -26,17 +30,20 @@ const SignUpForm = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: "" }));
     }
     setSubmitError("");
   };
 
-  const handleRoleChange = (selectedRole) => {
-    setFormData((prev) => ({ ...prev, role: selectedRole }));
+  // Design có dropdown "Employers" / "Candidate", nên cần hàm này
+  const handleRoleChange = (e) => {
+    setFormData((prev) => ({ ...prev, role: e.target.value }));
   };
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
@@ -47,7 +54,11 @@ const SignUpForm = () => {
     e.preventDefault();
     setSubmitError("");
 
+    // Cần cập nhật validateSignUpForm để bao gồm cả agreeTerms nếu bắt buộc
     const validationErrors = validateSignUpForm(formData);
+    if (!formData.agreeTerms) {
+      validationErrors.agreeTerms = "You must agree to the Terms of Services.";
+    }
     setErrors(validationErrors);
 
     if (Object.keys(validationErrors).length > 0) {
@@ -57,10 +68,22 @@ const SignUpForm = () => {
     setIsSubmitting(true);
 
     try {
-      const result = await signup(formData);
+      // Truyền đúng cấu trúc dữ liệu mà AuthContext.signup mong đợi
+      // Ví dụ: nếu signup cần firstName, lastName, bạn cần thêm chúng vào formData
+      // và có thể là thêm các input field cho chúng.
+      // Hiện tại, dựa trên design, chỉ có email, password, role.
+      const userDataToSubmit = {
+        email: formData.email,
+        password: formData.password,
+        role: formData.role,
+        // Thêm firstName, lastName nếu API yêu cầu ở bước này
+        // firstName: formData.firstName,
+        // lastName: formData.lastName,
+      };
+
+      const result = await signup(userDataToSubmit);
       if (result.success) {
-        // Redirect to a confirmation page or login page
-        navigate("/check-email", { state: { email: formData.email } }); // Redirect to check email page
+        navigate("/verify-email", { state: { email: formData.email } });
       } else {
         setSubmitError(
           result.error || "Registration failed. Please try again."
@@ -75,30 +98,30 @@ const SignUpForm = () => {
   };
 
   return (
-    <div className="signup-form-section w-full md:w-1/2 lg:w-2/5 p-8 flex flex-col justify-center">
-      <div className="form-container max-w-md mx-auto w-full">
-        <div className="brand-logo mb-8 text-center">
+    // Phần form chiếm 2/5, phần ảnh chiếm 3/5 trên màn hình lớn
+    <div className="signup-form-section w-full md:w-2/5 p-8 md:p-12 flex flex-col justify-center">
+      <div className="form-container max-w-sm mx-auto w-full">
+        <div className="brand-logo mb-8 text-left">
           <Link to="/" className="inline-flex items-center gap-2">
             <img
-              src="/assets/images/logo.png"
-              alt="MyaCorp Logo"
-              className="h-12 w-auto"
+              src="/assets/images/logo.png" // Logo "MyJob"
+              alt="MyJob Logo"
+              className="h-8 w-auto"
             />
-            <span className="text-3xl font-bold text-blue-600">MyaCorp</span>
           </Link>
         </div>
 
-        <div className="signup-header mb-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">
-            Create Account
+        <div className="signup-header mb-6 text-left">
+          <h2 className="text-3xl font-bold text-gray-800 mb-1">
+            Create account.
           </h2>
-          <p className="text-gray-600">
-            Already have an account?{" "}
+          <p className="text-gray-600 text-sm">
+            Already have account?{" "}
             <Link
               to="/login"
-              className="text-blue-600 font-medium hover:underline"
+              className="text-teal-500 font-medium hover:underline"
             >
-              Log In
+              Log in
             </Link>
           </p>
         </div>
@@ -109,216 +132,138 @@ const SignUpForm = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          {/* Role Selection */}
-          <div className="mb-4">
-            <label className="block text-gray-800 font-medium mb-2 text-sm">
-              I am a...
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Role Selection Dropdown */}
+          <div className="relative">
+            <label htmlFor="role" className="sr-only">
+              Select Role
             </label>
-            <div className="flex gap-4">
-              <button
-                type="button"
-                onClick={() => handleRoleChange("candidate")}
-                className={`flex-1 p-3 border rounded text-center transition-all duration-200 ${
-                  formData.role === "candidate"
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-500"
-                }`}
-              >
-                <FontAwesomeIcon icon="user-tie" className="mr-2" />
-                Candidate
-              </button>
-              <button
-                type="button"
-                onClick={() => handleRoleChange("recruiter")}
-                className={`flex-1 p-3 border rounded text-center transition-all duration-200 ${
-                  formData.role === "recruiter"
-                    ? "bg-blue-600 text-white border-blue-600"
-                    : "bg-white text-gray-700 border-gray-300 hover:border-blue-500"
-                }`}
-              >
-                <FontAwesomeIcon icon="building" className="mr-2" />
-                Recruiter
-              </button>
-            </div>
-          </div>
-
-          {/* First Name & Last Name */}
-          <div className="flex gap-4 mb-4">
-            <div className="flex-1">
-              <label
-                htmlFor="firstName"
-                className="block text-gray-800 font-medium mb-1 text-sm"
-              >
-                First Name
-              </label>
-              <input
-                type="text"
-                id="firstName"
-                name="firstName"
-                value={formData.firstName}
-                onChange={handleChange}
-                required
-                placeholder="John"
-                className={`w-full p-3 border rounded focus:outline-none ${
-                  errors.firstName
-                    ? "border-red-500"
-                    : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                }`}
-              />
-              {errors.firstName && (
-                <p className="text-red-600 text-xs mt-1">{errors.firstName}</p>
-              )}
-            </div>
-            <div className="flex-1">
-              <label
-                htmlFor="lastName"
-                className="block text-gray-800 font-medium mb-1 text-sm"
-              >
-                Last Name
-              </label>
-              <input
-                type="text"
-                id="lastName"
-                name="lastName"
-                value={formData.lastName}
-                onChange={handleChange}
-                required
-                placeholder="Doe"
-                className={`w-full p-3 border rounded focus:outline-none ${
-                  errors.lastName
-                    ? "border-red-500"
-                    : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                }`}
-              />
-              {errors.lastName && (
-                <p className="text-red-600 text-xs mt-1">{errors.lastName}</p>
-              )}
-            </div>
-          </div>
-
-          {/* Email */}
-          <div className="mb-4">
-            <label
-              htmlFor="email"
-              className="block text-gray-800 font-medium mb-1 text-sm"
+            <select
+              id="role"
+              name="role"
+              value={formData.role}
+              onChange={handleRoleChange}
+              className="w-full p-3 border border-gray-300 rounded-md appearance-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 bg-white text-gray-700 text-sm"
             >
-              Email Address
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={formData.email}
-              onChange={handleChange}
-              required
-              placeholder="example@email.com"
-              className={`w-full p-3 border rounded focus:outline-none ${
-                errors.email
-                  ? "border-red-500"
-                  : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              }`}
+              <option value="candidate">I'm a Candidate</option>
+              <option value="recruiter">I'm an Employer/Recruiter</option>
+            </select>
+            <FontAwesomeIcon
+              icon="chevron-down"
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
             />
-            {errors.email && (
-              <p className="text-red-600 text-xs mt-1">{errors.email}</p>
-            )}
           </div>
-
-          {/* Password */}
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="block text-gray-800 font-medium mb-1 text-sm"
-            >
-              Password
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={formData.password}
-                onChange={handleChange}
-                required
-                placeholder="••••••••"
-                className={`w-full p-3 border rounded focus:outline-none ${
-                  errors.password
-                    ? "border-red-500"
-                    : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={toggleShowPassword}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                <FontAwesomeIcon icon={showPassword ? "eye-slash" : "eye"} />
-              </button>
+          {/* Thêm input cho First Name và Last Name nếu API yêu cầu */}
+          {/*
+            <div className="grid grid-cols-2 gap-4">
+              <Input label="First Name" name="firstName" value={formData.firstName} onChange={handleChange} error={errors.firstName} required inputClassName="p-3" />
+              <Input label="Last Name" name="lastName" value={formData.lastName} onChange={handleChange} error={errors.lastName} required inputClassName="p-3" />
             </div>
-            {errors.password && (
-              <p className="text-red-600 text-xs mt-1">{errors.password}</p>
-            )}
-          </div>
+           */}
 
-          {/* Confirm Password */}
-          <div className="mb-6">
-            <label
-              htmlFor="confirmPassword"
-              className="block text-gray-800 font-medium mb-1 text-sm"
-            >
-              Confirm Password
+          <Input
+            label="Email address"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange}
+            error={errors.email}
+            required
+            placeholder="Enter your email"
+            inputClassName="p-3"
+          />
+          <Input
+            label="Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={formData.password}
+            onChange={handleChange}
+            error={errors.password}
+            required
+            placeholder="Create a password"
+            iconRight={showPassword ? "eye-slash" : "eye"}
+            onIconRightClick={toggleShowPassword}
+            inputClassName="p-3"
+          />
+          <Input
+            label="Confirm Password"
+            name="confirmPassword"
+            type={showConfirmPassword ? "text" : "password"}
+            value={formData.confirmPassword}
+            onChange={handleChange}
+            error={errors.confirmPassword}
+            required
+            placeholder="Confirm your password"
+            iconRight={showConfirmPassword ? "eye-slash" : "eye"}
+            onIconRightClick={toggleShowConfirmPassword}
+            inputClassName="p-3"
+          />
+
+          <div className="flex items-start">
+            <input
+              type="checkbox"
+              id="agreeTerms"
+              name="agreeTerms"
+              checked={formData.agreeTerms}
+              onChange={handleChange}
+              className="h-4 w-4 text-teal-500 border-gray-300 rounded focus:ring-teal-400 mt-1"
+            />
+            <label htmlFor="agreeTerms" className="ml-2 text-xs text-gray-600">
+              I've read and agree with your{" "}
+              <Link to="/terms" className="text-teal-500 hover:underline">
+                Terms of Services
+              </Link>
             </label>
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                id="confirmPassword"
-                name="confirmPassword"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-                placeholder="••••••••"
-                className={`w-full p-3 border rounded focus:outline-none ${
-                  errors.confirmPassword
-                    ? "border-red-500"
-                    : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={toggleShowConfirmPassword}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-              >
-                <FontAwesomeIcon
-                  icon={showConfirmPassword ? "eye-slash" : "eye"}
-                />
-              </button>
-            </div>
-            {errors.confirmPassword && (
-              <p className="text-red-600 text-xs mt-1">
-                {errors.confirmPassword}
-              </p>
-            )}
           </div>
+          {errors.agreeTerms && (
+            <p className="text-red-600 text-xs -mt-3">{errors.agreeTerms}</p>
+          )}
 
-          <button
+          <Button
             type="submit"
-            className="w-full py-3 bg-blue-600 text-white border-none rounded text-base font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700 disabled:bg-gray-400"
-            disabled={isSubmitting}
+            fullWidth
+            isLoading={isSubmitting || authLoading}
+            disabled={isSubmitting || authLoading || !formData.agreeTerms}
+            className="bg-teal-500 hover:bg-teal-600 text-white py-3"
+            iconRight="arrow-right"
           >
-            {isSubmitting ? "Registering..." : "Register"}
-          </button>
+            Create Account
+          </Button>
 
-          <p className="text-xs text-gray-500 mt-4 text-center">
-            By creating an account, you agree to our{" "}
-            <Link to="/terms" className="text-blue-600 hover:underline">
-              Terms of Service
-            </Link>{" "}
-            and{" "}
-            <Link to="/privacy" className="text-blue-600 hover:underline">
-              Privacy Policy
-            </Link>
-            .
-          </p>
+          <div className="relative my-6">
+            <div
+              className="absolute inset-0 flex items-center"
+              aria-hidden="true"
+            >
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-2 bg-white text-sm text-gray-500">or</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              // onClick={handleGoogleSignup} // Cần hàm riêng cho signup
+              disabled={isSubmitting || authLoading}
+              variant="outline-primary"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
+              iconLeft={["fab", "google"]}
+            >
+              Sign up with Google
+            </Button>
+            <Button
+              type="button"
+              // onClick={handleFacebookSignup} // Cần hàm riêng cho signup
+              disabled={isSubmitting || authLoading}
+              variant="outline-primary"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
+              iconLeft={["fab", "facebook-f"]}
+            >
+              Sign up with Facebook
+            </Button>
+          </div>
         </form>
       </div>
     </div>

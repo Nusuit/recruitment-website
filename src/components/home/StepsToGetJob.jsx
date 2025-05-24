@@ -7,94 +7,74 @@ const StepsToGetJob = () => {
   const steps = [
     {
       number: 1,
-      icon: "search", // FontAwesome icon name (solid)
-      title: "Search for Your Dream Job",
+      icon: "user-plus", // Icon cho đăng ký tài khoản
+      title: "Register for an account",
       description:
-        "Explore our diverse range of fashion industry positions. Use filters to narrow down your perfect match.",
+        "Create your profile with us to start your journey. It's quick and easy!",
     },
     {
       number: 2,
-      icon: "file-signature", // FontAwesome icon name
-      title: "Apply with Your CV",
+      icon: "file-arrow-up", // Icon cho upload CV
+      title: "Upload Your CV",
       description:
-        "Our streamlined application process makes it easy to submit your resume and cover letter in minutes.",
+        "Showcase your skills and experience by uploading your most up-to-date CV.",
     },
     {
       number: 3,
-      icon: "handshake", // FontAwesome icon name
-      title: "Interview & Get Hired",
+      icon: "paper-plane", // Icon cho apply job
+      title: "Apply For Job!",
       description:
-        "Connect with top employers, showcase your skills, and embark on your exciting new career path.",
+        "Browse through numerous job openings and apply for the one that fits you best.",
     },
   ];
 
   return (
-    <section className="steps-section py-16 md:py-24 bg-gray-50">
+    <section className="steps-section py-16 md:py-24 bg-white">
+      {" "}
+      {/* Nền trắng theo design */}
       <div className="container mx-auto px-4">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-            Your Journey to a Fashion Career
+            Only 3 Steps to Get Your Dream Job!
           </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            Follow these simple steps to land your dream job in the vibrant
-            world of fashion.
-          </p>
+          {/* Optional: Add a subtitle if needed based on your overall content strategy */}
+          {/* <p className="text-lg text-gray-600 max-w-2xl mx-auto">
+            Follow these simple steps to kickstart your career with SiuuuCorp.
+          </p> */}
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 relative">
-          {/* Dashed line connector for larger screens - improved */}
-          <div
-            className="hidden md:block absolute top-1/2 left-0 right-0 h-px -mt-4"
-            style={{ zIndex: 0 }}
-          >
-            <svg width="100%" height="8px" className="overflow-visible">
-              <line
-                x1="12%"
-                y1="4"
-                x2="88%"
-                y2="4"
-                stroke="#cbd5e1"
-                strokeWidth="2"
-                strokeDasharray="8, 8"
-              />
-            </svg>
-          </div>
-
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10">
           {steps.map((step, index) => (
             <div
               key={step.number}
-              className="step-card bg-white p-8 rounded-xl shadow-xl text-center border border-gray-100 relative z-10 flex flex-col items-center"
+              className="step-card bg-teal-500 text-white p-8 rounded-xl shadow-xl text-center flex flex-col items-center transform hover:scale-105 transition-transform duration-300"
             >
-              <div className="relative mb-6">
-                <div className="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center text-3xl font-bold shadow-lg">
-                  {step.number}
-                </div>
-                <div className="absolute -top-3 -right-3 bg-yellow-400 p-3 rounded-full shadow-md">
-                  <FontAwesomeIcon
-                    icon={step.icon}
-                    className="text-xl text-gray-800"
-                  />
-                </div>
+              <div className="flex-shrink-0 w-16 h-16 mb-6 bg-white text-teal-600 rounded-full flex items-center justify-center text-3xl font-bold shadow-md">
+                {step.number}
               </div>
-              <h3 className="text-xl font-semibold text-gray-800 mb-3 mt-2">
-                {step.title}
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed flex-grow">
+              <div className="mb-4">
+                <FontAwesomeIcon
+                  icon={step.icon}
+                  className="text-4xl text-white" // Icon màu trắng trên nền teal
+                />
+              </div>
+              <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
+              <p className="text-sm text-teal-100 leading-relaxed flex-grow">
                 {step.description}
               </p>
             </div>
           ))}
         </div>
 
-        <div className="text-center mt-12 md:mt-16">
+        {/* Optional: Add a call to action button if it makes sense here */}
+        {/* <div className="text-center mt-12 md:mt-16">
           <Link
-            to="/jobs"
-            className="px-10 py-4 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 shadow-lg text-lg inline-flex items-center gap-2"
+            to="/signup" // Hoặc /jobs
+            className="px-10 py-4 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors duration-200 shadow-lg text-lg"
           >
-            <FontAwesomeIcon icon="briefcase" />
-            Browse All Open Positions
+            Get Started Now
           </Link>
-        </div>
+        </div> */}
       </div>
     </section>
   );

@@ -3,107 +3,75 @@ import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const CompanyCulture = () => {
+  // Nội dung và icon có thể được tùy chỉnh thêm cho phù hợp
   const culturePoints = [
     {
-      icon: "users",
-      title: "Collaboration First",
+      icon: "users-cog", // Icon tượng trưng cho sự hợp tác và cấu trúc
+      title: "Collaborative & Inclusive",
       description:
-        "We believe teamwork and open communication lead to the best outcomes.",
+        "We foster a collaborative and inclusive work environment where every team member's ideas are valued.",
     },
     {
-      icon: "lightbulb",
-      title: "Continuous Innovation",
+      icon: "brain", // Icon tượng trưng cho sự sáng tạo
+      title: "Creativity & Respect",
       description:
-        "Encouraging creative thinking and embracing new ideas to stay ahead.",
+        "We believe in creativity, respect, and empowering our team to innovate.",
     },
     {
-      icon: "seedling",
-      title: "Sustainability Driven",
+      icon: "chart-line", // Icon tượng trưng cho sự phát triển
+      title: "Continuous Growth",
       description:
-        "Committed to ethical practices and reducing our environmental footprint.",
+        "Dedicated to fostering an environment of continuous learning and professional development for all.",
     },
-    {
-      icon: "hands-helping",
-      title: "Supportive Environment",
-      description:
-        "Fostering a space where everyone feels valued, respected, and empowered.",
-    },
-    {
-      icon: "chart-growth",
-      title: "Growth Mindset",
-      description:
-        "Dedicated to learning, development, and personal & professional growth for all.",
-    },
-    {
-      icon: "smile-beam",
-      title: "Positive & Fun",
-      description:
-        "We work hard, but also believe in enjoying the journey and celebrating successes.",
-    },
-  ];
-
-  const teamImages = [
-    "/assets/images/company/team-1.jpg",
-    "/assets/images/company/team-2.jpg",
-    "/assets/images/company/team-3.jpg",
-    "/assets/images/company/team-4.jpg",
   ];
 
   return (
     <section className="company-culture-section py-16 md:py-24 bg-gray-50">
+      {" "}
+      {/* Nền xám nhạt */}
       <div className="container mx-auto px-4">
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
-            Our Vibrant Company Culture
-          </h2>
-          <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-            At MyaCorp, we cultivate an environment where creativity,
-            collaboration, and individual growth are at the forefront.
-          </p>
-        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 items-center">
+          {/* Phần text bên trái */}
+          <div className="text-center md:text-left">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6">
+              Company Culture
+            </h2>
+            <p className="text-gray-600 text-md md:text-lg leading-relaxed mb-8">
+              At SIUUUcorp, we foster a collaborative and inclusive work
+              environment where every team member's ideas are valued. We believe
+              in creativity, respect, and continuous growth.
+            </p>
+            {/* Bạn có thể thêm các điểm nhấn văn hóa ở đây nếu muốn, tương tự như WhyJoinUs */}
+            {/* <div className="space-y-4">
+              {culturePoints.map((point, index) => (
+                <div key={index} className="flex items-start space-x-3">
+                  <div className="flex-shrink-0 w-8 h-8 bg-teal-500 text-white rounded-full flex items-center justify-center mt-1">
+                    <FontAwesomeIcon icon={point.icon} />
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-gray-700">{point.title}</h4>
+                    <p className="text-gray-500 text-sm">{point.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div> */}
+          </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {culturePoints.map((point, index) => (
-            <div
-              key={index}
-              className="bg-white p-8 rounded-xl shadow-lg hover:shadow-2xl transform hover:-translate-y-1 transition-all duration-300 border-l-4 border-blue-500"
-            >
-              <FontAwesomeIcon
-                icon={point.icon}
-                className="text-3xl text-blue-600 mb-5"
-              />
-              <h3 className="text-xl font-semibold text-gray-800 mb-2">
-                {point.title}
-              </h3>
-              <p className="text-gray-600 text-sm leading-relaxed">
-                {point.description}
-              </p>
-            </div>
-          ))}
-        </div>
-
-        <div className="text-center mb-12 md:mb-16">
-          <h3 className="text-2xl font-semibold text-gray-800 mb-4">
-            Life at MyaCorp
-          </h3>
-          <p className="text-gray-600 max-w-xl mx-auto">
-            Glimpses into our dynamic workspace and team events that foster
-            connection and creativity.
-          </p>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
-          {teamImages.map((image, index) => (
-            <div
-              key={index}
-              className="rounded-lg overflow-hidden shadow-md aspect-w-1 aspect-h-1 group"
-            >
+          {/* Phần hình ảnh bên phải */}
+          <div className="flex justify-center md:justify-end">
+            <div className="relative w-full max-w-md rounded-lg shadow-xl overflow-hidden group">
               <img
-                src={image}
-                alt={`MyaCorp Team ${index + 1}`}
-                className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-300"
+                src="/assets/images/company/company-culture-team.jpg" // Đảm bảo bạn có ảnh này
+                alt="Company Culture - Team Collaboration"
+                className="w-full h-auto object-cover transform group-hover:scale-105 transition-transform duration-300"
               />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-transparent"></div>
+              {/* <div className="absolute bottom-4 left-4 text-white">
+                <h4 className="font-semibold text-lg">Team Spirit</h4>
+                <p className="text-xs">Working together towards success.</p>
+              </div> */}
             </div>
-          ))}
+          </div>
         </div>
       </div>
     </section>

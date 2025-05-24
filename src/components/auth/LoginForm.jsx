@@ -5,15 +5,17 @@ import { AuthContext } from "../../contexts/AuthContext";
 import { validateLoginForm } from "../../utils/validators";
 import "../../styles/AuthForms.scss"; // Đảm bảo SCSS được import
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import Button from "../common/Button"; // Sử dụng Button component
+import Input from "../common/Input"; // Sử dụng Input component
 
 const LoginForm = () => {
   const {
     login,
-    loginWithGoogle,
+    loginWithGoogle, // Giả sử bạn có hàm này trong AuthContext
     loading: authLoading,
   } = useContext(AuthContext);
   const navigate = useNavigate();
-  const location = useLocation(); // Để lấy state từ redirect (nếu có)
+  const location = useLocation();
 
   const [values, setValues] = useState({
     email: "",
@@ -22,7 +24,7 @@ const LoginForm = () => {
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState(location.state?.error || ""); // Lấy lỗi từ redirect (nếu có)
+  const [submitError, setSubmitError] = useState(location.state?.error || "");
   const [showPassword, setShowPassword] = useState(false);
 
   const handleChange = (e) => {
@@ -32,13 +34,9 @@ const LoginForm = () => {
       [name]: type === "checkbox" ? checked : value,
     }));
     if (errors[name]) {
-      // Xóa lỗi khi người dùng bắt đầu nhập lại
-      setErrors((prevErrors) => ({
-        ...prevErrors,
-        [name]: "",
-      }));
+      setErrors((prevErrors) => ({ ...prevErrors, [name]: "" }));
     }
-    if (submitError) setSubmitError(""); // Xóa lỗi submit chung
+    if (submitError) setSubmitError("");
   };
 
   const validateForm = () => {
@@ -61,7 +59,7 @@ const LoginForm = () => {
 
       if (result.success && result.user) {
         const role = result.user.role?.toLowerCase();
-        const { from } = location.state || { from: { pathname: "/" } }; // Lấy đường dẫn redirect
+        const { from } = location.state || { from: { pathname: "/" } };
 
         if (role === "admin") {
           navigate(
@@ -102,7 +100,6 @@ const LoginForm = () => {
     if (loginWithGoogle) {
       loginWithGoogle();
     } else {
-      console.error("loginWithGoogle function is not available in AuthContext");
       setSubmitError("Chức năng đăng nhập với Google hiện không khả dụng.");
     }
   };
@@ -112,148 +109,136 @@ const LoginForm = () => {
   };
 
   return (
-    <div className="login-form-section w-full md:w-1/2 lg:w-2/5 p-8 flex flex-col justify-center">
-      {" "}
-      {/* Adjusted width */}
-      <div className="form-container max-w-md mx-auto w-full">
-        {" "}
-        {/* Centered form */}
-        <div className="brand-logo mb-8 text-center">
+    // Phần form chiếm 2/5, phần ảnh chiếm 3/5 trên màn hình lớn
+    <div className="login-form-section w-full md:w-2/5 p-8 md:p-12 flex flex-col justify-center">
+      <div className="form-container max-w-sm mx-auto w-full">
+        <div className="brand-logo mb-8 text-left">
+          {" "}
+          {/* Căn trái logo */}
           <Link to="/" className="inline-flex items-center gap-2">
             <img
-              src="/assets/images/logo.png"
-              alt="MyaCorp Logo"
-              className="h-12 w-auto"
+              src="/assets/images/logo-myjob.png" // Thay bằng logo "MyJob"
+              alt="MyJob Logo"
+              className="h-8 w-auto" // Điều chỉnh kích thước logo
             />
-            <span className="text-3xl font-bold text-blue-600">MyaCorp</span>
+            {/* <span className="text-2xl font-bold text-teal-600">MyJob</span> */}
           </Link>
         </div>
-        <div className="login-header mb-6 text-center">
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Đăng nhập</h2>
-          <p className="text-gray-600">
-            Bạn chưa có tài khoản?{" "}
+
+        <div className="login-header mb-6 text-left">
+          {" "}
+          {/* Căn trái header */}
+          <h2 className="text-3xl font-bold text-gray-800 mb-2">Log In</h2>
+          <p className="text-gray-600 text-sm">
+            Don't have account?{" "}
             <Link
               to="/signup"
-              className="text-blue-600 font-medium hover:underline"
+              className="text-teal-500 font-medium hover:underline"
             >
-              Tạo tài khoản
+              Create Account
             </Link>
           </p>
         </div>
+
         {submitError && (
           <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
             {submitError}
           </div>
         )}
-        <form onSubmit={handleSubmit} className="flex flex-col">
-          <div className="mb-4">
-            <label
-              htmlFor="email"
-              className="block text-gray-800 font-medium mb-1 text-sm"
-            >
-              Địa chỉ Email
-            </label>
-            <input
-              type="email"
-              id="email"
-              name="email"
-              value={values.email}
-              onChange={handleChange}
-              required
-              placeholder="example@email.com"
-              className={`w-full p-3 border rounded focus:outline-none transition-colors duration-200 ${
-                errors.email
-                  ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                  : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              }`}
-            />
-            {errors.email && (
-              <p className="text-red-600 text-xs mt-1">{errors.email}</p>
-            )}
-          </div>
 
-          <div className="mb-4">
-            <label
-              htmlFor="password"
-              className="block text-gray-800 font-medium mb-1 text-sm"
-            >
-              Mật khẩu
-            </label>
-            <div className="relative">
-              <input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                name="password"
-                value={values.password}
-                onChange={handleChange}
-                required
-                placeholder="••••••••"
-                className={`w-full p-3 border rounded focus:outline-none transition-colors duration-200 ${
-                  errors.password
-                    ? "border-red-500 focus:border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-                }`}
-              />
-              <button
-                type="button"
-                onClick={toggleShowPassword}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
-                aria-label={showPassword ? "Hide password" : "Show password"}
-              >
-                <FontAwesomeIcon icon={showPassword ? "eye-slash" : "eye"} />
-              </button>
-            </div>
-            {errors.password && (
-              <p className="text-red-600 text-xs mt-1">{errors.password}</p>
-            )}
-          </div>
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <Input
+            label="Email address"
+            name="email"
+            type="email"
+            value={values.email}
+            onChange={handleChange}
+            error={errors.email}
+            required
+            placeholder="Enter your email"
+            inputClassName="p-3"
+          />
+          <Input
+            label="Password"
+            name="password"
+            type={showPassword ? "text" : "password"}
+            value={values.password}
+            onChange={handleChange}
+            error={errors.password}
+            required
+            placeholder="Enter your password"
+            iconRight={showPassword ? "eye-slash" : "eye"}
+            onIconRightClick={toggleShowPassword}
+            inputClassName="p-3"
+          />
 
-          <div className="flex justify-between items-center mb-6">
-            <div className="flex items-center space-x-2">
+          <div className="flex justify-between items-center text-sm">
+            <label
+              htmlFor="rememberMe"
+              className="flex items-center cursor-pointer"
+            >
               <input
                 type="checkbox"
                 id="rememberMe"
                 name="rememberMe"
                 checked={values.rememberMe}
                 onChange={handleChange}
-                className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                className="h-4 w-4 text-teal-500 border-gray-300 rounded focus:ring-teal-400"
               />
-              <label htmlFor="rememberMe" className="text-gray-600 text-sm">
-                Ghi nhớ tôi
-              </label>
-            </div>
+              <span className="ml-2 text-gray-700">Remember Me</span>
+            </label>
             <Link
               to="/forgot-password"
-              className="text-blue-600 font-medium text-sm hover:underline"
+              className="text-teal-500 font-medium hover:underline"
             >
-              Quên mật khẩu?
+              Forget password?
             </Link>
           </div>
 
-          <button
+          <Button
             type="submit"
-            className="w-full py-3 bg-blue-600 text-white border-none rounded text-base font-medium cursor-pointer transition-colors duration-200 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+            fullWidth
+            isLoading={isSubmitting || authLoading}
             disabled={isSubmitting || authLoading}
+            className="bg-teal-500 hover:bg-teal-600 text-white py-3" // Nút màu teal
+            iconRight="arrow-right"
           >
-            {isSubmitting || authLoading ? "Đang đăng nhập..." : "Đăng nhập"}
-          </button>
+            Log In
+          </Button>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-500 text-sm mb-4 relative before:content-[''] before:absolute before:top-1/2 before:w-[35%] before:h-px before:bg-gray-300 before:left-0 after:content-[''] after:absolute after:top-1/2 after:w-[35%] after:h-px after:bg-gray-300 after:right-0">
-              hoặc
-            </p>
-            <button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isSubmitting || authLoading}
-              className="w-full flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-70"
+          <div className="relative my-6">
+            <div
+              className="absolute inset-0 flex items-center"
+              aria-hidden="true"
             >
-              <FontAwesomeIcon
-                icon={["fab", "google"]}
-                className="text-red-500"
-              />
-              Đăng nhập bằng Google
-            </button>
+              <div className="w-full border-t border-gray-300"></div>
+            </div>
+            <div className="relative flex justify-center">
+              <span className="px-2 bg-white text-sm text-gray-500">or</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <Button
+              type="button"
+              onClick={handleGoogleLogin} // Giả sử bạn có hàm này
+              disabled={isSubmitting || authLoading}
+              variant="outline-primary" // Hoặc một variant khác cho social login
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
+              iconLeft={["fab", "google"]}
+            >
+              Sign in with Google
+            </Button>
+            <Button
+              type="button"
+              // onClick={handleFacebookLogin} // Giả sử bạn có hàm này
+              disabled={isSubmitting || authLoading}
+              variant="outline-primary"
+              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
+              iconLeft={["fab", "facebook-f"]}
+            >
+              Sign in with Facebook
+            </Button>
           </div>
         </form>
       </div>

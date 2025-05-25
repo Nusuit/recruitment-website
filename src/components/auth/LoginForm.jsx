@@ -3,10 +3,38 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { validateLoginForm } from "../../utils/validators";
-import "../../styles/AuthForms.scss"; // SCSS này đã có trong Canvas
+// import "../../styles/AuthForms.scss"; // SCSS có thể không cần nhiều nữa
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+// SVG cho Google Logo (nhiều màu)
+const GoogleIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 18 18"
+    xmlns="http://www.w3.org/2000/svg"
+    className="mr-2"
+  >
+    <path
+      d="M17.64 9.20455C17.64 8.56636 17.5832 7.95273 17.4764 7.36364H9V10.845H13.8436C13.635 11.9705 13.0014 12.9232 12.045 13.5218V15.8195H14.9564C16.6582 14.2527 17.64 11.9459 17.64 9.20455Z"
+      fill="#4285F4"
+    />
+    <path
+      d="M9 18C11.43 18 13.4673 17.1941 14.9564 15.8195L12.045 13.5218C11.2805 14.0086 10.2295 14.3195 9 14.3195C6.65591 14.3195 4.67182 12.8077 3.96409 10.71H0.957272V13.0886C2.43818 15.9832 5.48182 18 9 18Z"
+      fill="#34A853"
+    />
+    <path
+      d="M3.96409 10.71C3.78409 10.1718 3.68045 9.59364 3.68045 9C3.68045 8.40636 3.78409 7.82818 3.96409 7.29V4.91136H0.957272C0.347727 6.17318 0 7.54773 0 9C0 10.4523 0.347727 11.8268 0.957272 13.0886L3.96409 10.71Z"
+      fill="#FBBC05"
+    />
+    <path
+      d="M9 3.68045C10.3977 3.68045 11.5268 4.17182 12.4795 5.08136L15.0218 2.54727C13.4632 0.972727 11.43 0 9 0C5.48182 0 2.43818 2.01682 0.957272 4.91136L3.96409 7.29C4.67182 5.19227 6.65591 3.68045 9 3.68045Z"
+      fill="#EA4335"
+    />
+  </svg>
+);
 
 const LoginForm = () => {
   const {
@@ -60,31 +88,17 @@ const LoginForm = () => {
       if (result.success && result.user) {
         const role = result.user.role?.toLowerCase();
         const { from } = location.state || { from: { pathname: "/" } };
-
-        if (role === "admin") {
-          navigate(
-            from.pathname === "/login" || from.pathname === "/"
+        const intendedPath =
+          from.pathname === "/login" || from.pathname === "/"
+            ? role === "admin"
               ? "/admin/dashboard"
-              : from.pathname,
-            { replace: true }
-          );
-        } else if (role === "candidate") {
-          navigate(
-            from.pathname === "/login" || from.pathname === "/"
+              : role === "candidate"
               ? "/applicant/dashboard"
-              : from.pathname,
-            { replace: true }
-          );
-        } else if (role === "recruiter") {
-          navigate(
-            from.pathname === "/login" || from.pathname === "/"
+              : role === "recruiter"
               ? "/recruiter/dashboard"
-              : from.pathname,
-            { replace: true }
-          );
-        } else {
-          navigate(from.pathname, { replace: true });
-        }
+              : "/"
+            : from.pathname;
+        navigate(intendedPath, { replace: true });
       } else {
         setSubmitError(result.error || "Email or password invalid.");
       }
@@ -113,151 +127,130 @@ const LoginForm = () => {
   };
 
   return (
-    // Cột form (Trái)
-    <div className="login-form-section w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-center bg-white">
-      <div className="form-container max-w-sm mx-auto w-full">
-        <div className="login-header mb-8 text-left">
-          <h2 className="text-4xl font-bold text-gray-900 mb-2">Log In</h2>
-          <p className="text-gray-600 text-sm">
-            Don't have an account?{" "}
-            <Link
-              to="/signup"
-              className="text-teal-500 font-semibold hover:underline"
-            >
-              Create Account
-            </Link>
-          </p>
+    <div className="w-full max-w-sm mx-auto">
+      {" "}
+      {/* Giới hạn chiều rộng form */}
+      <div className="mb-8 text-left">
+        <h2 className="text-3xl font-bold text-gray-900 mb-1">Log In</h2>
+        <p className="text-gray-500 text-sm">
+          Don't have an account?{" "}
+          <Link
+            to="/signup"
+            className="text-[#16C0B0] font-semibold hover:underline"
+          >
+            Create Account
+          </Link>
+        </p>
+      </div>
+      {submitError && (
+        <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-2.5 rounded-md text-xs mb-4">
+          {submitError}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          label="Email address*"
+          name="email"
+          type="email"
+          value={values.email}
+          onChange={handleChange}
+          error={errors.email}
+          required
+          placeholder="Enter your email"
+          inputClassName="p-3 text-sm rounded-md border-gray-300 focus:border-[#16C0B0] focus:ring-1 focus:ring-[#16C0B0]"
+          labelClassName="text-xs font-medium text-gray-600"
+        />
+        <Input
+          label="Password*"
+          name="password"
+          type={showPassword ? "text" : "password"}
+          value={values.password}
+          onChange={handleChange}
+          error={errors.password}
+          required
+          placeholder="Enter your password"
+          iconRight={showPassword ? "eye-slash" : "eye"}
+          onIconRightClick={toggleShowPassword}
+          inputClassName="p-3 text-sm rounded-md border-gray-300 focus:border-[#16C0B0] focus:ring-1 focus:ring-[#16C0B0]"
+          labelClassName="text-xs font-medium text-gray-600"
+        />
+
+        <div className="flex justify-between items-center text-xs">
+          <label
+            htmlFor="rememberMe"
+            className="flex items-center cursor-pointer text-gray-600"
+          >
+            <input
+              type="checkbox"
+              id="rememberMe"
+              name="rememberMe"
+              checked={values.rememberMe}
+              onChange={handleChange}
+              className="h-3.5 w-3.5 text-[#16C0B0] border-gray-300 rounded focus:ring-[#16C0B0]"
+            />
+            <span className="ml-2">Remember Me</span>
+          </label>
+          <Link
+            to="/forgot-password"
+            className="text-[#16C0B0] font-medium hover:underline"
+          >
+            Forget password?
+          </Link>
         </div>
 
-        {submitError && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm">
-            {submitError}
-          </div>
-        )}
+        <Button
+          type="submit"
+          fullWidth
+          isLoading={isSubmitting || authLoading}
+          disabled={isSubmitting || authLoading}
+          className="bg-[#16C0B0] hover:bg-[#12a79a] text-white py-3 text-sm font-semibold shadow-md hover:shadow-lg"
+          iconRight="arrow-right" // Thêm icon mũi tên
+        >
+          Log In
+        </Button>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <Input
-            label="Email address"
-            name="email"
-            type="email"
-            value={values.email}
-            onChange={handleChange}
-            error={errors.email}
-            required
-            placeholder="Enter your email"
-            inputClassName="p-3 rounded-md border-gray-300 focus:border-teal-500 focus:ring-teal-500"
-            labelClassName="font-medium text-gray-700"
-          />
-          <Input
-            label="Password"
-            name="password"
-            type={showPassword ? "text" : "password"}
-            value={values.password}
-            onChange={handleChange}
-            error={errors.password}
-            required
-            placeholder="Enter your password"
-            iconRight={showPassword ? "eye-slash" : "eye"}
-            onIconRightClick={toggleShowPassword}
-            inputClassName="p-3 rounded-md border-gray-300 focus:border-teal-500 focus:ring-teal-500"
-            labelClassName="font-medium text-gray-700"
-          />
-
-          <div className="flex justify-between items-center text-sm form-options">
-            <label
-              htmlFor="rememberMe"
-              className="flex items-center cursor-pointer remember-me"
-            >
-              <input
-                type="checkbox"
-                id="rememberMe"
-                name="rememberMe"
-                checked={values.rememberMe}
-                onChange={handleChange}
-                className="h-4 w-4 text-teal-500 border-gray-300 rounded focus:ring-teal-500"
-              />
-              <span className="ml-2 text-gray-700">Remember Me</span>
-            </label>
-            <Link
-              to="/forgot-password"
-              className="text-teal-500 font-semibold hover:underline forgot-password-link"
-            >
-              Forgot password?
-            </Link>
-          </div>
-
-          {/* SỬ DỤNG CLASS .btn-login-primary TỪ SCSS CHO NÚT NÀY */}
-          <button
-            type="submit"
-            disabled={isSubmitting || authLoading}
-            className="btn-login-primary" // Áp dụng class SCSS
+        <div className="relative my-5">
+          <div
+            className="absolute inset-0 flex items-center"
+            aria-hidden="true"
           >
-            {isSubmitting || authLoading ? (
-              <span className="flex items-center justify-center">
-                <svg
-                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Processing...
-              </span>
-            ) : (
-              <span className="flex items-center justify-center">
-                Log In
-                <FontAwesomeIcon icon="arrow-right" className="ml-2 h-4 w-4" />
-              </span>
-            )}
+            <div className="w-full border-t border-gray-300"></div>
+          </div>
+          <div className="relative flex justify-center text-xs">
+            <span className="px-2 bg-white text-gray-400">or</span>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3">
+          <button
+            type="button"
+            onClick={handleFacebookLogin}
+            disabled={isSubmitting || authLoading}
+            style={{
+              backgroundColor: "#3b5998",
+              color: "white",
+              borderColor: "transparent",
+            }}
+            className="w-full hover:opacity-90 shadow-sm flex items-center justify-center text-xs font-medium px-3 py-2.5 rounded-md"
+          >
+            <FontAwesomeIcon icon={["fab", "facebook-f"]} className="mr-2" />
+            <span className="whitespace-nowrap leading-tight">
+              Sign up with Facebook
+            </span>
           </button>
-
-          <div className="relative my-6 divider-or">
-            <div className="divider-line" aria-hidden="true">
-              <div></div> {/* This div is targeted by SCSS for the line */}
-            </div>
-            <div className="divider-text">
-              <span>or</span>
-            </div>
-          </div>
-
-          {/* Social Login Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Button
-              type="button"
-              onClick={handleFacebookLogin}
-              disabled={isSubmitting || authLoading}
-              variant="outline" // Hoặc không có variant nếu social-login-button đã đủ
-              className="social-login-button" // Class SCSS
-              iconLeft={["fab", "facebook-f"]}
-            >
-              Sign in with Facebook
-            </Button>
-            <Button
-              type="button"
-              onClick={handleGoogleLogin}
-              disabled={isSubmitting || authLoading}
-              variant="outline" // Hoặc không có variant
-              className="social-login-button" // Class SCSS
-              iconLeft={["fab", "google"]}
-            >
-              Sign in with Google
-            </Button>
-          </div>
-        </form>
-      </div>
+          <button
+            type="button"
+            onClick={handleGoogleLogin}
+            disabled={isSubmitting || authLoading}
+            className="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 shadow-sm flex items-center justify-center text-xs font-medium px-3 py-2.5 rounded-md"
+          >
+            <GoogleIcon /> {/* Sử dụng SVG inline */}
+            <span className="whitespace-nowrap leading-tight">
+              Sign up with Google
+            </span>
+          </button>
+        </div>
+      </form>
     </div>
   );
 };

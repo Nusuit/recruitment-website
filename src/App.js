@@ -15,6 +15,8 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom"; // Import Link
+import LoginPage from "./pages/guest/LoginPage";
+import SignUpPage from "./pages/guest/SignUpPage";
 
 import "./styles/global.scss";
 
@@ -35,6 +37,7 @@ const CheckEmailPage = lazy(() => import("./pages/guest/CheckEmailPage"));
 // Auth Pages
 const SignUpForm = lazy(() => import("./components/auth/SignUpForm"));
 const LoginForm = lazy(() => import("./components/auth/LoginForm"));
+
 const EmailVerificationPage = lazy(() =>
   import("./pages/guest/EmailVerificationPage")
 ); // Sử dụng Page
@@ -257,7 +260,7 @@ function App() {
                     path="/login"
                     element={
                       <GuestGuard>
-                        <LoginForm />
+                        <LoginPage />
                       </GuestGuard>
                     }
                   />
@@ -265,7 +268,7 @@ function App() {
                     path="/signup"
                     element={
                       <GuestGuard>
-                        <SignUpForm />
+                        <SignUpPage />
                       </GuestGuard>
                     }
                   />

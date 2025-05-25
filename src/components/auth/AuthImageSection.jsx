@@ -1,28 +1,42 @@
 // src/components/auth/AuthImageSection.jsx
 import React from "react";
+import PropTypes from "prop-types";
 
-const AuthImageSection = () => {
+const AuthImageSection = ({ imageSrc, imageAlt, quoteText, quoteAuthor }) => {
   return (
-    // Class hidden md:flex đảm bảo nó chỉ hiển thị trên màn hình md trở lên
-    <div className="login-image-section hidden md:flex w-full md:w-1/2 flex-col justify-center items-center p-12 text-center relative bg-white">
-      {/* Image */}
+    <div className="flex flex-col justify-center items-center h-full text-center px-4">
       <img
-        src="/assets/images/login.png" // Đường dẫn đến ảnh minh họa thời trang
-        alt="Login Illustration"
-        className="max-w-xs sm:max-w-sm lg:max-w-md mx-auto mb-10"
+        src={imageSrc}
+        alt={imageAlt}
+        className="max-w-xs sm:max-w-sm md:max-w-md lg:max-w-lg xl:max-w-xl mx-auto mb-8 object-contain"
       />
-
-      {/* Quote */}
-      <div className="quote-section text-gray-800">
+      <div className="text-gray-700 max-w-md">
         <p className="text-xl lg:text-2xl italic mb-3 leading-relaxed">
-          “Style is a way to say who you are without having to speak.”
+          “{quoteText}”
         </p>
-        <cite className="text-base font-medium text-gray-600">
-          - Rachel Zoe
-        </cite>
+        {quoteAuthor && (
+          <cite className="text-sm font-medium text-gray-500">
+            - {quoteAuthor}
+          </cite>
+        )}
       </div>
     </div>
   );
+};
+
+AuthImageSection.propTypes = {
+  imageSrc: PropTypes.string.isRequired,
+  imageAlt: PropTypes.string.isRequired,
+  quoteText: PropTypes.string.isRequired,
+  quoteAuthor: PropTypes.string,
+};
+
+// Thêm defaultProps để component không bị lỗi nếu thiếu props
+AuthImageSection.defaultProps = {
+  imageSrc: "/assets/images/login.png", // Ảnh mặc định
+  imageAlt: "Fashion Illustration",
+  quoteText: "Style is a way to say who you are without having to speak.",
+  quoteAuthor: "Rachel Zoe",
 };
 
 export default AuthImageSection;

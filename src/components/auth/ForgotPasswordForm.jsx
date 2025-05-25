@@ -1,21 +1,20 @@
-// src/pages/guest/ForgotPasswordPage.jsx
+// src/components/auth/ForgotPasswordForm.jsx
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { validateForgotPasswordForm } from "../../utils/validators";
-import Button from "../../components/common/Button";
-import Input from "../../components/common/Input";
-// import "../../styles/AuthForms.scss"; // SCSS chung cho các form auth đã được import ở AuthLayoutWrapper hoặc App.js
+import Button from "../common/Button";
+import Input from "../common/Input";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // For icon in button
 
-const ForgotPasswordPage = () => {
-  const { forgotPassword, loading: authLoading } = useContext(AuthContext); // Giả sử có hàm forgotPassword trong context
+const ForgotPasswordForm = () => {
+  const { forgotPassword, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
   const [error, setError] = useState(""); // Lỗi từ API
   const [validationError, setValidationError] = useState(""); // Lỗi từ client-side validation
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   const handleChange = (e) => {
     setEmail(e.target.value);
@@ -35,16 +34,14 @@ const ForgotPasswordPage = () => {
 
     setIsSubmitting(true);
     try {
-      const result = await forgotPassword(email);
+      const result = await forgotPassword(email); // Hàm này trong AuthContext nên xử lý việc gọi API
       if (result.success) {
-        setSubmitSuccess(true);
-        // Chuyển hướng đến trang thông báo kiểm tra email, truyền email và thông điệp
+        // Điều hướng đến trang /check-email với thông điệp phù hợp
         navigate("/check-email", {
           state: {
             email: email,
-            message:
-              "If an account with that email exists, we've sent instructions to reset your password.",
-            purpose: "passwordReset", // Để CheckEmailPage biết mục đích
+            message: `If an account with email ${email} exists, we have sent instructions to reset your password. Please check your inbox (and spam folder).`, // Thông điệp rõ ràng hơn
+            purpose: "passwordReset", // Giữ lại purpose để trang CheckEmailPage có thể tùy biến hiển thị nếu cần
           },
         });
       } else {
@@ -61,107 +58,64 @@ const ForgotPasswordPage = () => {
     }
   };
 
-  // Layout này sẽ được render bên trong AuthLayoutWrapper (phần single-column)
   return (
-    <>
-      <div className="text-left mb-8">
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="w-full max-w-sm mx-auto">
+      <div className="mb-6 text-left">
+        <h2 className="text-3xl font-bold text-gray-900 mb-1">
           Forget Password
         </h2>
         <p className="text-gray-500 text-sm">
           Go back to{" "}
           <Link
             to="/login"
-            className="text-teal-500 font-semibold hover:underline"
+            className="text-[#16C0B0] font-semibold hover:underline"
           >
-            Log in
+            Log In
           </Link>
-          . Don't have account?{" "}
+        </p>
+        <p className="text-gray-500 text-sm mt-1">
+          Don't have account?{" "}
           <Link
             to="/signup"
-            className="text-teal-500 font-semibold hover:underline"
+            className="text-[#16C0B0] font-semibold hover:underline"
           >
             Create Account
           </Link>
         </p>
       </div>
 
-      {submitSuccess ? (
-        <div className="text-center p-6 bg-green-50 border border-green-200 rounded-lg shadow-sm">
-          {/* Thông báo thành công sẽ hiển thị trên trang CheckEmailPage */}
-          <p className="text-gray-700">
-            Redirecting you to check your email...
-          </p>
+      {(error || validationError) && (
+        <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-2.5 rounded-md text-xs mb-4">
+          {error || validationError}
         </div>
-      ) : (
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && (
-            <div className="bg-red-50 border border-red-300 text-red-600 px-4 py-2.5 rounded text-xs">
-              {error}
-            </div>
-          )}
-          <Input
-            name="email"
-            type="email"
-            value={email}
-            onChange={handleChange}
-            error={validationError}
-            required
-            placeholder="Email address"
-            inputClassName="p-3 text-sm"
-          />
-          <Button
-            type="submit"
-            fullWidth
-            isLoading={isSubmitting || authLoading}
-            disabled={isSubmitting || authLoading}
-            className="bg-teal-500 hover:bg-teal-600 text-white py-3 text-sm font-semibold"
-            iconRight="arrow-right"
-          >
-            Reset Password
-          </Button>
-        </form>
       )}
 
-      {!submitSuccess && (
-        <>
-          <div className="relative my-6">
-            <div
-              className="absolute inset-0 flex items-center"
-              aria-hidden="true"
-            >
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center">
-              <span className="px-2 bg-white text-xs text-gray-400">or</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <Button
-              type="button"
-              // onClick={handleGoogleLogin} // Không phù hợp ở đây
-              disabled={true} // Tạm disable
-              variant="outline-primary"
-              className="border-gray-300 text-gray-600 hover:bg-gray-50 py-2.5 text-xs font-medium"
-              iconLeft={["fab", "google"]}
-            >
-              Sign in with Google
-            </Button>
-            <Button
-              type="button"
-              // onClick={handleFacebookLogin} // Không phù hợp ở đây
-              disabled={true} // Tạm disable
-              variant="outline-primary"
-              className="border-gray-300 text-gray-600 hover:bg-gray-50 py-2.5 text-xs font-medium"
-              iconLeft={["fab", "facebook-f"]}
-            >
-              Sign in with Facebook
-            </Button>
-          </div>
-        </>
-      )}
-    </>
+      <form onSubmit={handleSubmit} className="space-y-5">
+        <Input
+          label="Email address"
+          name="email"
+          type="email"
+          value={email}
+          onChange={handleChange}
+          required
+          placeholder="Enter your email"
+          inputClassName="p-3 text-sm rounded-md border-gray-300 focus:border-[#16C0B0] focus:ring-1 focus:ring-[#16C0B0]"
+          labelClassName="text-xs font-medium text-gray-600"
+        />
+
+        <Button
+          type="submit"
+          fullWidth
+          isLoading={isSubmitting || authLoading}
+          disabled={isSubmitting || authLoading}
+          className="bg-[#16C0B0] hover:bg-[#12a79a] text-white py-3 text-sm font-semibold shadow-md hover:shadow-lg"
+          iconRight="arrow-right"
+        >
+          Reset Password
+        </Button>
+      </form>
+    </div>
   );
 };
 
-export default ForgotPasswordPage;
+export default ForgotPasswordForm;

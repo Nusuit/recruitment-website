@@ -3,15 +3,15 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { validateLoginForm } from "../../utils/validators";
-import "../../styles/AuthForms.scss"; // Đảm bảo SCSS được import
+import "../../styles/AuthForms.scss"; // SCSS này đã có trong Canvas
+import Button from "../common/Button";
+import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import Button from "../common/Button"; // Sử dụng Button component
-import Input from "../common/Input"; // Sử dụng Input component
 
 const LoginForm = () => {
   const {
     login,
-    loginWithGoogle, // Giả sử bạn có hàm này trong AuthContext
+    loginWithGoogle,
     loading: authLoading,
   } = useContext(AuthContext);
   const navigate = useNavigate();
@@ -86,11 +86,11 @@ const LoginForm = () => {
           navigate(from.pathname, { replace: true });
         }
       } else {
-        setSubmitError(result.error || "Email hoặc mật khẩu không hợp lệ.");
+        setSubmitError(result.error || "Email or password invalid.");
       }
     } catch (error) {
-      console.error("Lỗi đăng nhập:", error);
-      setSubmitError("Đã xảy ra lỗi không mong muốn. Vui lòng thử lại sau.");
+      console.error("Login Error:", error);
+      setSubmitError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);
     }
@@ -100,8 +100,12 @@ const LoginForm = () => {
     if (loginWithGoogle) {
       loginWithGoogle();
     } else {
-      setSubmitError("Chức năng đăng nhập với Google hiện không khả dụng.");
+      setSubmitError("Google login is currently unavailable.");
     }
+  };
+
+  const handleFacebookLogin = () => {
+    setSubmitError("Facebook login is currently unavailable.");
   };
 
   const toggleShowPassword = () => {
@@ -109,31 +113,16 @@ const LoginForm = () => {
   };
 
   return (
-    // Phần form chiếm 2/5, phần ảnh chiếm 3/5 trên màn hình lớn
-    <div className="login-form-section w-full md:w-2/5 p-8 md:p-12 flex flex-col justify-center">
+    // Cột form (Trái)
+    <div className="login-form-section w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-center bg-white">
       <div className="form-container max-w-sm mx-auto w-full">
-        <div className="brand-logo mb-8 text-left">
-          {" "}
-          {/* Căn trái logo */}
-          <Link to="/" className="inline-flex items-center gap-2">
-            <img
-              src="/assets/images/logo-myjob.png" // Thay bằng logo "MyJob"
-              alt="MyJob Logo"
-              className="h-8 w-auto" // Điều chỉnh kích thước logo
-            />
-            {/* <span className="text-2xl font-bold text-teal-600">MyJob</span> */}
-          </Link>
-        </div>
-
-        <div className="login-header mb-6 text-left">
-          {" "}
-          {/* Căn trái header */}
-          <h2 className="text-3xl font-bold text-gray-800 mb-2">Log In</h2>
+        <div className="login-header mb-8 text-left">
+          <h2 className="text-4xl font-bold text-gray-900 mb-2">Log In</h2>
           <p className="text-gray-600 text-sm">
-            Don't have account?{" "}
+            Don't have an account?{" "}
             <Link
               to="/signup"
-              className="text-teal-500 font-medium hover:underline"
+              className="text-teal-500 font-semibold hover:underline"
             >
               Create Account
             </Link>
@@ -146,7 +135,7 @@ const LoginForm = () => {
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <Input
             label="Email address"
             name="email"
@@ -156,7 +145,8 @@ const LoginForm = () => {
             error={errors.email}
             required
             placeholder="Enter your email"
-            inputClassName="p-3"
+            inputClassName="p-3 rounded-md border-gray-300 focus:border-teal-500 focus:ring-teal-500"
+            labelClassName="font-medium text-gray-700"
           />
           <Input
             label="Password"
@@ -169,13 +159,14 @@ const LoginForm = () => {
             placeholder="Enter your password"
             iconRight={showPassword ? "eye-slash" : "eye"}
             onIconRightClick={toggleShowPassword}
-            inputClassName="p-3"
+            inputClassName="p-3 rounded-md border-gray-300 focus:border-teal-500 focus:ring-teal-500"
+            labelClassName="font-medium text-gray-700"
           />
 
-          <div className="flex justify-between items-center text-sm">
+          <div className="flex justify-between items-center text-sm form-options">
             <label
               htmlFor="rememberMe"
-              className="flex items-center cursor-pointer"
+              className="flex items-center cursor-pointer remember-me"
             >
               <input
                 type="checkbox"
@@ -183,61 +174,86 @@ const LoginForm = () => {
                 name="rememberMe"
                 checked={values.rememberMe}
                 onChange={handleChange}
-                className="h-4 w-4 text-teal-500 border-gray-300 rounded focus:ring-teal-400"
+                className="h-4 w-4 text-teal-500 border-gray-300 rounded focus:ring-teal-500"
               />
               <span className="ml-2 text-gray-700">Remember Me</span>
             </label>
             <Link
               to="/forgot-password"
-              className="text-teal-500 font-medium hover:underline"
+              className="text-teal-500 font-semibold hover:underline forgot-password-link"
             >
-              Forget password?
+              Forgot password?
             </Link>
           </div>
 
-          <Button
+          {/* SỬ DỤNG CLASS .btn-login-primary TỪ SCSS CHO NÚT NÀY */}
+          <button
             type="submit"
-            fullWidth
-            isLoading={isSubmitting || authLoading}
             disabled={isSubmitting || authLoading}
-            className="bg-teal-500 hover:bg-teal-600 text-white py-3" // Nút màu teal
-            iconRight="arrow-right"
+            className="btn-login-primary" // Áp dụng class SCSS
           >
-            Log In
-          </Button>
+            {isSubmitting || authLoading ? (
+              <span className="flex items-center justify-center">
+                <svg
+                  className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Processing...
+              </span>
+            ) : (
+              <span className="flex items-center justify-center">
+                Log In
+                <FontAwesomeIcon icon="arrow-right" className="ml-2 h-4 w-4" />
+              </span>
+            )}
+          </button>
 
-          <div className="relative my-6">
-            <div
-              className="absolute inset-0 flex items-center"
-              aria-hidden="true"
-            >
-              <div className="w-full border-t border-gray-300"></div>
+          <div className="relative my-6 divider-or">
+            <div className="divider-line" aria-hidden="true">
+              <div></div> {/* This div is targeted by SCSS for the line */}
             </div>
-            <div className="relative flex justify-center">
-              <span className="px-2 bg-white text-sm text-gray-500">or</span>
+            <div className="divider-text">
+              <span>or</span>
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          {/* Social Login Buttons */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <Button
               type="button"
-              onClick={handleGoogleLogin} // Giả sử bạn có hàm này
+              onClick={handleFacebookLogin}
               disabled={isSubmitting || authLoading}
-              variant="outline-primary" // Hoặc một variant khác cho social login
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
-              iconLeft={["fab", "google"]}
-            >
-              Sign in with Google
-            </Button>
-            <Button
-              type="button"
-              // onClick={handleFacebookLogin} // Giả sử bạn có hàm này
-              disabled={isSubmitting || authLoading}
-              variant="outline-primary"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 py-3"
+              variant="outline" // Hoặc không có variant nếu social-login-button đã đủ
+              className="social-login-button" // Class SCSS
               iconLeft={["fab", "facebook-f"]}
             >
               Sign in with Facebook
+            </Button>
+            <Button
+              type="button"
+              onClick={handleGoogleLogin}
+              disabled={isSubmitting || authLoading}
+              variant="outline" // Hoặc không có variant
+              className="social-login-button" // Class SCSS
+              iconLeft={["fab", "google"]}
+            >
+              Sign in with Google
             </Button>
           </div>
         </form>

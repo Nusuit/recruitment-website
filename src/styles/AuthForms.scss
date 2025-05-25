@@ -1,284 +1,143 @@
-/* Authentication Pages Styles */
+/* src/styles/AuthForms.scss */
 
-/* Common styles for auth pages */
-.login-page,
-.signup-page,
-.forgot-password-page,
-.reset-password-page,
-.email-verification-page {
-  @apply min-h-[calc(100vh-70px)] flex items-center justify-center py-6 px-4 bg-gray-50;
+// Biến màu
+$primary-teal: #00bfa6; // Màu teal chính
+$dark-bg: #1a1a1a; // Nền tối
+$white-bg: #ffffff; // Nền trắng
+$text-gray-primary: #212529;
+$text-gray-secondary: #6c757d;
+$input-border-color: #ced4da;
+
+// Wrapper chính cho toàn trang Login
+.login-page-wrapper {
+  background-color: $dark-bg;
+  @apply min-h-screen w-full;
 }
 
-.login-container,
-.signup-container,
-.password-container,
-.verification-container {
-  @apply flex bg-white rounded-lg shadow-lg overflow-hidden w-full max-w-screen-lg min-h-[600px];
+// Header tối ở trên cùng
+.login-header-bar {
+  background-color: $dark-bg;
+  @apply w-full border-b border-gray-800; // Thêm viền dưới nhẹ nếu muốn
 }
 
-.login-form-section,
-.signup-form-section,
-.password-form-section,
-.verification-form-section {
-  @apply flex-1 p-8 flex flex-col;
+// Phần nội dung để căn giữa container chính
+.login-page-content {
+  @apply flex items-center justify-center py-10 px-4;
 }
 
-.login-image-section,
-.signup-image-section,
-.password-image-section,
-.verification-image-section {
-  @apply flex-1 bg-blue-600 flex flex-col justify-center items-center p-8 relative;
+// Container trắng chứa 2 cột
+.login-container {
+  background-color: $white-bg;
+  @apply flex flex-col md:flex-row rounded-lg shadow-2xl overflow-hidden w-full max-w-screen-lg lg:max-w-screen-xl;
+  min-height: 650px; // Chiều cao tối thiểu
 }
 
-/* Brand logo */
-.brand-logo {
-  @apply flex items-center gap-2 mb-6;
+// Cột Form (Trái)
+.login-form-section {
+  @apply w-full md:w-1/2 p-8 sm:p-12 md:p-16 flex flex-col justify-center;
 }
 
-.brand-logo img {
-  @apply h-10 w-auto;
-}
-
-.brand-logo span {
-  @apply text-xl font-bold text-blue-600;
-}
-
-/* Form headers */
-.login-header,
-.signup-header,
-.password-header,
-.verification-header {
-  @apply mb-6;
-}
-
-.login-header h2,
-.signup-header h2,
-.password-header h2,
-.verification-header h2 {
-  @apply text-2xl font-bold text-gray-800 mb-2;
-}
-
-.login-header p,
-.signup-header p,
-.password-header p,
-.verification-header p {
-  @apply text-gray-600;
-}
-
-.login-header a,
-.signup-header a,
-.password-header a,
-.verification-header a {
-  @apply text-blue-600 font-medium;
-}
-
-/* Forms */
-.login-form,
-.signup-form,
-.password-form,
-.verification-form {
-  @apply flex-1 flex flex-col;
-}
-
-.form-group {
-  @apply mb-4;
-}
-
-.form-group label {
-  @apply block mb-1 font-medium text-gray-800;
-}
-
-.form-group input {
-  @apply w-full p-3 border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600 transition-all duration-200;
-}
-
-.password-input {
-  @apply relative;
-}
-
-.toggle-password {
-  @apply absolute right-3 top-1/2 -translate-y-1/2 bg-none border-none cursor-pointer flex items-center justify-center text-gray-500;
-}
-
-.eye-icon {
-  @apply text-lg;
-}
-
-.form-options {
-  @apply flex justify-between items-center mb-4;
-}
-
-.remember-me {
-  @apply flex items-center gap-2;
-}
-
-.forgot-password {
-  @apply text-blue-600 font-medium text-sm;
-}
-
-.login-button,
-.signup-button,
-.reset-button,
-.verify-button {
-  @apply w-full py-3 bg-teal-500 text-white border-none rounded text-base font-medium cursor-pointer transition-colors duration-200;
-}
-
-.login-button:hover,
-.signup-button:hover,
-.reset-button:hover,
-.verify-button:hover {
-  @apply bg-teal-600;
-}
-
-.login-button:disabled,
-.signup-button:disabled,
-.reset-button:disabled,
-.verify-button:disabled {
-  @apply bg-gray-400 cursor-not-allowed;
-}
-
-/* Social login */
-.social-login {
-  @apply mt-6 text-center;
-}
-
-.social-login p {
-  @apply text-gray-600 mb-4 relative;
-}
-
-.social-login p::before,
-.social-login p::after {
-  content: "";
-  @apply absolute top-1/2 w-1/4 h-px bg-gray-300;
-}
-
-.social-login p::before {
-  @apply left-0;
-}
-
-.social-login p::after {
-  @apply right-0;
-}
-
-.social-buttons {
-  @apply flex gap-2 justify-center;
-}
-
-.facebook-login,
-.google-login {
-  @apply flex-1 flex items-center justify-center gap-2 p-3 rounded font-medium transition-colors duration-200 border border-gray-300 bg-white;
-}
-
-.facebook-login {
-  @apply text-blue-700;
-}
-
-.google-login {
-  @apply text-red-600;
-}
-
-.facebook-login:hover,
-.google-login:hover {
-  @apply bg-gray-100;
-}
-
-/* Quote and illustration */
-.quote {
-  @apply text-white text-center mb-8 max-w-4/5;
-}
-
-.quote p {
-  @apply text-xl italic mb-2 leading-tight;
-}
-
-.quote cite {
-  @apply text-base font-medium;
-}
-
-.fashion-illustration {
-  @apply max-w-full h-auto;
-}
-
-/* Error message */
-.error-message {
-  @apply bg-red-100 text-red-700 p-3 rounded mb-4;
-}
-
-/* Email verification specific */
-.verification-code {
-  @apply flex gap-2 mb-6;
-}
-
-.verification-code input {
-  @apply flex-1 w-12 h-16 text-center text-2xl font-semibold border border-gray-300 rounded focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600;
-}
-
-.resend-link {
-  @apply text-center mt-4;
-}
-
-.resend-link button {
-  @apply bg-none border-none text-blue-600 font-medium cursor-pointer;
-}
-
-.resend-link button:hover {
-  @apply underline;
-}
-
-.resend-link button:disabled {
-  @apply text-gray-400 cursor-not-allowed no-underline;
-}
-
-.timer {
-  @apply text-gray-600 text-sm;
-}
-
-/* Responsive adjustments */
-@media (max-width: 992px) {
-  .login-container,
-  .signup-container,
-  .password-container,
-  .verification-container {
-    @apply flex-col max-w-xl;
+// Cột Ảnh (Phải)
+.login-image-section {
+  @apply hidden md:flex md:w-1/2 flex-col justify-center items-center p-12 text-center relative bg-white;
+  img {
+    @apply max-w-sm lg:max-w-md mx-auto mb-10;
   }
+}
 
-  .login-image-section,
-  .signup-image-section,
-  .password-image-section,
-  .verification-image-section {
+// Trích dẫn trong cột ảnh
+.quote-section {
+  color: $text-gray-primary;
+  @apply max-w-md;
+  .quote-text {
+    @apply text-xl lg:text-2xl italic mb-3 leading-relaxed;
+  }
+  .quote-author {
+    color: $text-gray-secondary;
+    @apply text-base font-medium;
+  }
+}
+
+// Header trong cột form
+.login-header {
+  @apply mb-8 text-left;
+  h2 {
+    color: $text-gray-primary;
+    @apply text-4xl font-bold mb-2;
+  }
+  p {
+    color: $text-gray-secondary;
+    @apply text-sm;
+    a {
+      color: $primary-teal;
+      @apply font-semibold hover:underline;
+    }
+  }
+}
+
+// Input (Style bổ sung cho Input component)
+.form-group input {
+  &:focus {
+    border-color: $primary-teal;
+    box-shadow: 0 0 0 0.2rem rgba($primary-teal, 0.25);
+    @apply ring-0;
+  }
+}
+
+// Checkbox và link "Forgot password?"
+.form-options {
+  .remember-me {
+    input[type="checkbox"] {
+      color: $primary-teal;
+      &:focus {
+        box-shadow: 0 0 0 0.2rem rgba($primary-teal, 0.25);
+        @apply ring-0 ring-offset-0;
+      }
+    }
+  }
+  .forgot-password-link {
+    color: $primary-teal;
+    @apply font-medium hover:underline;
+  }
+}
+
+// Nút Social Login
+.social-login-button {
+  @apply border border-gray-300 text-gray-700 hover:bg-gray-50 py-3 rounded-md;
+  .svg-inline--fa {
+    @apply mr-3; // Icon cách text
+  }
+}
+
+// Đường kẻ "or"
+.divider-or {
+  @apply relative my-6;
+  .divider-line {
+    @apply absolute inset-0 flex items-center;
+    div {
+      @apply w-full border-t border-gray-300;
+    }
+  }
+  .divider-text {
+    @apply relative flex justify-center text-sm;
+    span {
+      @apply px-3 bg-white text-gray-500;
+    }
+  }
+}
+
+// Responsive
+@media (max-width: 767px) {
+  .login-container {
+    @apply flex-col max-w-md;
+  }
+  .login-image-section {
     @apply hidden;
   }
-}
-
-@media (max-width: 576px) {
-  .login-form-section,
-  .signup-form-section,
-  .password-form-section,
-  .verification-form-section {
-    @apply p-6 px-4;
+  .login-form-section {
+    @apply w-full p-6 sm:p-8;
   }
-
-  .social-buttons {
-    @apply flex-col;
+  .login-header h2 {
+    @apply text-3xl;
   }
-}
-
-.auth-image-section {
-  @apply text-center mt-6;
-}
-
-.auth-image-section img {
-  @apply max-w-full h-auto rounded-lg;
-}
-
-.signup-header .role-select select {
-  @apply w-36 p-2 border border-gray-300 rounded text-sm bg-white cursor-pointer;
-}
-
-.form-row {
-  @apply flex gap-5 mb-5;
-}
-
-.form-row .form-group {
-  @apply flex-1 mb-0;
 }

@@ -3,17 +3,16 @@ import React, { useState, useContext } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { validateLoginForm } from "../../utils/validators";
-// import "../../styles/AuthForms.scss"; // SCSS có thể không cần nhiều nữa
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-// SVG cho Google Logo (nhiều màu)
+// SVG cho Google Logo
 const GoogleIcon = () => (
   <svg
     width="18"
     height="18"
-    viewBox="0 0 18 18"
+    viewBox="0 0 18"
     xmlns="http://www.w3.org/2000/svg"
     className="mr-2"
   >
@@ -49,6 +48,7 @@ const LoginForm = () => {
     email: "",
     password: "",
     rememberMe: false,
+    role: "candidate", 
   });
   const [errors, setErrors] = useState({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -68,58 +68,65 @@ const LoginForm = () => {
   };
 
   const validateForm = () => {
-    const validationErrors = validateLoginForm(values);
+    const validationErrors = validateLoginForm(values); 
     setErrors(validationErrors);
     return Object.keys(validationErrors).length === 0;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("[LoginForm] Form submitted. Current values:", values);
     if (!validateForm()) {
+      console.log("[LoginForm] Validation failed.");
       return;
     }
     setIsSubmitting(true);
     setSubmitError("");
 
     try {
-      const { email, password } = values;
-      const result = await login(email, password);
+      const { email, password, role } = values; 
+      console.log("[LoginForm] Calling login context with:", { email, password, role });
+      const result = await login(email, password, role); 
+      console.log("[LoginForm] Result from login context:", result);
 
-      if (result.success && result.user) {
-        const role = result.user.role?.toLowerCase();
+
+      if (result && result.success && result.user) {
+        console.log("[LoginForm] Login success. User role:", result.user.role);
+        const userRole = result.user.role?.toLowerCase();
         const { from } = location.state || { from: { pathname: "/" } };
         const intendedPath =
           from.pathname === "/login" || from.pathname === "/"
-            ? role === "admin"
+            ? userRole === "admin"
               ? "/admin/dashboard"
-              : role === "candidate"
+              : userRole === "candidate"
               ? "/applicant/dashboard"
-              : role === "recruiter"
-              ? "/recruiter/dashboard"
+              : userRole === "recruiter"
+              ? "/recruiter/dashboard" 
               : "/"
             : from.pathname;
+        console.log("[LoginForm] Navigating to:", intendedPath);
         navigate(intendedPath, { replace: true });
       } else {
-        setSubmitError(result.error || "Email or password invalid.");
+          const errorMessage = result ? (result.error || "Email or password invalid.") : "Login failed due to an unknown error.";
+          console.log("[LoginForm] Login failed, setting submitError:", errorMessage);
+          setSubmitError(errorMessage);
       }
     } catch (error) {
-      console.error("Login Error:", error);
+      console.error("[LoginForm] Login submission error (catch block):", error);
       setSubmitError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);
+      console.log("[LoginForm] Submission process finished.");
     }
   };
-
+  
   const handleGoogleLogin = () => {
     if (loginWithGoogle) {
-      loginWithGoogle();
+      console.log("[LoginForm] Initiating Google login for role:", values.role);
+      loginWithGoogle(values.role); 
     } else {
       setSubmitError("Google login is currently unavailable.");
     }
-  };
-
-  const handleFacebookLogin = () => {
-    setSubmitError("Facebook login is currently unavailable.");
   };
 
   const toggleShowPassword = () => {
@@ -128,8 +135,6 @@ const LoginForm = () => {
 
   return (
     <div className="w-full max-w-sm mx-auto">
-      {" "}
-      {/* Giới hạn chiều rộng form */}
       <div className="mb-8 text-left">
         <h2 className="text-3xl font-bold text-gray-900 mb-1">Log In</h2>
         <p className="text-gray-500 text-sm">
@@ -148,6 +153,26 @@ const LoginForm = () => {
         </div>
       )}
       <form onSubmit={handleSubmit} className="space-y-5">
+        <div>
+          <label
+            htmlFor="role"
+            className="block text-xs font-medium text-gray-600 mb-1"
+          >
+            I am a...
+          </label>
+          <select
+            id="role"
+            name="role"
+            value={values.role}
+            onChange={handleChange}
+            className="w-full p-3 text-sm border rounded-md border-gray-300 focus:border-[#16C0B0] focus:ring-1 focus:ring-[#16C0B0]"
+          >
+            <option value="candidate">Candidate</option>
+            <option value="recruiter">Recruiter</option>
+            {/* <option value="admin">Admin</option> */}
+          </select>
+        </div>
+
         <Input
           label="Email address*"
           name="email"
@@ -157,8 +182,8 @@ const LoginForm = () => {
           error={errors.email}
           required
           placeholder="Enter your email"
-          inputClassName="p-3 text-sm rounded-md border-gray-300 focus:border-[#16C0B0] focus:ring-1 focus:ring-[#16C0B0]"
-          labelClassName="text-xs font-medium text-gray-600"
+          inputClassName="p-3 text-sm"
+          labelClassName="text-xs"
         />
         <Input
           label="Password*"
@@ -171,8 +196,8 @@ const LoginForm = () => {
           placeholder="Enter your password"
           iconRight={showPassword ? "eye-slash" : "eye"}
           onIconRightClick={toggleShowPassword}
-          inputClassName="p-3 text-sm rounded-md border-gray-300 focus:border-[#16C0B0] focus:ring-1 focus:ring-[#16C0B0]"
-          labelClassName="text-xs font-medium text-gray-600"
+          inputClassName="p-3 text-sm"
+          labelClassName="text-xs"
         />
 
         <div className="flex justify-between items-center text-xs">
@@ -203,12 +228,12 @@ const LoginForm = () => {
           fullWidth
           isLoading={isSubmitting || authLoading}
           disabled={isSubmitting || authLoading}
-          className="bg-[#16C0B0] hover:bg-[#12a79a] text-white py-3 text-sm font-semibold shadow-md hover:shadow-lg"
-          iconRight="arrow-right" // Thêm icon mũi tên
+          className="bg-[#16C0B0] hover:bg-[#12a79a] text-white py-3 text-sm font-semibold"
+          iconRight="arrow-right"
         >
           Log In
         </Button>
-
+        
         <div className="relative my-5">
           <div
             className="absolute inset-0 flex items-center"
@@ -224,7 +249,7 @@ const LoginForm = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={handleFacebookLogin}
+            // onClick={handleFacebookLogin}
             disabled={isSubmitting || authLoading}
             style={{
               backgroundColor: "#3b5998",
@@ -244,7 +269,7 @@ const LoginForm = () => {
             disabled={isSubmitting || authLoading}
             className="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 shadow-sm flex items-center justify-center text-xs font-medium px-3 py-2.5 rounded-md"
           >
-            <GoogleIcon /> {/* Sử dụng SVG inline */}
+            <GoogleIcon />
             <span className="whitespace-nowrap leading-tight">
               Sign up with Google
             </span>

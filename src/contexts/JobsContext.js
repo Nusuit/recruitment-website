@@ -27,9 +27,10 @@ export const JobsProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await jobAPI.getAllPublicJobs(filters); // Pass filters to API
-      if (response.success && Array.isArray(response.data)) {
-        setJobs(response.data);
+      // SỬA Ở ĐÂY: jobAPI.getAllPublicJobs -> jobAPI.getJobs
+      const response = await jobAPI.getJobs(filters); // Pass filters to API
+      if (response.success && Array.isArray(response.jobs)) { // API trả về response.jobs
+        setJobs(response.jobs);
       } else {
         throw new Error(response.error || "Failed to fetch jobs");
       }
@@ -49,12 +50,12 @@ export const JobsProvider = ({ children }) => {
   // Fetch user-specific data (saved jobs, applications)
   const fetchUserSpecificData = useCallback(async () => {
     if (isAuthenticated && user) {
-      setOperationLoading(true); // Use operationLoading or a specific loading state
+      setOperationLoading(true);
       setError(null);
       try {
         const [savedJobsResponse, appsResponse] = await Promise.all([
-          candidateAPI.getMySavedJobs(),
-          candidateAPI.getMyApplications(),
+          candidateAPI.getMySavedJobs(), // Giả sử API này tồn tại
+          candidateAPI.getMyApplications(), // Giả sử API này tồn tại
         ]);
 
         if (
@@ -63,13 +64,13 @@ export const JobsProvider = ({ children }) => {
         ) {
           setSavedJobIds(
             savedJobsResponse.data.map((job) => job.id.toString())
-          ); // Store only IDs
+          );
         } else {
           console.warn(
             "Failed to fetch saved jobs or no saved jobs found:",
             savedJobsResponse.error
           );
-          setSavedJobIds([]); // Reset if fetch fails or no data
+          setSavedJobIds([]);
         }
 
         if (appsResponse.success && Array.isArray(appsResponse.data)) {
@@ -79,16 +80,13 @@ export const JobsProvider = ({ children }) => {
             "Failed to fetch applications or no applications found:",
             appsResponse.error
           );
-          setApplications([]); // Reset if fetch fails or no data
+          setApplications([]);
         }
       } catch (err) {
         console.error("Error fetching user-specific job data:", err);
         setError(
           err.message || "Could not load your saved jobs or applications."
         );
-        // Keep existing data on error or clear them? Depends on desired UX.
-        // setSavedJobIds([]);
-        // setApplications([]);
       } finally {
         setOperationLoading(false);
       }
@@ -100,25 +98,21 @@ export const JobsProvider = ({ children }) => {
 
   useEffect(() => {
     fetchUserSpecificData();
-  }, [fetchUserSpecificData]); // Runs when isAuthenticated or user changes
+  }, [fetchUserSpecificData]);
 
   const getJobById = useCallback(
     async (jobId) => {
-      // First, check if job is already in the local 'jobs' state
       const localJob = jobs.find(
         (job) => job.id.toString() === jobId.toString()
       );
       if (localJob) return localJob;
 
-      // If not found locally, fetch from API
       setOperationLoading(true);
       try {
-        const response = await jobAPI.getJobDetails(jobId);
-        if (response.success && response.data) {
-          // Optionally add/update this job in the main 'jobs' list if it's not there
-          // or if you want to ensure it's the most up-to-date version.
-          // For simplicity, just returning it here.
-          return response.data;
+        // SỬA Ở ĐÂY: jobAPI.getJobDetails -> jobAPI.getJobById (theo file jobs.js)
+        const response = await jobAPI.getJobById(jobId);
+        if (response.success && response.job) { // API trả về response.job
+          return response.job;
         } else {
           throw new Error(
             response.error || `Job with ID ${jobId} not found via API.`
@@ -126,7 +120,7 @@ export const JobsProvider = ({ children }) => {
         }
       } catch (err) {
         console.error(`Error fetching job ${jobId}:`, err);
-        setError(`Could not load details for job ${jobId}.`); // Set context error
+        setError(`Could not load details for job ${jobId}.`);
         return null;
       } finally {
         setOperationLoading(false);
@@ -138,7 +132,6 @@ export const JobsProvider = ({ children }) => {
   const toggleSaveJob = useCallback(
     async (jobId) => {
       if (!isAuthenticated) {
-        // Consider navigating to login or showing a modal
         alert("Please log in to save jobs.");
         return { success: false, error: "Not authenticated" };
       }
@@ -147,20 +140,17 @@ export const JobsProvider = ({ children }) => {
       try {
         let response;
         if (currentlySaved) {
-          response = await candidateAPI.unsaveJob(jobId);
+          response = await candidateAPI.unsaveJob(jobId); // Giả sử API này tồn tại
         } else {
-          response = await candidateAPI.saveJob(jobId);
+          response = await candidateAPI.saveJob(jobId); // Giả sử API này tồn tại
         }
 
         if (response.success) {
-          // Re-fetch saved jobs to ensure consistency or update local state optimistically
-          // For optimistic update:
           setSavedJobIds((prevIds) =>
             currentlySaved
               ? prevIds.filter((id) => id !== jobId.toString())
               : [...prevIds, jobId.toString()]
           );
-          // Or fetchUserSpecificData(); // To get the latest from server
         } else {
           throw new Error(
             response.error ||
@@ -176,7 +166,7 @@ export const JobsProvider = ({ children }) => {
         setOperationLoading(false);
       }
     },
-    [isAuthenticated, savedJobIds /*, fetchUserSpecificData (if using) */]
+    [isAuthenticated, savedJobIds]
   );
 
   const isJobSaved = useCallback(
@@ -187,7 +177,6 @@ export const JobsProvider = ({ children }) => {
   );
 
   const getSavedJobs = useCallback(() => {
-    // This returns full job objects by filtering the main `jobs` list
     return jobs.filter((job) => savedJobIds.includes(job.id.toString()));
   }, [jobs, savedJobIds]);
 
@@ -199,15 +188,13 @@ export const JobsProvider = ({ children }) => {
       }
       setOperationLoading(true);
       try {
-        // API call to submit application.
-        // If `applicationData.resume` is a File object, candidateAPI.submitApplication needs to handle FormData.
-        const response = await candidateAPI.submitApplication(
-          jobId,
-          applicationData
-        );
+        // SỬA Ở ĐÂY: candidateAPI.submitApplication -> jobAPI.applyForJob (theo file jobs.js)
+        // Hoặc nếu candidateAPI có hàm submitApplication thì giữ nguyên
+        // Dựa trên file jobs.js, hàm applyForJob có vẻ phù hợp hơn
+        const response = await jobAPI.applyForJob(jobId, applicationData);
 
         if (response.success && response.application) {
-          setApplications((prev) => [...prev, response.application]); // Add new application to local state
+          setApplications((prev) => [...prev, response.application]);
           return { success: true, application: response.application };
         } else {
           throw new Error(response.error || "Application submission failed");
@@ -226,7 +213,6 @@ export const JobsProvider = ({ children }) => {
   );
 
   const getUserApplications = useCallback(() => {
-    // Returns applications from local state. fetchUserSpecificData populates this.
     return applications;
   }, [applications]);
 
@@ -241,12 +227,12 @@ export const JobsProvider = ({ children }) => {
 
   const contextValue = {
     jobs,
-    loading, // For initial job list load
+    loading,
     error,
-    operationLoading, // For actions like save, apply
-    setLoading, // Expose if needed by pages for custom loading states
+    operationLoading,
+    setLoading,
     setError,
-    fetchAllJobs, // To allow re-fetching with filters from pages
+    fetchAllJobs,
     fetchUserSpecificData,
     getJobById,
     toggleSaveJob,

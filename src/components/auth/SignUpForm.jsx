@@ -2,17 +2,17 @@
 import React, { useState, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
-import { validateSignUpForm } from "../../utils/validators";
+import { validateSignupForm } from "../../utils/validators"; 
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-// SVG cho Google Logo (nhiều màu)
+// SVG cho Google Logo
 const GoogleIcon = () => (
   <svg
     width="18"
     height="18"
-    viewBox="0 0 18 18"
+    viewBox="0 0 18"
     xmlns="http://www.w3.org/2000/svg"
     className="mr-2"
   >
@@ -47,7 +47,7 @@ const SignUpForm = () => {
     email: "",
     password: "",
     confirmPassword: "",
-    role: "recruiter",
+    role: "candidate", 
     agreeTerms: false,
   });
 
@@ -79,41 +79,83 @@ const SignUpForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("[SignUpForm] Form submitted. Current formData:", formData);
     setSubmitError("");
-    const validationErrors = validateSignUpForm(formData);
+
+    const validationData = {
+        email: formData.email,
+        password: formData.password,
+        confirmPassword: formData.confirmPassword,
+        role: formData.role,
+    };
+    // Nếu validator cần username (dù nó là email), bạn có thể thêm nó vào đây:
+    // if (formData.role === 'recruiter') {
+    //   validationData.username = formData.email;
+    // }
+    console.log("[SignUpForm] Data for validation:", validationData);
+    const validationErrors = validateSignupForm(validationData); 
+    console.log("[SignUpForm] Validation errors (before agreeTerms):", validationErrors);
+
     if (!formData.agreeTerms) {
       validationErrors.agreeTerms = "You must agree to the Terms of Services.";
     }
     setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
+    console.log("[SignUpForm] Final validation errors:", validationErrors);
 
+
+    if (Object.keys(validationErrors).length > 0) {
+      console.log("[SignUpForm] Validation failed. Stopping submission.");
+      return; 
+    }
+
+    console.log("[SignUpForm] Validation passed. Proceeding to submit.");
     setIsSubmitting(true);
     try {
-      const result = await signup({
+      const payload = {
         email: formData.email,
         password: formData.password,
         role: formData.role,
-      });
-      if (result.success) {
-        navigate("/verify-email", { state: { email: formData.email } });
+      };
+      
+      if (formData.role === 'recruiter') {
+        payload.username = formData.email; // Gửi email làm username cho recruiter
+        // Nếu backend vẫn yêu cầu firstName, lastName (dù không có trên form),
+        // bạn có thể đặt giá trị mặc định ở đây, ví dụ:
+        // payload.firstName = formData.email.split('@')[0] || 'Recruiter User';
+        // payload.lastName = 'Default';
+      }
+      console.log("[SignUpForm] Payload to be sent to signup context:", payload);
+
+      const result = await signup(payload);
+      console.log("[SignUpForm] Result from signup context:", result);
+
+
+      if (result && result.success) {
+        console.log("[SignUpForm] Signup success, navigating...");
+        navigate("/verify-email", { state: { email: formData.email, role: formData.role } });
       } else {
-        setSubmitError(result.error || "Registration failed.");
+        const errorMessage = result ? (result.error || "Registration failed. Please try again.") : "Registration failed due to an unknown error.";
+        console.log("[SignUpForm] Signup failed, setting submitError:", errorMessage);
+        setSubmitError(errorMessage);
       }
     } catch (error) {
-      setSubmitError("An unexpected error occurred.");
+      console.error("[SignUpForm] Signup submission error (catch block):", error);
+      setSubmitError("An unexpected error occurred during registration.");
     } finally {
       setIsSubmitting(false);
+      console.log("[SignUpForm] Submission process finished.");
+    }
+  };
+  
+  const handleGoogleSignup = () => {
+    if (loginWithGoogle) {
+      console.log("[SignUpForm] Initiating Google signup for role:", formData.role);
+      loginWithGoogle(formData.role); 
+    } else {
+      setSubmitError("Google sign-up is currently unavailable.");
     }
   };
 
-  const handleGoogleSignup = () => {
-    if (loginWithGoogle) loginWithGoogle();
-    else setSubmitError("Google sign up unavailable.");
-  };
-
-  const handleFacebookSignup = () => {
-    setSubmitError("Facebook sign up unavailable.");
-  };
 
   return (
     <div className="w-full max-w-sm mx-auto">
@@ -127,8 +169,8 @@ const SignUpForm = () => {
             onChange={handleRoleChange}
             className="w-auto p-2 pr-8 border border-gray-300 rounded-md appearance-none focus:ring-1 focus:ring-[#16C0B0] focus:border-[#16C0B0] bg-white text-gray-700 text-xs"
           >
-            <option value="recruiter">Employers</option>
             <option value="candidate">I'm a Candidate</option>
+            <option value="recruiter">Employers</option>
           </select>
           <FontAwesomeIcon
             icon="chevron-down"
@@ -153,7 +195,6 @@ const SignUpForm = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-5">
-        {/* Inputs for email, password, confirmPassword */}
         <Input
           label="Email address*"
           name="email"
@@ -240,7 +281,7 @@ const SignUpForm = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            onClick={handleFacebookSignup}
+            // onClick={handleFacebookSignup} 
             disabled={isSubmitting || authLoading}
             style={{
               backgroundColor: "#3b5998",
@@ -260,7 +301,7 @@ const SignUpForm = () => {
             disabled={isSubmitting || authLoading}
             className="w-full bg-white hover:bg-gray-50 text-gray-600 border border-gray-300 shadow-sm flex items-center justify-center text-xs font-medium px-3 py-2.5 rounded-md"
           >
-            <GoogleIcon /> {/* Sử dụng SVG inline */}
+            <GoogleIcon />
             <span className="whitespace-nowrap leading-tight">
               Sign up with Google
             </span>

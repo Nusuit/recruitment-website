@@ -104,7 +104,7 @@ const EmailVerificationPage = () => {
     setIsSubmitting(true);
     try {
       // Use authAPI directly or context function
-      const result = await authAPI.verifyOTP(emailToVerify, enteredOtp);
+      const result = await authAPI.verifyOTP(emailToVerify, enteredOtp); // Không cần truyền role
       if (result.success) {
         setSubmitSuccess(true);
         setTimeout(() => {
@@ -139,7 +139,7 @@ const EmailVerificationPage = () => {
     setSubmitError("");
     setResendMessage("");
     try {
-      const result = await authAPI.resendOTP(emailToVerify);
+      const result = await authAPI.resendOTP(emailToVerify); // Không cần truyền role
       if (result.success) {
         setResendMessage("A new verification code has been sent.");
         setTimer(60); // Reset timer

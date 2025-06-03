@@ -8,7 +8,7 @@ const Header = () => {
   const { isAuthenticated, user, logout, loading: authLoading } = useContext(AuthContext); // Thêm authLoading
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState("guest");
+  const [userRole, setUserRole] = useState("guest"); // Mặc định là guest
 
   useEffect(() => {
     if (isAuthenticated && user) {
@@ -29,7 +29,7 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    logout();
+    logout(); // Hàm logout trong AuthContext sẽ tự động xử lý role
     navigate("/login");
     handleMobileLinkClick();
   };
@@ -93,11 +93,13 @@ const Header = () => {
       );
     } else { // Đã xác thực VÀ user object có giá trị
       let dashboardPath = "/";
-      if (userRole === "admin") dashboardPath = "/admin/dashboard";
+      if (userRole === "admin" || userRole === "recruiter") dashboardPath = "/admin/dashboard"; // Recruiter và Admin dùng chung Admin Dashboard
       else if (userRole === "candidate") dashboardPath = "/applicant/dashboard";
-      else if (userRole === "recruiter") dashboardPath = "/recruiter/dashboard";
 
       const userAvatar = user.avatarUrl || "/assets/images/default-avatar.png"; // Avatar mặc định
+
+      // SỬA ĐỔI: Lấy tên hiển thị từ email và loại bỏ @gmail.com
+      const displayUserName = user.email ? user.email.split('@')[0] : "User";
 
       return (
         <div
@@ -109,7 +111,7 @@ const Header = () => {
           <div className="flex items-center space-x-2 cursor-pointer group">
             <img
               src={userAvatar}
-              alt={user.firstName || user.name || "User"}
+              alt={displayUserName} // Sử dụng displayUserName cho alt text
               className="w-8 h-8 rounded-full object-cover border border-gray-300"
               onError={(e) => { // Xử lý lỗi tải ảnh avatar
                 e.target.onerror = null;
@@ -123,7 +125,7 @@ const Header = () => {
                   : "font-medium text-gray-700 text-sm hidden lg:inline group-hover:text-teal-600"
               }
             >
-              Hi, {user.firstName || user.name || "User"}!
+              Hi, {displayUserName}!
             </span>
           </div>
 

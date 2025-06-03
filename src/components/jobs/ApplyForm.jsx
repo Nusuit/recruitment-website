@@ -4,7 +4,7 @@ import {
   useNavigate, // No longer using withRouter, so history is not available via props
 } from "react-router-dom";
 import PropTypes from "prop-types";
-import { candidateAPI } from "../../api/candidate"; // Assuming API calls
+import { candidateAPI } from "../../api/applicant"; // Assuming API calls
 import { AuthContext } from "../../contexts/AuthContext"; // To prefill user data
 import { JobsContext } from "../../contexts/JobsContext"; // To mark as applied
 import LoadingSpinner from "../common/LoadingSpinner";

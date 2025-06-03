@@ -33,9 +33,9 @@ axiosInstance.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
 
-    // Nếu lỗi là 401 (Unauthorized) hoặc 403 (Forbidden) và chưa thử lại
+    // Nếu lỗi là 401 (Unauthorized) và chưa thử lại
     if (
-      (error.response?.status === 401 || error.response?.status === 403) &&
+      error.response?.status === 401 &&
       !originalRequest._retry
     ) {
       // Đánh dấu request này là đã thử lại
@@ -45,30 +45,43 @@ axiosInstance.interceptors.response.use(
       if (!isRefreshing) {
         isRefreshing = true;
         try {
-          // Gọi API refresh token
-          // Endpoint: POST /api/auth/recruiter/login/refresh hoặc /api/auth/candidate/login/refresh
-          // Tùy thuộc vào role của người dùng đang đăng nhập
-          // Để đơn giản, chúng ta sẽ gọi cả hai hoặc để backend tự xử lý endpoint
-          // Hoặc tốt hơn là lưu role của user trong localStorage và dùng nó để chọn endpoint
-          const userRole = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')).role?.toLowerCase() : 'candidate';
+          // Lấy role của người dùng từ localStorage để chọn đúng endpoint refresh token
+          const userString = localStorage.getItem('user');
+          let userRole = 'applicant'; // Mặc định là applicant
+          if (userString) {
+            try {
+              const user = JSON.parse(userString);
+              if (user.role) {
+                userRole = user.role.toLowerCase();
+              }
+            } catch (parseError) {
+              console.error("Failed to parse user from localStorage:", parseError);
+            }
+          }
+          
           const refreshEndpoint = `/auth/${userRole}/login/refresh`;
+          console.log(`[axiosInstance] Attempting to refresh token for role: ${userRole} at ${refreshEndpoint}`);
 
           const refreshResponse = await axiosInstance.post(refreshEndpoint);
-          const newAccessToken = refreshResponse.data?.data?.accessToken; // Lấy accessToken mới
+          const newAccessToken = refreshResponse.data?.payload?.accessToken; // Lấy accessToken mới từ payload
 
           if (newAccessToken) {
             localStorage.setItem('token', newAccessToken); // Lưu token mới
             axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${newAccessToken}`;
             processQueue(null, newAccessToken); // Xử lý các request đang chờ
-            return axiosInstance(originalRequest); // Gửi lại request ban đầu
+            // Gửi lại request ban đầu với token mới
+            originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+            return axiosInstance(originalRequest);
           } else {
             // Không nhận được accessToken mới, có thể refreshToken cũng hết hạn
             processQueue(new Error('Failed to refresh token: No new access token.'), null);
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
             window.location.href = '/login'; // Chuyển hướng về trang đăng nhập
             return Promise.reject(error);
           }
         } catch (refreshError) {
-          console.error("Refresh token failed:", refreshError);
+          console.error("Refresh token failed:", refreshError.response?.data || refreshError);
           processQueue(refreshError, null); // Thông báo lỗi cho các request đang chờ
           // Nếu refresh token thất bại, đăng xuất người dùng
           localStorage.removeItem('token');
@@ -90,7 +103,7 @@ axiosInstance.interceptors.response.use(
         });
       }
     }
-    // Nếu không phải lỗi 401/403 hoặc đã thử lại, hoặc lỗi không phải từ response
+    // Nếu không phải lỗi 401 hoặc đã thử lại, hoặc lỗi không phải từ response
     return Promise.reject(error);
   }
 );

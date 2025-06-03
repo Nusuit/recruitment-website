@@ -180,9 +180,9 @@ const JobManagement = () => {
   }, [jobs, filterStatus, searchTerm, sortConfig]);
 
   const requestSort = (key) => {
-    let direction = "ascending";
-    if (sortConfig.key === key && sortConfig.direction === "ascending") {
-      direction = "descending";
+    let direction = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
     }
     setSortConfig({ key, direction });
   };
@@ -190,7 +190,7 @@ const JobManagement = () => {
   const getSortIcon = (key) => {
     if (sortConfig.key !== key)
       return <FontAwesomeIcon icon="sort" className="ml-1 text-gray-400" />;
-    if (sortConfig.direction === "ascending")
+    if (sortConfig.direction === "asc")
       return <FontAwesomeIcon icon="sort-up" className="ml-1" />;
     return <FontAwesomeIcon icon="sort-down" className="ml-1" />;
   };
@@ -231,8 +231,9 @@ const JobManagement = () => {
             Manage all your company's job postings.
           </p>
         </div>
+        {/* Nút "Post New Job" đã được thêm vào đây */}
         <Link
-          to="/admin/jobs/create" // Ensure this matches your admin route for creating jobs
+          to="/admin/jobs/create" // Đảm bảo đây là đường dẫn đúng đến trang tạo job
           className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
         >
           <FontAwesomeIcon icon="plus" />

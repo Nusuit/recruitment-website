@@ -1,10 +1,11 @@
 // src/pages/guest/JobsPage.jsx
 import React, { useState, useEffect, useContext, useCallback } from "react";
-import { useLocation, useNavigate } from "react-router-dom";
-import { JobsContext } from "../../contexts/JobsContext"; // Sử dụng JobsContext đã cập nhật
+import { useLocation, useNavigate, Link } from "react-router-dom"; // Import Link
+import { JobsContext } from "../../contexts/JobsContext";
+import { AuthContext } from "../../contexts/AuthContext"; // Import AuthContext
 import JobList from "../../components/jobs/JobList";
 import JobFilters from "../../components/jobs/JobFilters";
-import Pagination from "../../components/common/Pagination"; // Giả sử Pagination đã được cập nhật
+import Pagination from "../../components/common/Pagination";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import EmptyState from "../../components/common/EmptyState";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -16,6 +17,7 @@ const GuestJobsPage = () => {
     error: contextError,
     setLoading: setContextLoading,
   } = useContext(JobsContext);
+  const { user, isAuthenticated } = useContext(AuthContext); // Lấy user và isAuthenticated từ AuthContext
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -235,6 +237,9 @@ const GuestJobsPage = () => {
     navigate(`/jobs?${query.toString()}`);
   };
 
+  // Kiểm tra xem người dùng có phải là Recruiter/Admin không
+  const isRecruiterOrAdmin = isAuthenticated && (user?.role?.toLowerCase() === 'recruiter' || user?.role?.toLowerCase() === 'admin');
+
   if (contextLoading && !allJobs.length) {
     // Chỉ hiển thị loading ban đầu khi chưa có jobs nào
     return <LoadingSpinner fullPage />;
@@ -323,6 +328,18 @@ const GuestJobsPage = () => {
         </button>
       </div>
 
+      {/* NEW: Nút "Đăng Job Mới" cho Recruiter/Admin */}
+      {isRecruiterOrAdmin && (
+        <div className="flex justify-end mb-6"> {/* Sử dụng flex justify-end để căn phải */}
+          <Link
+            to="/admin/jobs/create"
+            className="px-5 py-2.5 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+          >
+            <FontAwesomeIcon icon="plus" /> Đăng Job Mới
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Filters Sidebar */}
         <div className="lg:col-span-1">
@@ -335,6 +352,14 @@ const GuestJobsPage = () => {
 
         {/* Job Results */}
         <div className="lg:col-span-3">
+          <div className="flex justify-between items-center mb-4">
+            <div className="text-sm text-gray-600">
+              Hiển thị {filteredJobs.length} trong số {totalJobsCount} việc
+              làm
+            </div>
+            {/* Nút Đăng Job Mới đã được di chuyển ra ngoài khối này */}
+          </div>
+
           {contextLoading && filteredJobs.length === 0 ? ( // Hiển thị loading khi đang lọc và chưa có kết quả
             <LoadingSpinner />
           ) : filteredJobs.length === 0 ? (
@@ -353,10 +378,6 @@ const GuestJobsPage = () => {
             />
           ) : (
             <>
-              <div className="text-sm text-gray-600 mb-4">
-                Hiển thị {filteredJobs.length} trong số {totalJobsCount} việc
-                làm
-              </div>
               <JobList jobs={filteredJobs} />
               {totalPages > 1 && (
                 <Pagination

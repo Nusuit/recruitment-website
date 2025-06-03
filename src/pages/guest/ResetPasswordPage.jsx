@@ -206,8 +206,7 @@ const ResetPasswordPage = () => {
                     </p>
                   )}
                   <p className="text-xs text-gray-500 mt-1">
-                    Must be at least 8 characters, including letters and
-                    numbers.
+                    Must be at least 8 characters.
                   </p>
                 </div>
 

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useContext } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { JobsContext } from "../../contexts/JobsContext"; // Assuming this context provides applications
 import { AuthContext } from "../../contexts/AuthContext";
-import { candidateAPI } from "../../api/candidate"; // For withdrawing application
+import { candidateAPI } from "../../api/applicant"; // For withdrawing application
 import { formatDate, formatApplicationStatus } from "../../utils/formatters"; // Assuming formatters are updated
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import EmptyState from "../../components/common/EmptyState";

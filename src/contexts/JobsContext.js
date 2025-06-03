@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useContext,
 } from "react";
-import { jobAPI, candidateAPI } from "../api"; // Assuming API modules
+import { jobAPI, applicantAPI } from "../api"; // Đổi từ candidateAPI thành applicantAPI
 import { AuthContext } from "./AuthContext";
 
 export const JobsContext = createContext();
@@ -27,7 +27,6 @@ export const JobsProvider = ({ children }) => {
     setLoading(true);
     setError(null);
     try {
-      // SỬA Ở ĐÂY: jobAPI.getAllPublicJobs -> jobAPI.getJobs
       const response = await jobAPI.getJobs(filters); // Pass filters to API
       if (response.success && Array.isArray(response.jobs)) { // API trả về response.jobs
         setJobs(response.jobs);
@@ -49,18 +48,18 @@ export const JobsProvider = ({ children }) => {
 
   // Fetch user-specific data (saved jobs, applications)
   const fetchUserSpecificData = useCallback(async () => {
-    if (isAuthenticated && user) {
+    if (isAuthenticated && user && user.role?.toLowerCase() === 'applicant') { // Chỉ fetch nếu là applicant
       setOperationLoading(true);
       setError(null);
       try {
         const [savedJobsResponse, appsResponse] = await Promise.all([
-          candidateAPI.getMySavedJobs(), // Giả sử API này tồn tại
-          candidateAPI.getMyApplications(), // Giả sử API này tồn tại
+          applicantAPI.getMySavedJobs(), // Gọi applicantAPI
+          applicantAPI.getMyApplications(), // Gọi applicantAPI
         ]);
 
         if (
           savedJobsResponse.success &&
-          Array.isArray(savedJobsResponse.data)
+          Array.isArray(savedJobsResponse.data) // Backend trả về data trong payload
         ) {
           setSavedJobIds(
             savedJobsResponse.data.map((job) => job.id.toString())
@@ -73,7 +72,7 @@ export const JobsProvider = ({ children }) => {
           setSavedJobIds([]);
         }
 
-        if (appsResponse.success && Array.isArray(appsResponse.data)) {
+        if (appsResponse.success && Array.isArray(appsResponse.data)) { // Backend trả về data trong payload
           setApplications(appsResponse.data);
         } else {
           console.warn(
@@ -91,6 +90,7 @@ export const JobsProvider = ({ children }) => {
         setOperationLoading(false);
       }
     } else {
+      // Clear data if not authenticated or not an applicant
       setSavedJobIds([]);
       setApplications([]);
     }
@@ -109,9 +109,6 @@ export const JobsProvider = ({ children }) => {
 
       setOperationLoading(true);
       try {
-        // SỬA Ở ĐÂY: jobAPI.getJobDetails -> jobAPI.getJobById (theo file jobs.js)
-        // Hoặc nếu candidateAPI có hàm submitApplication thì giữ nguyên
-        // Dựa trên file jobs.js, hàm applyForJob có vẻ phù hợp hơn
         const response = await jobAPI.getJobById(jobId);
         if (response.success && response.job) { // API trả về response.job
           return response.job;
@@ -133,18 +130,18 @@ export const JobsProvider = ({ children }) => {
 
   const toggleSaveJob = useCallback(
     async (jobId) => {
-      if (!isAuthenticated) {
-        alert("Please log in to save jobs.");
-        return { success: false, error: "Not authenticated" };
+      if (!isAuthenticated || user?.role?.toLowerCase() !== 'applicant') {
+        alert("Please log in as an applicant to save jobs.");
+        return { success: false, error: "Not authenticated or not an applicant" };
       }
       setOperationLoading(true);
       const currentlySaved = savedJobIds.includes(jobId.toString());
       try {
         let response;
         if (currentlySaved) {
-          response = await candidateAPI.unsaveJob(jobId); // Giả sử API này tồn tại
+          response = await applicantAPI.unsaveJob(jobId); // Gọi applicantAPI
         } else {
-          response = await candidateAPI.saveJob(jobId); // Giả sử API này tồn tại
+          response = await applicantAPI.saveJob(jobId); // Gọi applicantAPI
         }
 
         if (response.success) {
@@ -168,7 +165,7 @@ export const JobsProvider = ({ children }) => {
         setOperationLoading(false);
       }
     },
-    [isAuthenticated, savedJobIds]
+    [isAuthenticated, savedJobIds, user]
   );
 
   const isJobSaved = useCallback(
@@ -185,15 +182,13 @@ export const JobsProvider = ({ children }) => {
 
   const submitApplication = useCallback(
     async (jobId, applicationData) => {
-      if (!isAuthenticated) {
-        alert("Please log in to apply for jobs.");
-        return { success: false, error: "Not authenticated" };
+      if (!isAuthenticated || user?.role?.toLowerCase() !== 'applicant') {
+        alert("Please log in as an applicant to apply for jobs.");
+        return { success: false, error: "Not authenticated or not an applicant" };
       }
       setOperationLoading(true);
       try {
-        // SỬA Ở ĐÂY: candidateAPI.submitApplication -> jobAPI.applyForJob (theo file jobs.js)
-        // Hoặc nếu candidateAPI có hàm submitApplication thì giữ nguyên
-        // Dựa trên file jobs.js, hàm applyForJob có vẻ phù hợp hơn
+        // SỬA Ở ĐÂY: jobAPI.applyForJob (theo file jobs.js)
         const response = await jobAPI.applyForJob(jobId, applicationData);
 
         if (response.success && response.application) {
@@ -212,7 +207,7 @@ export const JobsProvider = ({ children }) => {
         setOperationLoading(false);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated, user]
   );
 
   const getUserApplications = useCallback(() => {

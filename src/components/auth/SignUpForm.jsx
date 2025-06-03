@@ -47,7 +47,6 @@ const SignUpForm = () => {
     email: "", 
     password: "",
     confirmPassword: "",
-    // role: "candidate", // BỎ: Không cần chọn role ở đây nữa
     agreeTerms: false,
   });
 
@@ -69,9 +68,6 @@ const SignUpForm = () => {
     setSubmitError("");
   };
 
-  // BỎ: handleRoleChange không còn cần thiết
-  // const handleRoleChange = (e) => { ... };
-
   const toggleShowPassword = () => setShowPassword(!showPassword);
   const toggleShowConfirmPassword = () =>
     setShowConfirmPassword(!showConfirmPassword);
@@ -82,10 +78,9 @@ const SignUpForm = () => {
     setSubmitError("");
 
     const validationData = {
-        email: formData.email, // Luôn validate email
+        email: formData.email, 
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        role: "candidate", // Mặc định role là candidate cho việc validate
     };
 
     console.log("[SignUpForm] Data for validation:", validationData);
@@ -110,10 +105,9 @@ const SignUpForm = () => {
       const payload = {
         email: formData.email, 
         password: formData.password,
-        role: "candidate", // Luôn gửi role là candidate
       };
       
-      console.log("[SignUpForm] Payload to be sent to signup context:", payload);
+      console.log("[SignUpForm] Payload to be sent to signup context (always applicant):", payload);
 
       const result = await signup(payload);
       console.log("[SignUpForm] Result from signup context:", result);
@@ -121,7 +115,7 @@ const SignUpForm = () => {
 
       if (result && result.success) {
         console.log("[SignUpForm] Signup success, navigating...");
-        navigate("/verify-email", { state: { email: formData.email, role: "candidate" } }); // Luôn chuyển hướng cho candidate
+        navigate("/verify-email", { state: { email: formData.email } }); // Luôn chuyển hướng cho applicant
       } else {
         const errorMessage = result ? (result.error || "Registration failed. Please try again.") : "Registration failed due to an unknown error.";
         console.log("[SignUpForm] Signup failed, setting submitError:", errorMessage);
@@ -137,9 +131,9 @@ const SignUpForm = () => {
   };
   
   const handleGoogleSignup = () => {
-    // Google signup sẽ luôn được coi là candidate
-    console.log("[SignUpForm] Initiating Google signup for role: candidate");
-    loginWithGoogle("candidate"); 
+    // Google signup sẽ luôn được coi là applicant
+    console.log("[SignUpForm] Initiating Google signup for role: applicant");
+    loginWithGoogle(); // Không cần truyền role, mặc định là applicant
   };
 
 
@@ -147,24 +141,6 @@ const SignUpForm = () => {
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-2 flex justify-between items-baseline">
         <h2 className="text-3xl font-bold text-gray-900">Register</h2>
-        {/* BỎ: Không cần dropdown chọn role */}
-        {/*
-        <div className="relative ml-4">
-          <select
-            id="role"
-            name="role"
-            value={formData.role}
-            onChange={handleRoleChange}
-            className="w-auto p-2 pr-8 border border-gray-300 rounded-md appearance-none focus:ring-1 focus:ring-[#16C0B0] focus:border-[#16C0B0] bg-white text-gray-700 text-xs"
-          >
-            <option value="candidate">I'm a Candidate</option>
-          </select>
-          <FontAwesomeIcon
-            icon="chevron-down"
-            className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-2.5 w-2.5"
-          />
-        </div>
-        */}
       </div>
       <p className="text-gray-500 text-sm mb-6 text-left flex items-baseline">
         Already have account?&nbsp;
@@ -195,38 +171,6 @@ const SignUpForm = () => {
           inputClassName="p-3 text-sm"
           labelClassName="text-xs"
         />
-
-        {/* BỎ: Các trường First Name và Last Name không còn cần thiết cho đăng ký Candidate */}
-        {/*
-        {formData.role === "recruiter" && (
-          <>
-            <Input
-              label="First Name*"
-              name="firstName"
-              type="text"
-              value={formData.firstName}
-              onChange={handleChange}
-              error={errors.firstName}
-              required 
-              placeholder="Enter your first name"
-              inputClassName="p-3 text-sm"
-              labelClassName="text-xs"
-            />
-            <Input
-              label="Last Name*"
-              name="lastName"
-              type="text"
-              value={formData.lastName}
-              onChange={handleChange}
-              error={errors.lastName}
-              required 
-              placeholder="Enter your last name"
-              inputClassName="p-3 text-sm"
-              labelClassName="text-xs"
-            />
-          </>
-        )}
-        */}
 
         <Input
           label="Password*"
@@ -302,7 +246,7 @@ const SignUpForm = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            // onClick={handleFacebookSignup} 
+            // onClick={handleFacebookSignup} // Facebook login not implemented
             disabled={isSubmitting || authLoading}
             style={{
               backgroundColor: "#3b5998",

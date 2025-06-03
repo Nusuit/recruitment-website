@@ -99,13 +99,14 @@ const RecruitmentAnalytics = lazy(() =>
 );
 const AdminProfilePage = lazy(() => import("./pages/admin/ProfilePage"));
 
+
 // --- Guards ---
 const GuestGuard = ({ children }) => {
   const { isAuthenticated, loading, user } = useContext(AuthContext);
   if (loading) return <LoadingSpinner fullPage />;
   if (isAuthenticated) {
     const role = user?.role?.toLowerCase();
-    if (role === "admin") return <Navigate to="/admin/dashboard" replace />;
+    if (role === "admin" || role === "recruiter") return <Navigate to="/admin/dashboard" replace />; // Cả admin và recruiter đều về admin dashboard
     if (role === "candidate")
       return <Navigate to="/applicant/dashboard" replace />;
     return <Navigate to="/" replace />; // Fallback nếu có role lạ
@@ -123,13 +124,20 @@ const AuthGuard = ({ children, requiredRole }) => {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
-  if (
-    requiredRole &&
-    user?.role?.toLowerCase() !== requiredRole?.toLowerCase()
-  ) {
-    // console.warn(`Role mismatch: User role is "${user?.role}", required is "${requiredRole}". Redirecting.`);
-    return <Navigate to="/" replace />;
+  const userRole = user?.role?.toLowerCase();
+  if (requiredRole) {
+    const allowedRoles = Array.isArray(requiredRole) ? requiredRole.map(r => r.toLowerCase()) : [requiredRole.toLowerCase()];
+    if (!allowedRoles.includes(userRole)) {
+      // console.warn(`Role mismatch: User role is "${userRole}", required is "${requiredRole}". Redirecting.`);
+      if (userRole === "candidate") {
+        return <Navigate to="/applicant/dashboard" replace />;
+      }
+      // Nếu là recruiter mà không được phép vào route admin cụ thể
+      // thì vẫn giữ trong AdminLayout nhưng có thể hiển thị EmptyState hoặc thông báo lỗi
+      return <Navigate to="/admin/dashboard" replace />; // Điều hướng về dashboard admin
+    }
   }
+  
   return children;
 };
 
@@ -159,7 +167,7 @@ const OAuth2CallbackHandler = () => {
         const result = await handleGoogleOAuthCallback(code);
         if (result.success && result.user) {
           const role = result.user.role?.toLowerCase();
-          if (role === "admin") {
+          if (role === "admin" || role === "recruiter") { // Cả admin và recruiter đều về admin dashboard
             navigate("/admin/dashboard", { replace: true });
           } else if (role === "candidate") {
             navigate("/applicant/dashboard", { replace: true });
@@ -294,12 +302,10 @@ function App() {
                 <Route element={<GuestLayout />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/about" element={<AboutPage />} />
-                  <Route path="/jobs" element={<GuestJobsPage />} />
-                  <Route
-                    path="/jobs/:id"
-                    element={<ApplicantJobDetailsPage />}
-                  />{" "}
-                  {/* Dùng chung JobDetailsPage cho guest và applicant */}
+                  {/* SỬA ĐỔI: Đặt route tạo job trước route chi tiết job */}
+                  <Route path="/jobs/create" element={<CreateJobPage />} /> {/* Route tạo job */}
+                  <Route path="/jobs/:id" element={<ApplicantJobDetailsPage />} /> {/* Route chi tiết job */}
+                  <Route path="/jobs" element={<GuestJobsPage />} /> {/* Route danh sách job */}
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/check-email" element={<CheckEmailPage />} />
                 </Route>
@@ -358,11 +364,11 @@ function App() {
                   }
                 />
 
-                {/* Admin Routes */}
+                {/* Admin/Recruiter Routes (chung một layout và các trang) */}
                 <Route
                   path="/admin/*"
                   element={
-                    <AuthGuard requiredRole="admin">
+                    <AuthGuard requiredRole={["admin", "recruiter"]}> {/* Cả admin và recruiter đều có thể truy cập */}
                       <AdminLayout>
                         <Routes>
                           <Route
@@ -396,6 +402,7 @@ function App() {
                           />
                           <Route path="reports" element={<ReportsPage />} />
                           <Route path="settings" element={<SettingsPage />} />
+                          {/* Các route chỉ dành riêng cho Admin (nếu có) */}
                           <Route path="users" element={<UserManagement />} />
                           <Route path="roles" element={<RoleManagement />} />
                           <Route

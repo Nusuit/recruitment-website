@@ -1,19 +1,19 @@
 // src/components/auth/LoginForm.jsx
-import React, { useState, useContext } from "react";
+import React, { useState, useContext, useEffect } from "react"; // Thêm useEffect
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { validateLoginForm } from "../../utils/validators";
 import Button from "../common/Button";
 import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import axios from 'axios'; // Import axios để gửi request x-www-form-urlencoded
+import axios from 'axios';
 
 // SVG cho Google Logo
 const GoogleIcon = () => (
   <svg
     width="18"
     height="18"
-    viewBox="0 0 18"
+    viewBox="0 0 18 18"
     xmlns="http://www.w3.org/2000/svg"
     className="mr-2"
   >
@@ -38,16 +38,17 @@ const GoogleIcon = () => (
 
 const LoginForm = () => {
   const {
-    login, // Hàm login chung cho candidate/recruiter
+    login,
     loginWithGoogle,
     loading: authLoading,
-    handleSpecialLoginSuccess, // SỬA ĐỔI: Đổi tên hàm xử lý login đặc biệt
+    isAuthenticated, // Lấy isAuthenticated từ AuthContext
+    user: authContextUser, // Lấy user từ AuthContext
   } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
 
   const [values, setValues] = useState({
-    email: "", 
+    email: "",
     password: "",
     rememberMe: false,
   });
@@ -55,6 +56,25 @@ const LoginForm = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(location.state?.error || "");
   const [showPassword, setShowPassword] = useState(false);
+
+  // SỬA ĐỔI QUAN TRỌNG: Sử dụng useEffect để theo dõi isAuthenticated và user
+  useEffect(() => {
+    // Chỉ điều hướng khi đã xác thực và user object đã có giá trị
+    if (isAuthenticated && authContextUser && authContextUser.role) {
+      const userRole = authContextUser.role?.toLowerCase();
+      let dashboardPath;
+
+      if (userRole === "recruiter" || userRole === "admin") {
+        dashboardPath = "/admin/dashboard";
+      } else if (userRole === "applicant") {
+        dashboardPath = "/applicant/dashboard";
+      } else {
+        dashboardPath = "/";
+      }
+      console.log("[LoginForm - useEffect] Navigating to user dashboard:", dashboardPath);
+      navigate(dashboardPath, { replace: true });
+    }
+  }, [isAuthenticated, authContextUser, navigate]); // Dependencies: isAuthenticated, authContextUser, navigate
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -69,7 +89,7 @@ const LoginForm = () => {
   };
 
   const validateForm = () => {
-    const validationErrors = validateLoginForm(values); 
+    const validationErrors = validateLoginForm(values);
     setErrors(validationErrors);
     return Object.keys(validationErrors).length === 0;
   };
@@ -85,94 +105,43 @@ const LoginForm = () => {
     setSubmitError("");
 
     try {
-      const { email, password } = values; 
-      let loginRole = "candidate"; // Mặc định là candidate
+      const { email, password } = values;
+      let loginRole;
 
-      // LOGIC HARDCODED CHO TÀI KHOẢN RECRUITER ĐẶC BIỆT
+      // Xác định vai trò đăng nhập dựa trên email hardcode
       if (email === "hacnguyet108@gmail.com" && password === "123123") {
-        loginRole = "recruiter"; // Ép vai trò thành recruiter
-        console.log("[LoginForm] Determined login role: hardcoded recruiter (admin)");
+        loginRole = "recruiter";
+        console.log("[LoginForm] Determined login role: hardcoded recruiter.");
       } else {
-        loginRole = "candidate"; // Tất cả các tài khoản khác là candidate
-        console.log("[LoginForm] Determined login role: candidate");
+        loginRole = "applicant";
+        console.log("[LoginForm] Determined login role: applicant.");
       }
-      
-      // Nếu là tài khoản recruiter đặc biệt, xử lý riêng với endpoint /admin/login
-      if (loginRole === "recruiter" && email === "hacnguyet108@gmail.com") {
-        const formData = new URLSearchParams(); 
-        formData.append('username', email); // Backend Spring Security formLogin dùng 'username'
-        formData.append('password', password);
 
-        try {
-            const specialLoginResponse = await axios.post(
-                `${process.env.REACT_APP_API_URL || "http://localhost:8080"}/admin/login`, // Vẫn gọi /admin/login
-                formData.toString(), 
-                {
-                    headers: {
-                        'Content-Type': 'application/x-www-form-urlencoded'
-                    },
-                    withCredentials: true, 
-                    validateStatus: (status) => status >= 200 && status < 500 // Chấp nhận cả 4xx để đọc lỗi từ backend
-                }
-            );
-            console.log("[LoginForm] Special Recruiter Login Raw Response:", specialLoginResponse);
+      // GỌI HÀM LOGIN CHUNG TỪ AUTHCONTEXT CHO TẤT CẢ CÁC TRƯỜNG HỢP
+      const result = await login(email, password, loginRole);
+      console.log("[LoginForm] Result from login context:", result);
 
-            if (specialLoginResponse.status === 200) { 
-                await handleSpecialLoginSuccess(email); // Hàm này sẽ lấy token và user info, set role là RECRUITER
-                navigate("/recruiter/dashboard", { replace: true }); // Chuyển hướng đến dashboard recruiter
-            } else if (specialLoginResponse.status >= 400) {
-                setSubmitError("Tên đăng nhập hoặc mật khẩu không đúng."); 
-            } else {
-                 throw new Error("Đăng nhập tài khoản đặc biệt thất bại với trạng thái không mong muốn.");
-            }
-        } catch (specialError) {
-            console.error("[LoginForm] Special Recruiter Login Error (catch block):", specialError);
-            let errorMessage = "Đăng nhập tài khoản đặc biệt thất bại. Vui lòng kiểm tra lại thông tin.";
-            if (specialError.response && specialError.response.data && typeof specialError.response.data === 'string') {
-                errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
-            } else if (specialError.response && specialError.response.data && specialError.response.data.message) {
-                errorMessage = specialError.response.data.message;
-            } else if (specialError.message) {
-                errorMessage = specialError.message;
-            }
-            setSubmitError(errorMessage);
-        }
-
-      } else { // Xử lý đăng nhập Candidate hoặc Recruiter thông qua authAPI.login (JSON request)
-        const result = await login(email, password, loginRole); // Truyền loginRole để authAPI chọn endpoint
-        console.log("[LoginForm] Result from login context:", result);
-
-        if (result && result.success && result.user) {
-          console.log("[LoginForm] Login success. User role:", result.user.role);
-          const userRole = result.user.role?.toLowerCase();
-          const { from } = location.state || { from: { pathname: "/" } };
-          const intendedPath =
-            from.pathname === "/login" || from.pathname === "/"
-              ? userRole === "recruiter" 
-                ? "/recruiter/dashboard" 
-                : "/applicant/dashboard" // Mặc định tất cả các user khác là applicant
-              : from.pathname;
-          console.log("[LoginForm] Navigating to:", intendedPath);
-          navigate(intendedPath, { replace: true });
-        } else {
-            const errorMessage = result ? (result.error || "Email or password invalid.") : "Login failed due to an unknown error.";
-            console.log("[LoginForm] Login failed, setting submitError:", errorMessage);
-            setSubmitError(errorMessage);
-        }
+      if (result && result.success) { // CHỈ KIỂM TRA result.success
+        // Điều hướng sẽ được xử lý bởi useEffect khi isAuthenticated và user cập nhật
+        console.log("[LoginForm] Login successful, waiting for AuthContext state update for navigation.");
+        setSubmitError(""); // Xóa lỗi nếu login thành công
+      } else {
+        console.log("[LoginForm] Login failed:", result?.error);
+        setSubmitError(result?.error || "Email or password invalid.");
       }
-    } catch (error) { // Catch block cho lỗi chung từ luồng JSON API
+    } catch (error) {
       console.error("[LoginForm] Login submission error (catch block):", error);
       let errorMessage = "An unexpected error occurred. Please try again later.";
       if (error.response) {
-          if (error.response.status === 401 || error.response.status === 403) {
-              errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
-          } else if (error.response.data && typeof error.response.data === 'string') {
-              errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
-          } else if (error.response.data && error.response.data.message) {
-              errorMessage = error.response.data.message;
-          }
+        if (error.response.status === 401 || error.response.status === 403) {
+          errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
+        } else if (error.response.data && typeof error.response.data === 'string') {
+          errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
+        } else if (error.response.data && error.response.data.message) {
+          errorMessage = error.response.data.message;
+        }
       } else if (error.message) {
-          errorMessage = error.message;
+        errorMessage = error.message;
       }
       setSubmitError(errorMessage);
     } finally {
@@ -180,10 +149,10 @@ const LoginForm = () => {
       console.log("[LoginForm] Submission process finished.");
     }
   };
-  
+
   const handleGoogleLogin = () => {
-    console.log("[LoginForm] Initiating Google login for role: candidate");
-    loginWithGoogle("candidate"); 
+    console.log("[LoginForm] Initiating Google login for role: applicant");
+    loginWithGoogle();
   };
 
   const toggleShowPassword = () => {
@@ -193,7 +162,7 @@ const LoginForm = () => {
   return (
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-8 text-left">
-        <h2 className="text-3xl font-bold text-gray-900 mb-1">Log In</h2>
+        <h2 className="text-3xl font-bold text-gray-900">Log In</h2>
         <p className="text-gray-500 text-sm">
           Don't have an account?{" "}
           <Link
@@ -211,9 +180,9 @@ const LoginForm = () => {
       )}
       <form onSubmit={handleSubmit} className="space-y-5">
         <Input
-          label="Email address*" 
+          label="Email address*"
           name="email"
-          type="email" 
+          type="email"
           value={values.email}
           onChange={handleChange}
           error={errors.email}
@@ -270,7 +239,7 @@ const LoginForm = () => {
         >
           Log In
         </Button>
-        
+
         <div className="relative my-5">
           <div
             className="absolute inset-0 flex items-center"

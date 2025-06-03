@@ -14,17 +14,28 @@ const mockApplications = [
   {
     id: 1,
     jobId: 1,
-    userId: 1,
+    userId: 1, // Giả định userId của applicant
     jobTitle: "Frontend Developer",
     company: "ABC Tech",
-    fullName: "Nguyễn Văn A",
+    applicantName: "Nguyễn Văn A", // Đổi từ fullName thành applicantName
     email: "nguyenvana@example.com",
     phone: "0987654321",
-    resume: "nguyenvana_resume.pdf",
+    resumeUrl: "mock_resume_nguyenvana.pdf", // Đổi từ resume thành resumeUrl
     coverLetter: "Tôi mong muốn ứng tuyển vị trí Frontend Developer tại công ty của bạn...",
-    status: "pending",
-    submittedAt: "2023-08-20T08:30:00Z",
-    notes: ""
+    status: "PENDING_REVIEW", // Đổi từ pending thành PENDING_REVIEW
+    appliedDate: "2023-08-20T08:30:00Z", // Đổi từ submittedAt thành appliedDate
+    recruiterNote: "", // Đổi từ notes thành recruiterNote
+    education: "Đại học Bách Khoa",
+    experience: "2 năm kinh nghiệm",
+    skills: ["HTML", "CSS", "JavaScript", "React"],
+    linkedinProfile: "linkedin.com/in/nguyenvana",
+    portfolioUrl: "portfolio.nguyenvana.com",
+    expectedSalary: "18 triệu VND",
+    availableDate: "2023-09-01",
+    interviewDetails: null,
+    timeline: [
+      { date: "2023-08-20T08:30:00Z", title: "Application Submitted", description: "Candidate applied for the role." }
+    ]
   },
   {
     id: 2,
@@ -32,29 +43,60 @@ const mockApplications = [
     userId: 1,
     jobTitle: "Backend Developer",
     company: "XYZ Solutions",
-    fullName: "Nguyễn Văn A",
+    applicantName: "Nguyễn Văn A",
     email: "nguyenvana@example.com",
     phone: "0987654321",
-    resume: "nguyenvana_resume.pdf",
+    resumeUrl: "mock_resume_nguyenvana.pdf",
     coverLetter: "Tôi có kinh nghiệm làm việc với Node.js và mong muốn ứng tuyển vị trí Backend Developer...",
-    status: "reviewing",
-    submittedAt: "2023-08-15T10:15:00Z",
-    notes: "Ứng viên có kinh nghiệm tốt với Node.js"
+    status: "IN_REVIEW", // Đổi từ reviewing thành IN_REVIEW
+    appliedDate: "2023-08-15T10:15:00Z",
+    recruiterNote: "Ứng viên có kinh nghiệm tốt với Node.js",
+    education: "Đại học Khoa học Tự nhiên",
+    experience: "3 năm kinh nghiệm",
+    skills: ["Node.js", "Python", "SQL"],
+    linkedinProfile: "linkedin.com/in/nguyenvana",
+    portfolioUrl: "portfolio.nguyenvana.com",
+    expectedSalary: "20 triệu VND",
+    availableDate: "2023-09-01",
+    interviewDetails: null,
+    timeline: [
+      { date: "2023-08-15T10:15:00Z", title: "Application Submitted", description: "Candidate applied for the role." },
+      { date: "2023-08-16T09:00:00Z", title: "Application Viewed", description: "Recruiter viewed the application." }
+    ]
   },
   {
     id: 3,
     jobId: 3,
-    userId: 2,
+    userId: 2, // Giả định userId của applicant khác
     jobTitle: "Product Manager",
     company: "Tech Innovations",
-    fullName: "Trần Thị B",
+    applicantName: "Trần Thị B",
     email: "tranthib@example.com",
     phone: "0123456789",
-    resume: "tranthib_resume.pdf",
+    resumeUrl: "mock_resume_tranthib.pdf",
     coverLetter: "Tôi có kinh nghiệm quản lý sản phẩm phần mềm và mong muốn...",
-    status: "interview",
-    submittedAt: "2023-08-10T14:20:00Z",
-    notes: "Ứng viên phù hợp, hẹn phỏng vấn ngày 25/08"
+    status: "INTERVIEW_SCHEDULED", // Đổi từ interview thành INTERVIEW_SCHEDULED
+    appliedDate: "2023-08-10T14:20:00Z",
+    recruiterNote: "Ứng viên phù hợp, hẹn phỏng vấn ngày 25/08",
+    education: "Thạc sĩ Quản trị kinh doanh",
+    experience: "5 năm kinh nghiệm",
+    skills: ["Product Management", "Agile", "Communication"],
+    linkedinProfile: "linkedin.com/in/tranthib",
+    portfolioUrl: null,
+    expectedSalary: "28 triệu VND",
+    availableDate: "2023-09-01",
+    interviewDetails: {
+      datetime: "2023-08-25T09:00:00Z",
+      type: "Online Video Call",
+      location: "https://meet.google.com/abc-xyz",
+      interviewer: "Nguyễn Quản lý",
+      notes: "Chuẩn bị câu hỏi về quản lý sản phẩm và kinh nghiệm làm việc"
+    },
+    timeline: [
+      { date: "2023-08-10T14:20:00Z", title: "Application Submitted", description: "Candidate applied for the role." },
+      { date: "2023-08-12T10:00:00Z", title: "Shortlisted", description: "Application moved to shortlisted stage." },
+      { date: "2023-08-20T15:00:00Z", title: "Interview Scheduled", description: "First round interview scheduled." }
+    ]
   },
   {
     id: 4,
@@ -62,14 +104,26 @@ const mockApplications = [
     userId: 3,
     jobTitle: "Frontend Developer",
     company: "ABC Tech",
-    fullName: "Lê Văn C",
+    applicantName: "Lê Văn C",
     email: "levanc@example.com",
     phone: "0369852147",
-    resume: "levanc_resume.pdf",
+    resumeUrl: "mock_resume_levanc.pdf",
     coverLetter: "Tôi có 3 năm kinh nghiệm với React và Vue...",
-    status: "rejected",
-    submittedAt: "2023-08-12T09:45:00Z",
-    notes: "Không phù hợp với yêu cầu của vị trí"
+    status: "REJECTED", // Đổi từ rejected thành REJECTED
+    appliedDate: "2023-08-12T09:45:00Z",
+    recruiterNote: "Không phù hợp với yêu cầu của vị trí",
+    education: "Đại học FPT",
+    experience: "3 năm kinh nghiệm",
+    skills: ["React", "Vue", "JavaScript"],
+    linkedinProfile: null,
+    portfolioUrl: null,
+    expectedSalary: "15 triệu VND",
+    availableDate: "2023-09-01",
+    interviewDetails: null,
+    timeline: [
+      { date: "2023-08-12T09:45:00Z", title: "Application Submitted", description: "Candidate applied for the role." },
+      { date: "2023-08-15T11:00:00Z", title: "Rejected", description: "Application was not selected." }
+    ]
   },
   {
     id: 5,
@@ -77,27 +131,27 @@ const mockApplications = [
     userId: 4,
     jobTitle: "Backend Developer",
     company: "XYZ Solutions",
-    fullName: "Phạm Thị D",
+    applicantName: "Phạm Thị D",
     email: "phamthid@example.com",
     phone: "0765432198",
-    resume: "phamthid_resume.pdf",
+    resumeUrl: "mock_resume_phamthid.pdf",
     coverLetter: "Tôi có chuyên môn về Node.js và Express...",
-    status: "offered",
-    submittedAt: "2023-08-05T11:30:00Z",
-    notes: "Ứng viên xuất sắc, đã gửi offer"
-  }
-];
-
-// Dữ liệu mẫu cho các cuộc phỏng vấn
-const mockInterviews = [
-  {
-    id: 1,
-    applicationId: 3,
-    date: "2023-08-25T09:00:00Z",
-    location: "Online - Google Meet",
-    interviewers: ["Nguyễn Quản lý", "Trần HR"],
-    status: "scheduled",
-    notes: "Chuẩn bị câu hỏi về quản lý sản phẩm và kinh nghiệm làm việc"
+    status: "OFFER_EXTENDED", // Đổi từ offered thành OFFER_EXTENDED
+    appliedDate: "2023-08-05T11:30:00Z",
+    recruiterNote: "Ứng viên xuất sắc, đã gửi offer",
+    education: "Đại học Bách Khoa",
+    experience: "4 năm kinh nghiệm",
+    skills: ["Node.js", "Express", "MongoDB"],
+    linkedinProfile: "linkedin.com/in/phamthid",
+    portfolioUrl: null,
+    expectedSalary: "25 triệu VND",
+    availableDate: "2023-09-01",
+    interviewDetails: null,
+    timeline: [
+      { date: "2023-08-05T11:30:00Z", title: "Application Submitted", description: "Candidate applied for the role." },
+      { date: "2023-08-08T14:00:00Z", title: "Interview Scheduled", description: "First interview." },
+      { date: "2023-08-10T16:00:00Z", title: "Offer Extended", description: "Job offer sent." }
+    ]
   }
 ];
 
@@ -155,7 +209,7 @@ export const getApplicationById = async (applicationId) => {
   }
 };
 
-// Get applications for a job (for admins)
+// Get applications for a job (for recruiters)
 export const getJobApplications = async (jobId, params = {}) => {
   try {
     let jobApplications = mockApplications.filter(app => app.jobId === parseInt(jobId));
@@ -184,8 +238,8 @@ export const getJobApplications = async (jobId, params = {}) => {
   }
 };
 
-// Update application status (for admins)
-export const updateApplicationStatus = async (applicationId, status, notes = '') => {
+// Update application status (for recruiters)
+export const updateApplicationStatus = async (applicationId, status, recruiterNote = '') => { // Đổi notes thành recruiterNote
   try {
     const index = mockApplications.findIndex(app => app.id === parseInt(applicationId));
     
@@ -194,8 +248,19 @@ export const updateApplicationStatus = async (applicationId, status, notes = '')
       mockApplications[index] = {
         ...mockApplications[index],
         status,
-        notes: notes || mockApplications[index].notes
+        recruiterNote: recruiterNote || mockApplications[index].recruiterNote // Cập nhật recruiterNote
       };
+
+      // Thêm event vào timeline
+      const newTimelineEvent = {
+        date: new Date().toISOString(),
+        title: `Status updated to ${status.replace(/_/g, ' ')}`,
+        description: recruiterNote || `Application status changed to ${status.replace(/_/g, ' ')}.`
+      };
+      if (!mockApplications[index].timeline) {
+        mockApplications[index].timeline = [];
+      }
+      mockApplications[index].timeline.push(newTimelineEvent);
       
       return {
         success: true,
@@ -213,7 +278,7 @@ export const updateApplicationStatus = async (applicationId, status, notes = '')
   }
 };
 
-// Schedule interview (for admins)
+// Schedule interview (for recruiters)
 export const scheduleInterview = async (applicationId, interviewData) => {
   try {
     // Kiểm tra xem đơn ứng tuyển có tồn tại không
@@ -226,37 +291,38 @@ export const scheduleInterview = async (applicationId, interviewData) => {
       };
     }
     
-    // Kiểm tra xem đã có lịch phỏng vấn chưa
-    const existingInterviewIndex = mockInterviews.findIndex(
-      interview => interview.applicationId === parseInt(applicationId)
-    );
-    
-    const newInterview = {
-      id: existingInterviewIndex !== -1 ? mockInterviews[existingInterviewIndex].id : mockInterviews.length + 1,
+    // Cập nhật interviewDetails trực tiếp vào application
+    application.interviewDetails = {
+      id: Date.now(), // Tạo ID giả cho interview
       applicationId: parseInt(applicationId),
       ...interviewData
     };
     
-    if (existingInterviewIndex !== -1) {
-      // Cập nhật lịch phỏng vấn hiện có
-      mockInterviews[existingInterviewIndex] = newInterview;
-    } else {
-      // Thêm lịch phỏng vấn mới
-      mockInterviews.push(newInterview);
-    }
-    
-    // Cập nhật trạng thái đơn ứng tuyển thành "interview" nếu chưa phải
-    if (application.status !== 'interview') {
-      const appIndex = mockApplications.findIndex(app => app.id === parseInt(applicationId));
-      mockApplications[appIndex] = {
-        ...mockApplications[appIndex],
-        status: 'interview'
+    // Cập nhật trạng thái đơn ứng tuyển thành "INTERVIEW_SCHEDULED" nếu chưa phải
+    if (application.status !== 'INTERVIEW_SCHEDULED') {
+      application.status = 'INTERVIEW_SCHEDULED';
+      // Thêm event vào timeline
+      const newTimelineEvent = {
+        date: new Date().toISOString(),
+        title: "Interview Scheduled",
+        description: `Interview scheduled for ${interviewData.datetime} (${interviewData.type}).`
       };
+      if (!application.timeline) {
+        application.timeline = [];
+      }
+      application.timeline.push(newTimelineEvent);
     }
+
+    // Lưu thay đổi vào mockApplications (nếu mockApplications là global mutable array)
+    const appIndex = mockApplications.findIndex(app => app.id === parseInt(applicationId));
+    if (appIndex !== -1) {
+      mockApplications[appIndex] = application;
+    }
+    setApplicationsToStorage(mockApplications); // Cập nhật localStorage
     
     return {
       success: true,
-      interview: newInterview
+      interview: application.interviewDetails // Trả về interviewDetails
     };
   } catch (error) {
     console.error(`Schedule interview for application ${applicationId} error:`, error);
@@ -267,14 +333,12 @@ export const scheduleInterview = async (applicationId, interviewData) => {
 // Get interview details
 export const getInterviewDetails = async (applicationId) => {
   try {
-    const interview = mockInterviews.find(
-      interview => interview.applicationId === parseInt(applicationId)
-    );
+    const application = mockApplications.find(app => app.id === parseInt(applicationId));
     
-    if (interview) {
+    if (application && application.interviewDetails) {
       return {
         success: true,
-        interview
+        interview: application.interviewDetails
       };
     } else {
       return {
@@ -294,11 +358,23 @@ export const withdrawApplication = async (applicationId) => {
     const index = mockApplications.findIndex(app => app.id === parseInt(applicationId));
     
     if (index !== -1) {
-      // Cập nhật trạng thái thành "withdrawn"
+      // Cập nhật trạng thái thành "WITHDRAWN"
       mockApplications[index] = {
         ...mockApplications[index],
-        status: 'withdrawn'
+        status: 'WITHDRAWN'
       };
+      // Thêm event vào timeline
+      const newTimelineEvent = {
+        date: new Date().toISOString(),
+        title: "Application Withdrawn",
+        description: "Candidate withdrew the application."
+      };
+      if (!mockApplications[index].timeline) {
+        mockApplications[index].timeline = [];
+      }
+      mockApplications[index].timeline.push(newTimelineEvent);
+
+      setApplicationsToStorage(mockApplications); // Cập nhật localStorage
       
       return {
         success: true,
@@ -316,7 +392,7 @@ export const withdrawApplication = async (applicationId) => {
   }
 };
 
-// Get application statistics (for admins)
+// Get application statistics (for recruiters)
 export const getApplicationStats = async () => {
   try {
     // Tính toán thống kê đơn giản
@@ -324,12 +400,14 @@ export const getApplicationStats = async () => {
     
     // Đếm theo trạng thái
     const statusCounts = {
-      pending: 0,
-      reviewing: 0,
-      interview: 0,
-      rejected: 0,
-      offered: 0,
-      withdrawn: 0
+      PENDING_REVIEW: 0,
+      IN_REVIEW: 0,
+      SHORTLISTED: 0,
+      INTERVIEW_SCHEDULED: 0,
+      OFFER_EXTENDED: 0,
+      HIRED: 0,
+      REJECTED: 0,
+      WITHDRAWN: 0
     };
     
     mockApplications.forEach(app => {
@@ -338,8 +416,10 @@ export const getApplicationStats = async () => {
       }
     });
     
-    // Tính tỷ lệ chấp nhận
-    const acceptanceRate = (statusCounts.offered / totalApplications * 100).toFixed(2);
+    // Tính tỷ lệ chấp nhận (ví dụ)
+    const offeredCount = statusCounts.OFFER_EXTENDED || 0;
+    const totalProcessed = totalApplications - (statusCounts.PENDING_REVIEW || 0) - (statusCounts.IN_REVIEW || 0); // Ví dụ: chỉ tính trên các đơn đã xử lý
+    const acceptanceRate = totalProcessed > 0 ? ((offeredCount / totalProcessed) * 100).toFixed(2) : 0;
     
     return {
       success: true,
@@ -355,7 +435,7 @@ export const getApplicationStats = async () => {
   }
 };
 
-// Download resume
+// Download resume (for recruiters)
 export const downloadResume = async (applicationId) => {
   try {
     const application = mockApplications.find(app => app.id === parseInt(applicationId));
@@ -368,7 +448,7 @@ export const downloadResume = async (applicationId) => {
     }
     
     // Giả lập tạo một file PDF trống (không thực sự tạo file trong trình duyệt)
-    alert(`Đang tải xuống file ${application.resume}`);
+    alert(`Đang tải xuống file ${application.resumeUrl}`);
     
     return { success: true };
   } catch (error) {

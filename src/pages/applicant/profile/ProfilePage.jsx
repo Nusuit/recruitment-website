@@ -1,7 +1,7 @@
 // src/pages/applicant/profile/ProfilePage.jsx
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { candidateAPI } from "../../../api/candidate"; // Assuming candidateAPI for profile actions
+import { candidateAPI } from "../../../api/applicant"; // Assuming candidateAPI for profile actions
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom"; // Import Link cho Go to Login button

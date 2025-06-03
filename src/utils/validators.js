@@ -8,11 +8,10 @@ export const isValidEmail = (email) => {
   return emailRegex.test(String(email).toLowerCase());
 };
 
-// Password validation (ít nhất 8 ký tự, bao gồm chữ cái và số)
+// Password validation (ít nhất 8 ký tự)
 export const isValidPassword = (password) => {
-  // SỬA ĐỔI: BỎ REGEX ĐỘ PHỨC TẠP, CHỈ CẦN ĐẢM BẢO KHÔNG RỖNG VÀ CÓ CHIỀU DÀI TỐI THIỂU (8 ký tự)
-  // Logic kiểm tra isNotEmpty và hasMinLength sẽ được xử lý ở validateSignupForm
-  return password && password.length >= 2; // Chỉ kiểm tra độ dài tối thiểu 8 ký tự
+  // SỬA ĐỔI: Chỉ kiểm tra độ dài tối thiểu 8 ký tự
+  return password && password.length >= 3; 
 };
 
 // Phone number validation
@@ -130,36 +129,17 @@ export const validateSignupForm = (values) => {
   const errors = {};
   console.log("[Validator] Validating Signup Form with values:", values);
 
-  // No longer validating firstName and lastName as per user request
-  // if (!isNotEmpty(values.firstName)) {
-  //   errors.firstName = 'First name is required';
-  // }
-  // if (!isNotEmpty(values.lastName)) {
-  //   errors.lastName = 'Last name is required';
-  // }
-
+  // SỬA ĐỔI: Không còn validate firstName và lastName cho Applicant Signup
   if (!isNotEmpty(values.email)) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(values.email)) {
     errors.email = 'Invalid email format';
   }
   
-  // If username is being sent (e.g., for recruiter, it's the email)
-  // and backend has specific validation for username that differs from email
-  // (currently unlikely if username is just the email)
-  if (values.role === 'recruiter' && values.username) {
-      if (!isNotEmpty(values.username)) {
-          errors.username = 'Username is required for recruiters.';
-      } else if (!isValidEmail(values.username)) { // Assuming username should also be a valid email if it's set to email
-          errors.username = 'Username format is invalid (should be email).';
-      }
-  }
-
-
   if (!isNotEmpty(values.password)) {
     errors.password = 'Password is required';
   } else if (!isValidPassword(values.password)) { // SỬA ĐỔI: Chỉnh sửa thông báo lỗi
-    errors.password = 'Password must be at least 8 characters.'; // BỎ YÊU CẦU CHỮ CÁI, SỐ
+    errors.password = 'Password must be at least 8 characters.'; 
   }
 
   if (!isNotEmpty(values.confirmPassword)) {
@@ -168,11 +148,6 @@ export const validateSignupForm = (values) => {
     errors.confirmPassword = 'Passwords do not match';
   }
   
-  // Example: if you have a companyName field for recruiters
-  // if (values.role === 'recruiter' && !isNotEmpty(values.companyName)) {
-  //   errors.companyName = 'Company name is required for employers.';
-  // }
-
   console.log("[Validator] Signup Form Validation Errors:", errors);
   return errors;
 };
@@ -197,7 +172,7 @@ export const validateResetPasswordForm = (values) => {
   if (!isNotEmpty(values.password)) {
     errors.password = 'New password is required';
   } else if (!isValidPassword(values.password)) { // SỬA ĐỔI: Chỉnh sửa thông báo lỗi
-    errors.password = 'Password must be at least 8 characters.'; // BỎ YÊU CẦU CHỮ CÁI, SỐ
+    errors.password = 'Password must be at least 8 characters.'; 
   }
 
   if (!isNotEmpty(values.confirmPassword)) {
@@ -281,9 +256,8 @@ export const validateJobPostingForm = (values) => {
 
   if (!isNotEmpty(values.title)) errors.title = 'Job title is required';
   if (!isNotEmpty(values.location)) errors.location = 'Location is required';
-  if (!isNotEmpty(values.jobType)) errors.jobType = 'Job type is required'; // e.g., full-time, part-time
+  if (!isNotEmpty(values.type)) errors.jobType = 'Job type is required'; // e.g., full-time, part-time
   if (!isNotEmpty(values.description)) errors.description = 'Job description is required';
-  if (!isNotEmpty(values.responsibilities)) errors.responsibilities = 'Responsibilities are required';
   if (!isNotEmpty(values.requirements)) errors.requirements = 'Requirements are required';
   
   if (values.salaryMin && !isNumeric(values.salaryMin)) {
@@ -295,10 +269,10 @@ export const validateJobPostingForm = (values) => {
   if (isNotEmpty(values.salaryMin) && isNotEmpty(values.salaryMax) && parseFloat(values.salaryMin) > parseFloat(values.salaryMax)) {
     errors.salaryMax = 'Maximum salary should be greater than or equal to minimum salary.';
   }
-  if (!isNotEmpty(values.applicationDeadline)) {
-    errors.applicationDeadline = 'Application deadline is required';
-  } else if (!isValidDate(values.applicationDeadline) || !isFutureDate(values.applicationDeadline)) {
-    errors.applicationDeadline = 'Deadline must be a valid future date.';
+  if (!isNotEmpty(values.deadline)) {
+    errors.deadline = 'Application deadline is required';
+  } else if (!isValidDate(values.deadline) || !isFutureDate(values.deadline)) {
+    errors.deadline = 'Deadline must be a valid future date.';
   }
    if (values.numberOfVacancies && (!isInteger(values.numberOfVacancies) || !isPositiveNumber(values.numberOfVacancies))) {
     errors.numberOfVacancies = 'Number of vacancies must be a positive integer.';

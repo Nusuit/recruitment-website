@@ -10,10 +10,9 @@ export const isValidEmail = (email) => {
 
 // Password validation (ít nhất 8 ký tự, bao gồm chữ cái và số)
 export const isValidPassword = (password) => {
-  // Password must be at least 8 characters, include at least one letter and one number
-  // Có thể thêm yêu cầu về ký tự đặc biệt nếu muốn: /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
-  const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
-  return passwordRegex.test(password);
+  // SỬA ĐỔI: BỎ REGEX ĐỘ PHỨC TẠP, CHỈ CẦN ĐẢM BẢO KHÔNG RỖNG VÀ CÓ CHIỀU DÀI TỐI THIỂU (8 ký tự)
+  // Logic kiểm tra isNotEmpty và hasMinLength sẽ được xử lý ở validateSignupForm
+  return password && password.length >= 2; // Chỉ kiểm tra độ dài tối thiểu 8 ký tự
 };
 
 // Phone number validation
@@ -159,8 +158,8 @@ export const validateSignupForm = (values) => {
 
   if (!isNotEmpty(values.password)) {
     errors.password = 'Password is required';
-  } else if (!isValidPassword(values.password)) {
-    errors.password = 'Password must be at least 8 characters, including letters, and numbers.';
+  } else if (!isValidPassword(values.password)) { // SỬA ĐỔI: Chỉnh sửa thông báo lỗi
+    errors.password = 'Password must be at least 8 characters.'; // BỎ YÊU CẦU CHỮ CÁI, SỐ
   }
 
   if (!isNotEmpty(values.confirmPassword)) {
@@ -197,8 +196,8 @@ export const validateResetPasswordForm = (values) => {
   console.log("[Validator] Validating Reset Password Form:", values);
   if (!isNotEmpty(values.password)) {
     errors.password = 'New password is required';
-  } else if (!isValidPassword(values.password)) {
-    errors.password = 'Password must be at least 8 characters, including letters, and numbers.';
+  } else if (!isValidPassword(values.password)) { // SỬA ĐỔI: Chỉnh sửa thông báo lỗi
+    errors.password = 'Password must be at least 8 characters.'; // BỎ YÊU CẦU CHỮ CÁI, SỐ
   }
 
   if (!isNotEmpty(values.confirmPassword)) {
@@ -348,12 +347,10 @@ export const validateInterviewForm = (values) => {
   if (values.interviewType === 'in-person' && !isNotEmpty(values.location)) {
     errors.location = 'Location is required for in-person interviews.';
   }
-  if (values.interviewType === 'online') {
-    if (!isNotEmpty(values.meetingLink)) {
-        errors.meetingLink = 'Meeting link is required for online interviews.';
-    } else if (!isValidUrl(values.meetingLink)) {
-        errors.meetingLink = 'Invalid meeting link format.';
-    }
+  if (values.interviewType === 'online' && !isNotEmpty(values.meetingLink)) { // Thêm kiểm tra isNotEmpty
+    errors.meetingLink = 'Meeting link is required for online interviews.';
+  } else if (values.interviewType === 'online' && values.meetingLink && !isValidUrl(values.meetingLink)) { // Thêm kiểm tra values.meetingLink
+    errors.meetingLink = 'Invalid meeting link format.';
   }
   // ... thêm các rule khác cho interviewer, notes, etc.
   console.log("[Validator] Interview Form Errors:", errors);

@@ -2,13 +2,15 @@
 import axiosInstance from "./config/axiosConfig";
 
 export const authAPI = {
-  login: async (email, password, role) => {
-    console.log("[authAPI] login called with:", { email, role });
+  login: async (email, password, role) => { // Giữ role để chọn endpoint
+    console.log("[authAPI] login called with:", { email, password, role }); 
     try {
       let loginUrl = ""; 
+      // THAY ĐỔI: Chỉ có 2 endpoint chính cho login (candidate và recruiter)
+      // Endpoint admin sẽ được xử lý riêng trong LoginForm
       if (role === "candidate") {
         loginUrl = "/auth/candidate/login"; 
-      } else if (role === "recruiter") {
+      } else if (role === "recruiter") { // Đây là recruiter bình thường (không phải hardcoded admin)
         loginUrl = "/auth/recruiter/login"; 
       } else {
         console.error("[authAPI] Invalid role for login:", role);
@@ -19,47 +21,52 @@ export const authAPI = {
       }
       console.log("[authAPI] Attempting POST to:", loginUrl);
       const response = await axiosInstance.post(loginUrl, {
-        email,
+        username: email, 
         password,
       });
       console.log("[authAPI] Login response from backend:", response);
 
       const { data, success, message } = response.data || {}; 
 
-      if (success) {
-        localStorage.setItem("token", data.token);
-        localStorage.setItem("user", JSON.stringify(data.user));
-        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+      if (success && data && data.accessToken) { 
+        localStorage.setItem("token", data.accessToken); 
+        axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${data.accessToken}`;
+        console.log("[authAPI] Login successful. AccessToken stored.");
         return {
           success: true,
-          user: data.user,
-          token: data.token,
+          user: undefined, 
+          token: data.accessToken,
         };
       } else {
         return {
           success: false,
-          error: message || "Đăng nhập thất bại",
+          error: message || data?.error || "Đăng nhập thất bại: Thông tin đăng nhập không hợp lệ.",
         };
       }
     } catch (error) {
       console.error("[authAPI] Login error (catch block):", error.response || error);
+      if (error.response) {
+          console.error("Backend Error Details:", error.response.data);
+          console.error("Backend Error Status:", error.response.status);
+      }
       return {
         success: false,
         error:
           error.response?.data?.message ||
-          error.message || 
-          "Đã xảy ra lỗi trong quá trình đăng nhập",
+          error.response?.data?.error ||   
+          error.message ||                 
+          "Đã xảy ra lỗi trong quá trình đăng nhập.",
       };
     }
   },
 
+  // SỬA ĐỔI: registerCandidate không còn nhận role, luôn là candidate
   registerCandidate: async (userData) => { 
     console.log("[authAPI] registerCandidate called with userData:", userData);
     try {
       const payload = {
         email: userData.email,
         password: userData.password,
-        // role: userData.role // Backend CandidateAuthController không yêu cầu role trong body
       };
       console.log("[authAPI] Payload for /auth/candidate/signup:", payload);
       const response = await axiosInstance.post(
@@ -89,18 +96,16 @@ export const authAPI = {
     }
   },
 
+  // BỎ: registerRecruiter không còn được gọi từ SignUpForm
+  /*
   registerRecruiter: async (userData) => {
     console.log("[authAPI] registerRecruiter called with userData:", userData);
     try {
       const payload = {
-        email: userData.email,
+        username: userData.email, 
         password: userData.password,
-        username: userData.username, // Đã được thêm từ SignUpForm (là email)
-        // role: userData.role // Backend RecruiterAuthController không yêu cầu role trong body
-        // Nếu backend vẫn yêu cầu firstName, lastName (dù không có trên form),
-        // bạn cần đảm bảo SignUpForm gửi chúng (ví dụ, gán giá trị mặc định)
-        // firstName: userData.firstName || userData.email.split('@')[0], 
-        // lastName: userData.lastName || 'User',
+        firstName: userData.firstName, 
+        lastName: userData.lastName,   
       };
       console.log("[authAPI] Payload for /auth/recruiter/signup:", payload);
       const response = await axiosInstance.post(
@@ -112,8 +117,7 @@ export const authAPI = {
       if (response.data && (response.data.success !== undefined ? response.data.success : true)) {
         return {
           success: true,
-          message: response.data.message || "Đăng ký nhà tuyển dụng thành công! Vui lòng kiểm tra email để xác thực.",
-          email: userData.email, 
+          message: response.data.message || "Đăng ký nhà tuyển dụng thành công!",
         };
       } else {
         return {
@@ -130,16 +134,37 @@ export const authAPI = {
       };
     }
   },
+  */
+
+  // THÊM: Hàm mới để lấy JWT token sau khi admin form login thành công
+  getAdminJwtToken: async () => {
+    console.log("[authAPI] getAdminJwtToken called");
+    try {
+        const response = await axiosInstance.get('/api/auth/admin/get-jwt'); // Endpoint mới ở backend
+        console.log("[authAPI] getAdminJwtToken response:", response);
+        if (response.data?.success && response.data?.data?.accessToken) {
+            return {
+                success: true,
+                token: response.data.data.accessToken,
+            };
+        }
+        return {
+            success: false,
+            error: response.data?.message || "Failed to get JWT token from admin session."
+        };
+    } catch (error) {
+        console.error("[authAPI] getAdminJwtToken error:", error.response || error);
+        return {
+            success: false,
+            error: error.response?.data?.message || error.message || "Failed to get JWT token."
+        };
+    }
+  },
 
   verifyOTP: async (email, otp, role = "candidate") => { 
     console.log("[authAPI] verifyOTP called with:", { email, otp, role });
     try {
       let verifyUrl = "/auth/candidate/signup/verify"; 
-      if (role === "recruiter") {
-        // LƯU Ý: Backend RecruiterAuthController hiện tại CHƯA CÓ endpoint này.
-        // verifyUrl = "/auth/recruiter/signup/verify"; 
-        console.warn("[authAPI] verifyOTP for recruiter is using candidate endpoint. Backend update needed for /auth/recruiter/signup/verify.");
-      }
       console.log("[authAPI] Attempting POST to:", verifyUrl);
       const response = await axiosInstance.post(verifyUrl, { email, otp });
       console.log("[authAPI] verifyOTP response from backend:", response);
@@ -168,10 +193,6 @@ export const authAPI = {
     console.log("[authAPI] resendOTP called for:", { email, role });
     try {
       let resendUrl = "/auth/candidate/resend-otp"; 
-      if (role === "recruiter") {
-        // resendUrl = "/auth/recruiter/resend-otp"; 
-        console.warn("[authAPI] resendOTP for recruiter is using candidate endpoint. Backend update needed.");
-      }
       console.log("[authAPI] Attempting POST to:", resendUrl);
       const response = await axiosInstance.post(resendUrl, { email });
       console.log("[authAPI] resendOTP response from backend:", response);
@@ -237,10 +258,6 @@ export const authAPI = {
     console.log("[authAPI] loginWithGoogleOAuth called with code for role:", role);
     try {
       let oauthUrl = `/auth/candidate/login/oauth2?code=${code}`; 
-      if (role === "recruiter") {
-        // oauthUrl = `/auth/recruiter/login/oauth2?code=${code}`; 
-        console.warn("[authAPI] loginWithGoogleOAuth for recruiter is using candidate endpoint. Backend update needed.");
-      }
       console.log("[authAPI] Attempting GET to:", oauthUrl);
       const response = await axiosInstance.get(oauthUrl); 
       console.log("[authAPI] loginWithGoogleOAuth response from backend:", response);

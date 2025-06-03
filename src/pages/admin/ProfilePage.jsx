@@ -10,7 +10,7 @@ import Input from "../../components/common/Input";
 const AdminProfilePage = () => {
   const {
     user,
-    updateUserContext,
+    updateUserContext, // SỬA ĐỔI: Sử dụng hàm này để cập nhật user trong context
     loading: authLoading,
   } = useContext(AuthContext);
   const [profileData, setProfileData] = useState({
@@ -44,23 +44,20 @@ const AdminProfilePage = () => {
       setFormError(null);
       try {
         // TODO: Replace with actual API call to get admin/recruiter's own profile
-        // const response = await recruiterAPI.getMyProfile();
-        // const currentProfile = response.profile || {};
+        const response = await recruiterAPI.getAdminProfile(); // Giả sử API này trả về đối tượng user/profile
+        const currentProfile = response.profile || response.user || {}; // backend có thể trả về 'profile' hoặc 'user'
 
-        // Mock data using current user from AuthContext
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        const currentProfile = {
-          firstName: user?.firstName || "",
-          lastName: user?.lastName || "",
-          email: user?.email || "",
-          phone: user?.phone || "0987654321", // Example
-          jobTitle: user?.jobTitle || "Recruitment Specialist", // Example
-          department: user?.department || "Human Resources", // Example
-          avatarUrl: user?.avatarUrl || "/assets/images/admin-avatar.png", // Example
-        };
-
-        setProfileData(currentProfile);
-        setAvatarPreview(currentProfile.avatarUrl);
+        // Mock data using current user from AuthContext nếu API trả về rỗng
+        setProfileData({
+          firstName: currentProfile.firstName || user?.firstName || "",
+          lastName: currentProfile.lastName || user?.lastName || "",
+          email: currentProfile.email || user?.email || "",
+          phone: currentProfile.phone || user?.phone || "", 
+          jobTitle: currentProfile.jobTitle || user?.jobTitle || "", 
+          department: currentProfile.department || user?.department || "", 
+          avatarUrl: currentProfile.avatarUrl || user?.avatarUrl || "/assets/images/admin-avatar.png", // Sử dụng avatar của user hoặc mặc định
+        });
+        setAvatarPreview(currentProfile.avatarUrl || user?.avatarUrl || "/assets/images/admin-avatar.png");
       } catch (err) {
         console.error("Error loading admin profile:", err);
         setFormError("Failed to load profile data. Please try again.");
@@ -107,29 +104,27 @@ const AdminProfilePage = () => {
     try {
       let newAvatarUrl = profileData.avatarUrl;
       if (avatarFile) {
-        const avatarFormData = new FormData();
-        avatarFormData.append("avatar", avatarFile); // Match backend field name
-        // TODO: Replace with actual API call
-        // const avatarUploadResponse = await recruiterAPI.uploadMyAvatar(avatarFormData);
-        // newAvatarUrl = avatarUploadResponse.avatarUrl;
-        await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate upload
-        newAvatarUrl = avatarPreview; // Use preview for mock
+        const avatarUploadResponse = await recruiterAPI.uploadAdminAvatar(avatarFile); // Pass file directly
+        if (avatarUploadResponse.success && avatarUploadResponse.avatarUrl) {
+          newAvatarUrl = avatarUploadResponse.avatarUrl;
+        } else {
+          throw new Error(avatarUploadResponse.error || "Failed to upload avatar.");
+        }
       }
 
       const profileToUpdate = { ...profileData, avatarUrl: newAvatarUrl };
-      // TODO: Replace with actual API call
-      // const updateResponse = await recruiterAPI.updateMyProfile(profileToUpdate);
-      await new Promise((resolve) => setTimeout(resolve, 500)); // Simulate update
-      const updateResponse = { profile: profileToUpdate }; // Mock response
+      const updateResponse = await recruiterAPI.updateAdminProfile(profileToUpdate); // API update profile text data
 
-      if (updateResponse.profile) {
-        updateUserContext({ ...user, ...updateResponse.profile }); // Update user in AuthContext
+      if (updateResponse.success && updateResponse.profile) {
+        updateUserContext({ ...user, ...updateResponse.profile, avatarUrl: newAvatarUrl }); // Update user in AuthContext
         setProfileData(updateResponse.profile); // Update local state
+        setSubmitSuccess(true);
+        setIsEditing(false);
+        setAvatarFile(null); // Clear staged file
+      } else {
+        throw new Error(updateResponse.error || "Failed to update profile via API.");
       }
-
-      setSubmitSuccess(true);
-      setIsEditing(false);
-      setAvatarFile(null);
+      
       setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (err) {
       console.error("Error updating admin profile:", err);
@@ -152,9 +147,9 @@ const AdminProfilePage = () => {
       phone: user?.phone || "",
       jobTitle: user?.jobTitle || "",
       department: user?.department || "",
-      avatarUrl: user?.avatarUrl || "",
+      avatarUrl: user?.avatarUrl || "/assets/images/admin-avatar.png",
     });
-    setAvatarPreview(user?.avatarUrl || "");
+    setAvatarPreview(user?.avatarUrl || "/assets/images/admin-avatar.png");
     setAvatarFile(null);
   };
 
@@ -229,7 +224,7 @@ const AdminProfilePage = () => {
         <section className="text-center">
           <div className="relative inline-block mb-4">
             <img
-              src={avatarPreview || "/assets/images/admin-avatar.png"}
+              src={avatarPreview || "/assets/images/admin-avatar.png"} // SỬA ĐỔI: Avatar mặc định cho admin
               alt="Admin Avatar"
               className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-gray-200 shadow-md"
             />

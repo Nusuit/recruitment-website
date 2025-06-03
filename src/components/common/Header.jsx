@@ -5,7 +5,7 @@ import { AuthContext } from "../../contexts/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const Header = () => {
-  const { isAuthenticated, user, logout } = useContext(AuthContext);
+  const { isAuthenticated, user, logout, loading: authLoading } = useContext(AuthContext); // Thêm authLoading
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userRole, setUserRole] = useState("guest");
@@ -62,7 +62,17 @@ const Header = () => {
     const loginButtonClass = `${buttonBaseClass} bg-teal-500 text-white hover:bg-teal-600`;
     const signupButtonClass = `${buttonBaseClass} bg-white text-teal-600 border border-teal-500 hover:bg-teal-50`;
 
-    if (!isAuthenticated) {
+    // SỬA ĐỔI CHÍNH Ở ĐÂY: Sử dụng authLoading và user để quyết định hiển thị
+    if (authLoading) {
+      // Nếu đang tải dữ liệu xác thực, hiển thị spinner
+      return (
+        <div className={isMobile ? "text-center py-3" : ""}>
+          <FontAwesomeIcon icon="spinner" spin className="text-gray-500 text-lg" />
+        </div>
+      );
+    }
+
+    if (!isAuthenticated || !user) { // Nếu chưa xác thực hoặc user object là null
       return (
         <>
           <Link
@@ -81,11 +91,13 @@ const Header = () => {
           </Link>
         </>
       );
-    } else {
+    } else { // Đã xác thực VÀ user object có giá trị
       let dashboardPath = "/";
       if (userRole === "admin") dashboardPath = "/admin/dashboard";
       else if (userRole === "candidate") dashboardPath = "/applicant/dashboard";
       else if (userRole === "recruiter") dashboardPath = "/recruiter/dashboard";
+
+      const userAvatar = user.avatarUrl || "/assets/images/default-avatar.png"; // Avatar mặc định
 
       return (
         <div
@@ -93,15 +105,28 @@ const Header = () => {
             isMobile ? "flex flex-col space-y-3" : "flex items-center space-x-3"
           }
         >
-          <span
-            className={
-              isMobile
-                ? "text-gray-800 font-medium text-lg py-2 text-center"
-                : "font-medium text-gray-700 text-sm hidden lg:inline"
-            }
-          >
-            Hi, {user.firstName || user.name || "User"}!
-          </span>
+          {/* Hiển thị Avatar và Tên */}
+          <div className="flex items-center space-x-2 cursor-pointer group">
+            <img
+              src={userAvatar}
+              alt={user.firstName || user.name || "User"}
+              className="w-8 h-8 rounded-full object-cover border border-gray-300"
+              onError={(e) => { // Xử lý lỗi tải ảnh avatar
+                e.target.onerror = null;
+                e.target.src = "/assets/images/default-avatar.png"; // Fallback nếu ảnh không tải được
+              }}
+            />
+            <span
+              className={
+                isMobile
+                  ? "text-gray-800 font-medium text-lg py-2 text-center"
+                  : "font-medium text-gray-700 text-sm hidden lg:inline group-hover:text-teal-600"
+              }
+            >
+              Hi, {user.firstName || user.name || "User"}!
+            </span>
+          </div>
+
           {userRole !== "guest" && (
             <Link
               to={dashboardPath}

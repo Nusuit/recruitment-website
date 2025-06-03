@@ -82,7 +82,7 @@ const EmployeeReviews = () => {
       stars.push(
         <FontAwesomeIcon
           key={i}
-          icon={i <= rating ? ["fas", "star"] : ["far", "star"]}
+          icon={i <= rating ? ["fas", "star"] : ["far", "star"]} // SỬA ĐỔI: Sử dụng "fas" cho sao đầy, "far" cho sao rỗng
           className="text-yellow-400"
         />
       );
@@ -98,6 +98,8 @@ const EmployeeReviews = () => {
 
   return (
     <section className="employee-reviews-section py-16 md:py-24 bg-white">
+      {" "}
+      {/* Nền trắng theo design */}
       <div className="container mx-auto px-4">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
@@ -142,6 +144,10 @@ const EmployeeReviews = () => {
                             }
                             alt={review.author}
                             className="w-14 h-14 rounded-full mx-auto mb-3 border-2 border-teal-300 object-cover"
+                            onError={(e) => {
+                              e.target.onerror = null;
+                              e.target.src = "https://placehold.co/56x56/cccccc/333333?text=Avatar";
+                            }}
                           />
                           <h4 className="font-semibold text-gray-800 text-sm md:text-base">
                             {review.author}
@@ -174,14 +180,14 @@ const EmployeeReviews = () => {
                 className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 hover:bg-white rounded-full shadow-md transition-all text-gray-600 hover:text-teal-600 -ml-4 md:-ml-8"
                 aria-label="Previous review page"
               >
-                <FontAwesomeIcon icon="chevron-left" />
+                <FontAwesomeIcon icon="angle-left" /> {/* SỬA ĐỔI: Sử dụng "angle-left" */}
               </button>
               <button
                 onClick={handleNext}
                 className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 hover:bg-white rounded-full shadow-md transition-all text-gray-600 hover:text-teal-600 -mr-4 md:-mr-8"
                 aria-label="Next review page"
               >
-                <FontAwesomeIcon icon="chevron-right" />
+                <FontAwesomeIcon icon="angle-right" /> {/* SỬA ĐỔI: Sử dụng "angle-right" */}
               </button>
             </>
           )}

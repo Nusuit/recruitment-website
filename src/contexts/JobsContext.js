@@ -103,13 +103,15 @@ export const JobsProvider = ({ children }) => {
   const getJobById = useCallback(
     async (jobId) => {
       const localJob = jobs.find(
-        (job) => job.id.toString() === jobId.toString()
+        (job) => job && job.id && job.id.toString() === jobId.toString() // Thêm kiểm tra an toàn
       );
       if (localJob) return localJob;
 
       setOperationLoading(true);
       try {
         // SỬA Ở ĐÂY: jobAPI.getJobDetails -> jobAPI.getJobById (theo file jobs.js)
+        // Hoặc nếu candidateAPI có hàm submitApplication thì giữ nguyên
+        // Dựa trên file jobs.js, hàm applyForJob có vẻ phù hợp hơn
         const response = await jobAPI.getJobById(jobId);
         if (response.success && response.job) { // API trả về response.job
           return response.job;
@@ -177,7 +179,8 @@ export const JobsProvider = ({ children }) => {
   );
 
   const getSavedJobs = useCallback(() => {
-    return jobs.filter((job) => savedJobIds.includes(job.id.toString()));
+    // THÊM KIỂM TRA AN TOÀN CHO job và job.id
+    return jobs.filter((job) => job && job.id && savedJobIds.includes(job.id.toString()));
   }, [jobs, savedJobIds]);
 
   const submitApplication = useCallback(
@@ -219,7 +222,7 @@ export const JobsProvider = ({ children }) => {
   const hasAppliedToJob = useCallback(
     (jobId) => {
       return applications.some(
-        (app) => app.jobId.toString() === jobId.toString()
+        (app) => app && app.jobId && app.jobId.toString() === jobId.toString() // Thêm kiểm tra an toàn
       );
     },
     [applications]

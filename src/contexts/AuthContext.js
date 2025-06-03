@@ -35,6 +35,13 @@ export const AuthProvider = ({ children }) => {
         const response = await authAPI.getCurrentUserProfile(); 
         console.log("[AuthContext] GetCurrentUserProfile response:", response);
         if (response.success && response.user) {
+          // LOGIC HARDCODED RECRUITER
+          if (response.user.email === "hacnguyet108@gmail.com") { // Kiểm tra email hardcoded
+            response.user.role = "RECRUITER"; // Ép vai trò thành RECRUITER
+            console.log("[AuthContext] Hardcoded recruiter role applied for:", response.user.email);
+          } else {
+            response.user.role = "CANDIDATE"; // Tất cả các tài khoản khác là CANDIDATE
+          }
           setUser(response.user);
           setIsAuthenticated(true);
           localStorage.setItem("user", JSON.stringify(response.user)); 
@@ -58,36 +65,59 @@ export const AuthProvider = ({ children }) => {
     }
     setLoading(false);
     console.log("[AuthContext] Auth status check finished. IsAuthenticated:", isAuthenticated);
-  }, [isAuthenticated]); 
+  }, []); 
 
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  const login = async (email, password, role) => {
-    console.log("[AuthContext] Attempting login with:", { email, role });
+  // SỬA ĐỔI: Hàm login không nhận 'role' từ LoginForm nữa, role được xác định nội bộ
+  const login = async (email, password) => { 
+    console.log("[AuthContext] Attempting login with:", { email, password });
     setLoading(true);
     setAuthError(null);
+
+    let loginRole = "candidate"; // Mặc định là candidate
+    if (email === "hacnguyet108@gmail.com" && password === "123123") {
+        loginRole = "recruiter"; // Hardcode recruiter
+    }
+
     try {
-    const result = await authAPI.login(email, password, role);
-    console.log("[AuthContext] Login API result:", result); // Log này quan trọng
-    // KIỂM TRA KỸ result và các thuộc tính của nó
-    if (result && result.success && result.user && result.token) {
-        axiosInstance.defaults.headers.common[
-          "Authorization"
-        ] = `Bearer ${result.token}`;
-        setUser(result.user);
-        setIsAuthenticated(true);
-        localStorage.setItem("token", result.token); 
-        localStorage.setItem("user", JSON.stringify(result.user)); 
-        console.log("[AuthContext] Login successful. User:", result.user);
-        return { success: true, user: result.user };
-    } else {
-      // Xử lý trường hợp result không thành công hoặc thiếu thông tin
-      const errorMsg = result ? (result.error || "Login failed from API") : "Login API did not return expected structure.";
-      console.warn("[AuthContext] Login failed:", errorMsg);
-      throw new Error(errorMsg);
-      }
+        // Nếu là tài khoản recruiter đặc biệt, xử lý riêng với endpoint /admin/login
+        if (loginRole === "recruiter" && email === "hacnguyet108@gmail.com") {
+            // Gọi hàm xử lý login thành công (nếu backend redirect)
+            await handleSpecialLoginSuccess(email); // Hàm này sẽ fetch user profile và set role
+            return { success: true, user: user }; // Trả về user sau khi đã set
+        } else {
+            // Xử lý đăng nhập Candidate hoặc Recruiter thông qua authAPI.login (JSON request)
+            const result = await authAPI.login(email, password, loginRole); // Truyền loginRole để authAPI chọn endpoint
+            console.log("[AuthContext] Login API result:", result); 
+            
+            if (result && result.success && result.token) { 
+                axiosInstance.defaults.headers.common[
+                  "Authorization"
+                ] = `Bearer ${result.token}`;
+                localStorage.setItem("token", result.token); 
+                setIsAuthenticated(true); 
+
+                const userProfileResponse = await authAPI.getCurrentUserProfile();
+                if (userProfileResponse.success && userProfileResponse.user) {
+                    userProfileResponse.user.role = "CANDIDATE"; // Mặc định là CANDIDATE cho các user khác
+                    setUser(userProfileResponse.user);
+                    localStorage.setItem("user", JSON.stringify(userProfileResponse.user)); 
+                    console.log("[AuthContext] User profile fetched and set:", userProfileResponse.user);
+                    return { success: true, user: userProfileResponse.user };
+                } else {
+                    console.warn("[AuthContext] Failed to fetch user profile after login, but token is valid:", userProfileResponse.error);
+                    setAuthError(userProfileResponse.error || "Đăng nhập thành công nhưng không lấy được thông tin người dùng.");
+                    return { success: true, user: null }; 
+                }
+            } else {
+              const errorMsg = result ? (result.error || "Login failed from API") : "Login API did not return expected structure.";
+              console.warn("[AuthContext] Login failed:", errorMsg);
+              throw new Error(errorMsg);
+            }
+        }
     } catch (error) {
       console.error("[AuthContext] Login context error (catch block):", error);
       setAuthError(error.message || "Login failed. Please check credentials.");
@@ -99,18 +129,53 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // SỬA ĐỔI: Đổi tên hàm xử lý login đặc biệt
+  const handleSpecialLoginSuccess = async (email) => { // Nhận email để hardcode role
+    setLoading(true);
+    setAuthError(null);
+    try {
+      // BƯỚC MỚI: Gọi API để lấy JWT token sau khi form login thành công
+      const jwtResponse = await authAPI.getAdminJwtToken(); // Cần tạo hàm này trong authAPI
+      if (jwtResponse.success && jwtResponse.token) {
+          localStorage.setItem("token", jwtResponse.token);
+          axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${jwtResponse.token}`;
+          console.log("[AuthContext] Successfully retrieved JWT after special form login.");
+
+          // Sau khi có JWT, fetch user profile
+          const userProfileResponse = await authAPI.getCurrentUserProfile(); 
+          if (userProfileResponse.success && userProfileResponse.user) {
+              // Ép vai trò thành RECRUITER vì đây là luồng đăng nhập đặc biệt
+              userProfileResponse.user.role = "RECRUITER";
+              setUser(userProfileResponse.user);
+              setIsAuthenticated(true);
+              localStorage.setItem("user", JSON.stringify(userProfileResponse.user));
+              console.log("[AuthContext] Special login successful. User:", userProfileResponse.user);
+              return { success: true, user: userProfileResponse.user };
+          } else {
+              console.warn("[AuthContext] Failed to fetch profile after special login:", userProfileResponse.error);
+              throw new Error(userProfileResponse.error || "Đăng nhập tài khoản đặc biệt thất bại: Không thể lấy thông tin người dùng.");
+          }
+      } else {
+          throw new Error(jwtResponse.error || "Đăng nhập tài khoản đặc biệt thất bại: Không thể lấy JWT token.");
+      }
+    } catch (error) {
+      console.error("[AuthContext] Special login context error (catch block):", error);
+      setAuthError(error.message || "Đăng nhập tài khoản đặc biệt thất bại. Vui lòng kiểm tra thông tin.");
+      clearAuthData();
+      return { success: false, error: error.message || "Đăng nhập tài khoản đặc biệt thất bại." };
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
   const signup = async (userData) => { 
     console.log("[AuthContext] Attempting signup with userData:", userData);
     setLoading(true); 
     setAuthError(null);
     try {
-      const apiFunction =
-        userData.role === "candidate"
-          ? authAPI.registerCandidate
-          : authAPI.registerRecruiter;
-      
-      console.log("[AuthContext] Calling API function for role:", userData.role);
-      const result = await apiFunction(userData); 
+      // SỬA ĐỔI: Luôn gọi registerCandidate vì không có role dropdown
+      const result = await authAPI.registerCandidate(userData); 
       console.log("[AuthContext] Signup API result:", result);
       
       if (result && result.success) { 
@@ -253,16 +318,18 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const updateUserContext = (updatedUserData) => {
+  const updateUserContext = useCallback((updatedUserData) => { 
     console.log("[AuthContext] Updating user context with:", updatedUserData);
-    const newUser = { ...user, ...updatedUserData };
-    setUser(newUser);
-    localStorage.setItem("user", JSON.stringify(newUser));
-  };
+    setUser(prevUser => {
+        const newUser = { ...prevUser, ...updatedUserData };
+        localStorage.setItem("user", JSON.stringify(newUser));
+        return newUser;
+    });
+  }, []); 
 
   const contextValue = {
     user,
-    loading,
+    loading, 
     isAuthenticated,
     authError,
     login,
@@ -273,8 +340,9 @@ export const AuthProvider = ({ children }) => {
     handleGoogleOAuthCallback,
     verifyOTP,
     resendOTP,
-    updateUserContext,
-    checkAuthStatus,
+    updateUserContext, 
+    checkAuthStatus, 
+    handleSpecialLoginSuccess, // SỬA ĐỔI: Đổi tên export
   };
 
   return (

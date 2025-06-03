@@ -115,6 +115,32 @@ export const formatCurrency = (amount, currency = 'USD') => {
     const yearsAgo = Math.floor(monthsAgo / 12);
     return `${yearsAgo} year${yearsAgo !== 1 ? 's' : ''} ago`;
   };
+
+  // NEW: formatRelativeTime function
+  export const formatRelativeTime = (dateString) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffSeconds < 60) {
+        return "just now";
+    } else if (diffSeconds < 3600) { // less than an hour
+        const minutes = Math.floor(diffSeconds / 60);
+        return `${minutes} minute${minutes > 1 ? 's' : ''} ago`;
+    } else if (diffSeconds < 86400) { // less than a day
+        const hours = Math.floor(diffSeconds / 3600);
+        return `${hours} hour${hours > 1 ? 's' : ''} ago`;
+    } else if (diffSeconds < 2592000) { // less than 30 days (approx a month)
+        const days = Math.floor(diffSeconds / 86400);
+        return `${days} day${days > 1 ? 's' : ''} ago`;
+    } else if (diffSeconds < 31536000) { // less than a year
+        const months = Math.floor(diffSeconds / 2592000);
+        return `${months} month${months > 1 ? 's' : ''} ago`;
+    } else {
+        const years = Math.floor(diffSeconds / 31536000);
+        return `${years} year${years > 1 ? 's' : ''} ago`;
+    }
+  };
   
   // Format salary range
   export const formatSalaryRange = (min, max, period = 'monthly') => {

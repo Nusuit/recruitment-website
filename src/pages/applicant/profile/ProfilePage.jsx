@@ -4,11 +4,12 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { candidateAPI } from "../../../api/candidate"; // Assuming candidateAPI for profile actions
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link } from "react-router-dom"; // Import Link cho Go to Login button
 
 const ProfilePage = () => {
   const {
     user,
-    updateUserContext,
+    updateUserContext, // SỬA ĐỔI: Sử dụng hàm này để cập nhật user trong context
     loading: authLoading,
   } = useContext(AuthContext); // Get user and updateUserContext
   const [profileData, setProfileData] = useState({
@@ -45,7 +46,7 @@ const ProfilePage = () => {
       if (!user && !authLoading) {
         // If user is not loaded and auth is not loading, redirect or show error
         setLoading(false);
-        setSubmitError("User not authenticated.");
+        setSubmitError("User not authenticated or profile data unavailable.");
         return;
       }
       if (authLoading) return; // Wait for auth context to load
@@ -55,14 +56,15 @@ const ProfilePage = () => {
       try {
         // Fetch profile data
         const profileResponse = await candidateAPI.getProfile(); // API to get candidate's own profile
-        const currentProfile = profileResponse.profile || {};
+        const currentProfile = profileResponse.profile || profileResponse.user || {}; // backend có thể trả về 'profile' hoặc 'user'
+        
         setProfileData({
           firstName: currentProfile.firstName || user?.firstName || "",
           lastName: currentProfile.lastName || user?.lastName || "",
           email: currentProfile.email || user?.email || "",
           phone: currentProfile.phone || "",
           address: currentProfile.address || "",
-          avatarUrl: currentProfile.avatarUrl || user?.avatarUrl || "",
+          avatarUrl: currentProfile.avatarUrl || user?.avatarUrl || "/assets/images/default-avatar.png", // Sử dụng avatar của user hoặc mặc định
           cvUrl: currentProfile.cvUrl || "",
           gender: currentProfile.gender || "",
           education: currentProfile.education || "",
@@ -72,19 +74,15 @@ const ProfilePage = () => {
           portfolio: currentProfile.portfolio || "",
           bio: currentProfile.bio || "",
         });
-        setAvatarPreview(currentProfile.avatarUrl || user?.avatarUrl || "");
+        setAvatarPreview(currentProfile.avatarUrl || user?.avatarUrl || "/assets/images/default-avatar.png");
         setCvFileName(
           currentProfile.cvUrl ? currentProfile.cvUrl.split("/").pop() : ""
         );
 
         // Fetch gender options (example, replace with actual API if needed)
-        // const gendersResponse = await candidateAPI.getGenders();
-        // setGenders(gendersResponse.genders || []);
         setGenders(["Male", "Female", "Other", "Prefer not to say"]); // Mock genders
 
         // Fetch available skills (example)
-        // const skillsResponse = await candidateAPI.getAllSkills();
-        // setAvailableSkills(skillsResponse.skills || []);
         setAvailableSkills([
           { id: "react", name: "React" },
           { id: "node", name: "Node.js" },
@@ -150,7 +148,7 @@ const ProfilePage = () => {
     e.preventDefault();
     setSubmitError(null);
     setSubmitSuccess(false);
-    setIsEditing(true); // Keep in editing mode while submitting
+    // setIsEditing(true); // Keep in editing mode while submitting - removed, now handle through loading state
 
     // Basic Validation (can be expanded)
     if (!profileData.firstName || !profileData.lastName) {
@@ -164,38 +162,40 @@ const ProfilePage = () => {
       // 1. Upload avatar if changed
       let newAvatarUrl = profileData.avatarUrl;
       if (avatarFile) {
-        const avatarFormData = new FormData();
-        avatarFormData.append("image", avatarFile); // Match backend field name
-        const avatarUploadResponse = await candidateAPI.uploadProfilePicture(
-          avatarFormData
-        );
-        newAvatarUrl = avatarUploadResponse.avatarUrl; // Get new URL from response
+        const avatarUploadResponse = await candidateAPI.uploadProfilePicture(avatarFile); // Pass file directly
+        if (avatarUploadResponse.success && avatarUploadResponse.avatarUrl) {
+          newAvatarUrl = avatarUploadResponse.avatarUrl;
+        } else {
+          throw new Error(avatarUploadResponse.error || "Failed to upload avatar.");
+        }
       }
 
       // 2. Upload CV if changed
       let newCvUrl = profileData.cvUrl;
       if (cvFile) {
-        const cvFormData = new FormData();
-        cvFormData.append("cv", cvFile); // Match backend field name
-        const cvUploadResponse = await candidateAPI.uploadCV(cvFormData);
-        newCvUrl = cvUploadResponse.cvUrl;
+        const cvUploadResponse = await candidateAPI.uploadCV(cvFile); // Pass file directly
+        if (cvUploadResponse.success && cvUploadResponse.cvUrl) {
+          newCvUrl = cvUploadResponse.cvUrl;
+        } else {
+          throw new Error(cvUploadResponse.error || "Failed to upload CV.");
+        }
       }
 
       // 3. Update profile text data
       const profilePayload = {
         ...profileData,
-        avatarUrl: newAvatarUrl,
-        cvUrl: newCvUrl,
+        avatarUrl: newAvatarUrl, // Use the new URL
+        cvUrl: newCvUrl,        // Use the new URL
         // skills: profileData.skills, // Ensure skills are in the correct format for API (e.g., array of strings/IDs)
       };
       // Remove file objects before sending to updateProfile API if it expects only URLs
-      delete profilePayload.avatarFile;
-      delete profilePayload.cvFile;
+      // delete profilePayload.avatarFile; // This is handled by not including them in profileData directly
+      // delete profilePayload.cvFile;
 
       const updateResponse = await candidateAPI.updateProfile(profilePayload);
 
       // Update AuthContext user if update was successful
-      if (updateResponse.profile) {
+      if (updateResponse.success && updateResponse.profile) { // Check for success flag from API
         // Assuming API returns the updated profile
         const updatedUserForContext = {
           ...user,
@@ -208,12 +208,13 @@ const ProfilePage = () => {
           avatarUrl: newAvatarUrl,
           cvUrl: newCvUrl,
         })); // Update local state with new URLs
+        setSubmitSuccess(true);
+        setIsEditing(false); // Exit editing mode on success
+        setAvatarFile(null); // Clear staged files
+        setCvFile(null);
+      } else {
+          throw new Error(updateResponse.error || "Failed to update profile via API.");
       }
-
-      setSubmitSuccess(true);
-      setIsEditing(false); // Exit editing mode on success
-      setAvatarFile(null); // Clear staged files
-      setCvFile(null);
 
       setTimeout(() => setSubmitSuccess(false), 3000);
     } catch (err) {
@@ -226,11 +227,11 @@ const ProfilePage = () => {
     }
   };
 
-  if (authLoading || (loading && !profileData.email)) {
+  if (authLoading || (loading && !user)) { // Check if auth is loading or user is null and local loading is true
     // Show loading if auth is loading or profile data isn't ready
     return <LoadingSpinner fullPage message="Loading profile..." />;
   }
-  if (!user && !authLoading) {
+  if (!user && !authLoading) { // If user is null and auth is not loading (means not authenticated)
     return (
       <div className="p-8 text-center">
         <p className="text-red-600 text-lg">
@@ -266,11 +267,25 @@ const ProfilePage = () => {
                   setSubmitError(null);
                   // Reset form to original data (re-fetch or use initial user data)
                   setProfileData({
-                    /* ... reset to original profile data ... */
+                    // Reset to currently loaded profileData to discard unsaved changes
+                    firstName: user?.firstName || "",
+                    lastName: user?.lastName || "",
+                    email: user?.email || "",
+                    phone: user?.phone || "",
+                    address: user?.address || "",
+                    avatarUrl: user?.avatarUrl || "/assets/images/default-avatar.png",
+                    cvUrl: user?.cvUrl || "",
+                    gender: user?.gender || "",
+                    education: user?.education || "",
+                    experience: user?.experience || "",
+                    skills: Array.isArray(user?.skills) ? user.skills : [],
+                    linkedin: user?.linkedin || "",
+                    portfolio: user?.portfolio || "",
+                    bio: user?.bio || "",
                   });
-                  setAvatarPreview(profileData.avatarUrl);
+                  setAvatarPreview(user?.avatarUrl || "/assets/images/default-avatar.png");
                   setCvFileName(
-                    profileData.cvUrl ? profileData.cvUrl.split("/").pop() : ""
+                    user?.cvUrl ? user.cvUrl.split("/").pop() : ""
                   );
                   setAvatarFile(null);
                   setCvFile(null);
@@ -317,7 +332,7 @@ const ProfilePage = () => {
           <section className="text-center">
             <div className="relative inline-block mb-4">
               <img
-                src={avatarPreview || "/assets/images/default-avatar.png"}
+                src={avatarPreview || "/assets/images/default-avatar.png"} // SỬA ĐỔI: Avatar mặc định
                 alt="Profile Avatar"
                 className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-gray-200 shadow-md"
               />
@@ -352,7 +367,7 @@ const ProfilePage = () => {
                 label="First Name*"
                 name="firstName"
                 value={profileData.firstName}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 error={errors.firstName}
               />
@@ -360,7 +375,7 @@ const ProfilePage = () => {
                 label="Last Name*"
                 name="lastName"
                 value={profileData.lastName}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 error={errors.lastName}
               />
@@ -377,7 +392,7 @@ const ProfilePage = () => {
                 name="phone"
                 type="tel"
                 value={profileData.phone}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 error={errors.phone}
               />
@@ -385,7 +400,7 @@ const ProfilePage = () => {
                 label="Address"
                 name="address"
                 value={profileData.address}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
               />
               <div>
@@ -399,7 +414,7 @@ const ProfilePage = () => {
                   id="gender"
                   name="gender"
                   value={profileData.gender}
-                  onChange={handleChange}
+                  onChange={handleInputChange}
                   disabled={!isEditing}
                   className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
                 >
@@ -423,7 +438,7 @@ const ProfilePage = () => {
                 id="bio"
                 name="bio"
                 value={profileData.bio}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 rows="4"
                 className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -439,7 +454,7 @@ const ProfilePage = () => {
                 label="Current Position / Title"
                 name="title"
                 value={profileData.title || ""}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
               />
               <InputField
@@ -447,7 +462,7 @@ const ProfilePage = () => {
                 name="experience"
                 type="number"
                 value={profileData.experience}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 placeholder="e.g., 5"
               />
@@ -463,7 +478,7 @@ const ProfilePage = () => {
                 id="education"
                 name="education"
                 value={profileData.education}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 rows="3"
                 className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500"
@@ -574,7 +589,7 @@ const ProfilePage = () => {
                 label="LinkedIn Profile URL"
                 name="linkedin"
                 value={profileData.linkedin}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 placeholder="linkedin.com/in/yourprofile"
               />
@@ -582,7 +597,7 @@ const ProfilePage = () => {
                 label="Portfolio/Website URL"
                 name="portfolio"
                 value={profileData.portfolio}
-                onChange={handleChange}
+                onChange={handleInputChange}
                 disabled={!isEditing}
                 placeholder="yourportfolio.com"
               />

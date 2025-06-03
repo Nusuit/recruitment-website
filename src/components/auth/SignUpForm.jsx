@@ -44,10 +44,10 @@ const SignUpForm = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    email: "",
+    email: "", 
     password: "",
     confirmPassword: "",
-    role: "candidate", 
+    // role: "candidate", // BỎ: Không cần chọn role ở đây nữa
     agreeTerms: false,
   });
 
@@ -69,9 +69,8 @@ const SignUpForm = () => {
     setSubmitError("");
   };
 
-  const handleRoleChange = (e) => {
-    setFormData((prev) => ({ ...prev, role: e.target.value }));
-  };
+  // BỎ: handleRoleChange không còn cần thiết
+  // const handleRoleChange = (e) => { ... };
 
   const toggleShowPassword = () => setShowPassword(!showPassword);
   const toggleShowConfirmPassword = () =>
@@ -83,15 +82,12 @@ const SignUpForm = () => {
     setSubmitError("");
 
     const validationData = {
-        email: formData.email,
+        email: formData.email, // Luôn validate email
         password: formData.password,
         confirmPassword: formData.confirmPassword,
-        role: formData.role,
+        role: "candidate", // Mặc định role là candidate cho việc validate
     };
-    // Nếu validator cần username (dù nó là email), bạn có thể thêm nó vào đây:
-    // if (formData.role === 'recruiter') {
-    //   validationData.username = formData.email;
-    // }
+
     console.log("[SignUpForm] Data for validation:", validationData);
     const validationErrors = validateSignupForm(validationData); 
     console.log("[SignUpForm] Validation errors (before agreeTerms):", validationErrors);
@@ -112,18 +108,11 @@ const SignUpForm = () => {
     setIsSubmitting(true);
     try {
       const payload = {
-        email: formData.email,
+        email: formData.email, 
         password: formData.password,
-        role: formData.role,
+        role: "candidate", // Luôn gửi role là candidate
       };
       
-      if (formData.role === 'recruiter') {
-        payload.username = formData.email; // Gửi email làm username cho recruiter
-        // Nếu backend vẫn yêu cầu firstName, lastName (dù không có trên form),
-        // bạn có thể đặt giá trị mặc định ở đây, ví dụ:
-        // payload.firstName = formData.email.split('@')[0] || 'Recruiter User';
-        // payload.lastName = 'Default';
-      }
       console.log("[SignUpForm] Payload to be sent to signup context:", payload);
 
       const result = await signup(payload);
@@ -132,7 +121,7 @@ const SignUpForm = () => {
 
       if (result && result.success) {
         console.log("[SignUpForm] Signup success, navigating...");
-        navigate("/verify-email", { state: { email: formData.email, role: formData.role } });
+        navigate("/verify-email", { state: { email: formData.email, role: "candidate" } }); // Luôn chuyển hướng cho candidate
       } else {
         const errorMessage = result ? (result.error || "Registration failed. Please try again.") : "Registration failed due to an unknown error.";
         console.log("[SignUpForm] Signup failed, setting submitError:", errorMessage);
@@ -148,12 +137,9 @@ const SignUpForm = () => {
   };
   
   const handleGoogleSignup = () => {
-    if (loginWithGoogle) {
-      console.log("[SignUpForm] Initiating Google signup for role:", formData.role);
-      loginWithGoogle(formData.role); 
-    } else {
-      setSubmitError("Google sign-up is currently unavailable.");
-    }
+    // Google signup sẽ luôn được coi là candidate
+    console.log("[SignUpForm] Initiating Google signup for role: candidate");
+    loginWithGoogle("candidate"); 
   };
 
 
@@ -161,6 +147,8 @@ const SignUpForm = () => {
     <div className="w-full max-w-sm mx-auto">
       <div className="mb-2 flex justify-between items-baseline">
         <h2 className="text-3xl font-bold text-gray-900">Register</h2>
+        {/* BỎ: Không cần dropdown chọn role */}
+        {/*
         <div className="relative ml-4">
           <select
             id="role"
@@ -170,13 +158,13 @@ const SignUpForm = () => {
             className="w-auto p-2 pr-8 border border-gray-300 rounded-md appearance-none focus:ring-1 focus:ring-[#16C0B0] focus:border-[#16C0B0] bg-white text-gray-700 text-xs"
           >
             <option value="candidate">I'm a Candidate</option>
-            <option value="recruiter">Employers</option>
           </select>
           <FontAwesomeIcon
             icon="chevron-down"
             className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none h-2.5 w-2.5"
           />
         </div>
+        */}
       </div>
       <p className="text-gray-500 text-sm mb-6 text-left flex items-baseline">
         Already have account?&nbsp;
@@ -207,6 +195,39 @@ const SignUpForm = () => {
           inputClassName="p-3 text-sm"
           labelClassName="text-xs"
         />
+
+        {/* BỎ: Các trường First Name và Last Name không còn cần thiết cho đăng ký Candidate */}
+        {/*
+        {formData.role === "recruiter" && (
+          <>
+            <Input
+              label="First Name*"
+              name="firstName"
+              type="text"
+              value={formData.firstName}
+              onChange={handleChange}
+              error={errors.firstName}
+              required 
+              placeholder="Enter your first name"
+              inputClassName="p-3 text-sm"
+              labelClassName="text-xs"
+            />
+            <Input
+              label="Last Name*"
+              name="lastName"
+              type="text"
+              value={formData.lastName}
+              onChange={handleChange}
+              error={errors.lastName}
+              required 
+              placeholder="Enter your last name"
+              inputClassName="p-3 text-sm"
+              labelClassName="text-xs"
+            />
+          </>
+        )}
+        */}
+
         <Input
           label="Password*"
           name="password"

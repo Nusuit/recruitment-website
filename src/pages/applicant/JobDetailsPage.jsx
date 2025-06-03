@@ -62,7 +62,12 @@ const JobDetailsPage = () => {
     if (!isAuthenticated) {
       navigate("/login", { state: { from: { pathname: `/jobs/${id}` } } });
     } else {
-      toggleSaveJob(job.id);
+      // THÊM KIỂM TRA AN TOÀN CHO job.id TRƯỚC KHI GỌI toggleSaveJob
+      if (job && job.id) {
+        toggleSaveJob(job.id);
+      } else {
+        console.warn("Attempted to save job without a valid job ID.");
+      }
     }
   };
 
@@ -90,8 +95,9 @@ const JobDetailsPage = () => {
     );
   }
 
-  const isAlreadyApplied = hasAppliedToJob(job.id);
-  const isSaved = isJobSaved(job.id);
+  // THÊM KIỂM TRA AN TOÀN CHO job.id TRƯỚC KHI GỌI hasAppliedToJob và isJobSaved
+  const isAlreadyApplied = job.id ? hasAppliedToJob(job.id) : false;
+  const isSaved = job.id ? isJobSaved(job.id) : false;
 
   return (
     <div className="job-details-page container mx-auto p-4 md:p-8">

@@ -11,12 +11,14 @@ const Header = () => {
   const [userRole, setUserRole] = useState("guest"); // Mặc định là guest
 
   useEffect(() => {
+    console.log("[Header] AuthContext user changed:", user); // Thêm console.log để kiểm tra
+    console.log("[Header] AuthContext isAuthenticated changed:", isAuthenticated); // Thêm console.log để kiểm tra
     if (isAuthenticated && user) {
       setUserRole(user.role?.toLowerCase() || "guest");
     } else {
       setUserRole("guest");
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user]); // Dependencies: isAuthenticated, user
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -62,9 +64,7 @@ const Header = () => {
     const loginButtonClass = `${buttonBaseClass} bg-teal-500 text-white hover:bg-teal-600`;
     const signupButtonClass = `${buttonBaseClass} bg-white text-teal-600 border border-teal-500 hover:bg-teal-50`;
 
-    // SỬA ĐỔI CHÍNH Ở ĐÂY: Sử dụng authLoading và user để quyết định hiển thị
     if (authLoading) {
-      // Nếu đang tải dữ liệu xác thực, hiển thị spinner
       return (
         <div className={isMobile ? "text-center py-3" : ""}>
           <FontAwesomeIcon icon="spinner" spin className="text-gray-500 text-lg" />
@@ -72,7 +72,7 @@ const Header = () => {
       );
     }
 
-    if (!isAuthenticated || !user) { // Nếu chưa xác thực hoặc user object là null
+    if (!isAuthenticated || !user) {
       return (
         <>
           <Link
@@ -91,15 +91,14 @@ const Header = () => {
           </Link>
         </>
       );
-    } else { // Đã xác thực VÀ user object có giá trị
+    } else {
       let dashboardPath = "/";
-      if (userRole === "admin" || userRole === "recruiter") dashboardPath = "/admin/dashboard"; // Recruiter và Admin dùng chung Admin Dashboard
+      if (userRole === "admin" || userRole === "recruiter") dashboardPath = "/admin/dashboard";
       else if (userRole === "candidate") dashboardPath = "/applicant/dashboard";
 
-      const userAvatar = user.avatarUrl || "/assets/images/default-avatar.png"; // Avatar mặc định
+      const userAvatar = user.avatarUrl || "https://placehold.co/40x40/cccccc/333333?text=AV"; 
 
-      // SỬA ĐỔI: Lấy tên hiển thị từ email và loại bỏ @gmail.com
-      const displayUserName = user.email ? user.email.split('@')[0] : "User";
+      const displayUserName = user.firstName || user.name || (user.email ? user.email.split('@')[0] : "User");
 
       return (
         <div
@@ -107,15 +106,14 @@ const Header = () => {
             isMobile ? "flex flex-col space-y-3" : "flex items-center space-x-3"
           }
         >
-          {/* Hiển thị Avatar và Tên */}
           <div className="flex items-center space-x-2 cursor-pointer group">
             <img
               src={userAvatar}
-              alt={displayUserName} // Sử dụng displayUserName cho alt text
+              alt={displayUserName}
               className="w-8 h-8 rounded-full object-cover border border-gray-300"
-              onError={(e) => { // Xử lý lỗi tải ảnh avatar
+              onError={(e) => {
                 e.target.onerror = null;
-                e.target.src = "/assets/images/default-avatar.png"; // Fallback nếu ảnh không tải được
+                e.target.src = "https://placehold.co/40x40/cccccc/333333?text=AV";
               }}
             />
             <span

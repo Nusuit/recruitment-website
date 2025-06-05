@@ -15,8 +15,6 @@ import { ThemeProvider, createTheme } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom"; // Import Link
-import LoginPage from "./pages/guest/LoginPage";
-import SignUpPage from "./pages/guest/SignUpPage";
 
 import "./styles/global.scss";
 
@@ -45,6 +43,9 @@ const ForgotPasswordPage = lazy(() =>
   import("./pages/guest/ForgotPasswordPage")
 );
 const ResetPasswordPage = lazy(() => import("./pages/guest/ResetPasswordPage"));
+
+const LoginPage = lazy(() => import("./pages/guest/LoginPage"));
+const SignUpPage = lazy(() => import("./pages/guest/SignUpPage"));
 
 // Applicant Pages
 const ApplicantDashboard = lazy(() => import("./pages/applicant/Dashboard"));
@@ -128,12 +129,9 @@ const AuthGuard = ({ children, requiredRole }) => {
   if (requiredRole) {
     const allowedRoles = Array.isArray(requiredRole) ? requiredRole.map(r => r.toLowerCase()) : [requiredRole.toLowerCase()];
     if (!allowedRoles.includes(userRole)) {
-      // console.warn(`Role mismatch: User role is "${userRole}", required is "${requiredRole}". Redirecting.`);
       if (userRole === "candidate") {
         return <Navigate to="/applicant/dashboard" replace />;
       }
-      // Nếu là recruiter mà không được phép vào route admin cụ thể
-      // thì vẫn giữ trong AdminLayout nhưng có thể hiển thị EmptyState hoặc thông báo lỗi
       return <Navigate to="/admin/dashboard" replace />; // Điều hướng về dashboard admin
     }
   }
@@ -142,60 +140,122 @@ const AuthGuard = ({ children, requiredRole }) => {
 };
 
 // --- OAuth2 Callback Handler ---
+// Component này sẽ được kích hoạt khi backend chuyển hướng đến /api/oauth2/login/google
+// Nó sẽ đọc accessToken từ URL, lưu vào localStorage, và sau đó điều hướng
 const OAuth2CallbackHandler = () => {
-  const { handleGoogleOAuthCallback, loading: authLoading } =
-    useContext(AuthContext);
+  const { checkAuthStatus, loading: authLoading, isAuthenticated, user } = useContext(AuthContext);
   const location = useLocation();
   const navigate = useNavigate();
 
   useEffect(() => {
-    const processOAuth = async () => {
-      const queryParams = new URLSearchParams(location.search);
-      const code = queryParams.get("code");
-      const error = queryParams.get("error");
+    console.log("[OAuth2CallbackHandler] Component mounted/updated. Current URL search params:", location.search);
+
+    // Nếu đã xác thực và có thông tin người dùng, điều hướng ngay lập tức
+    if (isAuthenticated && user && user.role) {
+      const userRole = user.role?.toLowerCase();
+      let dashboardPath;
+      if (userRole === "recruiter" || userRole === "admin") {
+        dashboardPath = "/admin/dashboard";
+      } else if (userRole === "applicant") {
+        dashboardPath = "/applicant/dashboard";
+      } else {
+        dashboardPath = "/";
+      }
+      console.log("[OAuth2CallbackHandler] Already authenticated, navigating to:", dashboardPath);
+      navigate(dashboardPath, { replace: true });
+      // Đảm bảo URL được làm sạch ngay cả khi đã xác thực và điều hướng lại
+      window.history.replaceState({}, document.title, window.location.pathname);
+      return;
+    }
+
+    const processTokensAndRedirect = async () => {
+      const params = new URLSearchParams(location.search);
+      const accessToken = params.get('accessToken');
+      const error = params.get('error'); // Xử lý lỗi nếu có từ backend
+
+      console.log("[OAuth2CallbackHandler] Parsed URL params - accessToken:", accessToken ? "present" : "absent", "error:", error);
 
       if (error) {
-        console.error("OAuth2 callback error (from URL):", error);
+        console.error("[OAuth2CallbackHandler] OAuth2 callback error from backend:", error);
         navigate("/login", {
           replace: true,
           state: { error: `Đăng nhập Google thất bại: ${error}` },
         });
+        // LUÔN LUÔN xóa các tham số token khỏi URL sau khi đã xử lý lỗi
+        window.history.replaceState({}, document.title, window.location.pathname);
         return;
       }
 
-      if (code) {
-        const result = await handleGoogleOAuthCallback(code);
-        if (result.success && result.user) {
-          const role = result.user.role?.toLowerCase();
-          if (role === "admin" || role === "recruiter") { // Cả admin và recruiter đều về admin dashboard
-            navigate("/admin/dashboard", { replace: true });
-          } else if (role === "candidate") {
-            navigate("/applicant/dashboard", { replace: true });
+      if (accessToken) {
+        console.log("[OAuth2CallbackHandler] AccessToken found in URL. Storing.");
+        localStorage.setItem('token', accessToken); // Lưu accessToken vào localStorage
+        // Refresh token không cần lưu ở đây vì backend đặt vào cookie HTTP-only
+
+        // Kích hoạt AuthContext để đọc token mới và fetch user profile
+        console.log("[OAuth2CallbackHandler] Triggering auth status check.");
+        const authCheckResult = await checkAuthStatus(); // Chờ checkAuthStatus hoàn tất
+        console.log("[OAuth2CallbackHandler] Auth status check result:", authCheckResult);
+
+        // Sau khi checkAuthStatus hoàn tất và user đã được cập nhật trong context
+        // Điều hướng rõ ràng đến trang đích mong muốn
+        if (authCheckResult?.success && authCheckResult?.user) {
+          const userRole = authCheckResult.user.role?.toLowerCase();
+          let dashboardPath;
+          if (userRole === "recruiter" || userRole === "admin") {
+            dashboardPath = "/admin/dashboard";
+          } else if (userRole === "applicant") {
+            dashboardPath = "/applicant/dashboard";
           } else {
-            navigate("/", { replace: true });
+            dashboardPath = "/";
           }
+          console.log("[OAuth2CallbackHandler] OAuth login successful, navigating to:", dashboardPath);
+          navigate(dashboardPath, { replace: true });
         } else {
-          console.error("OAuth2 callback processing error:", result.error);
+          console.error("[OAuth2CallbackHandler] Failed to get user profile after OAuth. Redirecting to login.");
           navigate("/login", {
             replace: true,
-            state: { error: result.error || "Đăng nhập Google thất bại." },
+            state: { error: authCheckResult?.error || "Không thể lấy thông tin người dùng sau đăng nhập Google." },
           });
         }
-      } else if (!authLoading) {
-        // Chỉ redirect nếu không có code VÀ auth không loading
-        console.warn("OAuth2 callback: No code found in URL.");
+
+        // LUÔN LUÔN xóa các tham số token khỏi URL sau khi đã xử lý, bất kể điều hướng thành công hay không
+        // Đặt ở cuối cùng để đảm bảo logic xử lý đã chạy
+        window.history.replaceState({}, document.title, window.location.pathname);
+        console.log("[OAuth2CallbackHandler] URL cleaned.");
+
+      } else {
+        console.warn("[OAuth2CallbackHandler] No accessToken found in URL. Redirecting to login.");
         navigate("/login", {
           replace: true,
-          state: { error: "Không tìm thấy mã xác thực Google." },
+          state: { error: "Không tìm thấy token xác thực sau đăng nhập Google." },
         });
+        // LUÔN LUÔN xóa các tham số token khỏi URL nếu không tìm thấy
+        window.history.replaceState({}, document.title, window.location.pathname);
       }
     };
 
-    if (!authLoading) {
-      // Đảm bảo context đã load xong trước khi xử lý
-      processOAuth();
+    // Chỉ xử lý token nếu không đang tải và chưa xác thực
+    // hoặc nếu đang ở trang callback và có query params (để xử lý refresh)
+    if (!authLoading && !isAuthenticated && location.search) {
+      processTokensAndRedirect();
+    } else if (!authLoading && isAuthenticated) {
+      // Nếu đã xác thực nhưng vẫn ở trang callback (có thể do refresh), điều hướng lại
+      const userRole = user?.role?.toLowerCase();
+      let dashboardPath;
+      if (userRole === "recruiter" || userRole === "admin") {
+        dashboardPath = "/admin/dashboard";
+      } else if (userRole === "applicant") {
+        dashboardPath = "/applicant/dashboard";
+      } else {
+        dashboardPath = "/";
+      }
+      console.log("[OAuth2CallbackHandler] Already authenticated, redirecting to dashboard:", dashboardPath);
+      navigate(dashboardPath, { replace: true });
+      // Đảm bảo URL được làm sạch ngay cả khi đã xác thực và điều hướng lại
+      window.history.replaceState({}, document.title, window.location.pathname);
     }
-  }, [location.search, handleGoogleOAuthCallback, navigate, authLoading]);
+
+  }, [location.search, navigate, checkAuthStatus, authLoading, isAuthenticated, user]);
 
   if (authLoading) {
     return <LoadingSpinner fullPage message="Đang xử lý đăng nhập Google..." />;
@@ -240,13 +300,12 @@ const NotFoundPage = () => (
 // --- Main App Component ---
 function App() {
   const muiTheme = createTheme({
-    // Bạn có thể tùy chỉnh theme MUI ở đây nếu cần
     palette: {
       primary: {
-        main: "#00BFA6", // Màu teal từ variables.scss
+        main: "#00BFA6",
       },
       secondary: {
-        main: "#6c757d", // Màu secondary từ variables.scss
+        main: "#6c757d",
       },
     },
     typography: {
@@ -292,8 +351,10 @@ function App() {
                     path="/reset-password"
                     element={<ResetPasswordPage />}
                   />
+                  {/* SỬA ĐỔI QUAN TRỌNG: Cập nhật path cho OAuth2 callback */}
+                  {/* Route này sẽ xử lý khi backend chuyển hướng với token trong URL */}
                   <Route
-                    path="/oauth2/callback"
+                    path="/api/oauth2/login/google" // Đường dẫn mới theo cấu hình backend
                     element={<OAuth2CallbackHandler />}
                   />
                 </Route>
@@ -302,10 +363,9 @@ function App() {
                 <Route element={<GuestLayout />}>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/about" element={<AboutPage />} />
-                  {/* SỬA ĐỔI: Đặt route tạo job trước route chi tiết job */}
-                  <Route path="/jobs/create" element={<CreateJobPage />} /> {/* Route tạo job */}
-                  <Route path="/jobs/:id" element={<ApplicantJobDetailsPage />} /> {/* Route chi tiết job */}
-                  <Route path="/jobs" element={<GuestJobsPage />} /> {/* Route danh sách job */}
+                  <Route path="/jobs/create" element={<CreateJobPage />} />
+                  <Route path="/jobs/:id" element={<ApplicantJobDetailsPage />} />
+                  <Route path="/jobs" element={<GuestJobsPage />} />
                   <Route path="/contact" element={<ContactPage />} />
                   <Route path="/check-email" element={<CheckEmailPage />} />
                 </Route>
@@ -364,11 +424,11 @@ function App() {
                   }
                 />
 
-                {/* Admin/Recruiter Routes (chung một layout và các trang) */}
+                {/* Admin/Recruiter Routes */}
                 <Route
                   path="/admin/*"
                   element={
-                    <AuthGuard requiredRole={["admin", "recruiter"]}> {/* Cả admin và recruiter đều có thể truy cập */}
+                    <AuthGuard requiredRole={["admin", "recruiter"]}>
                       <AdminLayout>
                         <Routes>
                           <Route
@@ -402,7 +462,6 @@ function App() {
                           />
                           <Route path="reports" element={<ReportsPage />} />
                           <Route path="settings" element={<SettingsPage />} />
-                          {/* Các route chỉ dành riêng cho Admin (nếu có) */}
                           <Route path="users" element={<UserManagement />} />
                           <Route path="roles" element={<RoleManagement />} />
                           <Route

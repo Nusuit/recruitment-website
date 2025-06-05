@@ -25,10 +25,10 @@ export const AuthProvider = ({ children }) => {
   const fetchUserProfile = useCallback(async () => {
     console.log("[AuthContext] Fetching user profile...");
     setAuthError(null); // Xóa lỗi trước khi fetch
-    const token = localStorage.getLogger("token");
+    const token = localStorage.getItem("token");
     if (!token) {
       console.log("[AuthContext] No token found during profile fetch.");
-      clearAuthData(); // Clear data nếu không có token
+      clearAuthData();
       return { success: false, error: "No token found." };
     }
 
@@ -39,43 +39,37 @@ export const AuthProvider = ({ children }) => {
       const profileResult = await authAPI.getCurrentUserProfile();
       console.log("[AuthContext] GetCurrentUserProfile response:", profileResult);
 
-      // SỬA ĐỔI QUAN TRỌNG Ở ĐÂY:
-      // Kiểm tra nếu profileResult.success là true VÀ có đối tượng payload
       if (profileResult.success && profileResult.payload) {
-        const rawUserData = profileResult.payload; // Lấy trực tiếp payload làm dữ liệu user
+        const rawUserData = profileResult.payload;
         
-        // Tạo đối tượng fetchedUser với các thuộc tính mong muốn
         const fetchedUser = {
-          email: rawUserData.email, // Lấy email từ payload
-          name: rawUserData.name || rawUserData.email, // Sử dụng email làm fallback cho name
-          firstName: rawUserData.firstName || rawUserData.name || rawUserData.email, // Fallback cho firstName
-          lastName: rawUserData.lastName || '', // Fallback cho lastName
+          email: rawUserData.email,
+          name: rawUserData.name || rawUserData.email,
+          firstName: rawUserData.firstName || rawUserData.name?.split(' ')[0] || rawUserData.email.split('@')[0],
+          lastName: rawUserData.lastName || rawUserData.name?.split(' ').slice(1).join(' ') || '',
           address: rawUserData.address,
           avatarUrl: rawUserData.avatarUrl,
           cvUrl: rawUserData.cvUrl,
           dateOfBirth: rawUserData.dateOfBirth,
           gender: rawUserData.gender,
           phone: rawUserData.phone,
-          // Đảm bảo role được đặt đúng cách
           role: rawUserData.role?.toLowerCase(),
-          isSuperRecruiter: rawUserData.isSuperRecruiter // Lấy cờ isSuperRecruiter từ payload
+          isSuperRecruiter: rawUserData.isSuperRecruiter
         };
         
-        // Hardcode vai trò recruiter nếu email khớp, theo logic trước đó của bạn
         if (fetchedUser.email === "hacnguyet108@gmail.com") {
             fetchedUser.role = "recruiter";
             fetchedUser.isSuperRecruiter = true;
-        } else if (!fetchedUser.role) { // Mặc định là candidate nếu vai trò chưa được đặt
+        } else if (!fetchedUser.role) {
             fetchedUser.role = "candidate";
         }
 
         setUser(fetchedUser);
         setIsAuthenticated(true);
-        localStorage.setItem("user", JSON.stringify(fetchedUser)); // Lưu user object vào localStorage
+        localStorage.setItem("user", JSON.stringify(fetchedUser));
         console.log("[AuthContext] User profile fetched and set. IsAuthenticated:", true);
-        return { success: true, user: fetchedUser }; // TRẢ VỀ fetchedUser ĐÃ XỬ LÝ
+        return { success: true, user: fetchedUser }; // TRẢ VỀ user
       } else {
-        // Nếu profileResult.success là false hoặc không có payload, coi là lỗi
         console.warn("[AuthContext] Token validation failed or user data missing in payload:", profileResult.message || profileResult.error);
         clearAuthData();
         return { success: false, error: profileResult.message || profileResult.error || "Token validation failed or user data missing." };
@@ -87,24 +81,29 @@ export const AuthProvider = ({ children }) => {
     }
   }, [clearAuthData]);
 
-  // Effect để kiểm tra trạng thái xác thực khi ứng dụng khởi động
+  // checkAuthStatus giờ sẽ trả về kết quả của fetchUserProfile
   const checkAuthStatus = useCallback(async () => {
     console.log("[AuthContext] Checking auth status...");
     setLoading(true);
-    setAuthError(null); // Xóa lỗi cũ
-    const token = localStorage.getLogger("token");
+    setAuthError(null);
+    const token = localStorage.getItem("token");
+    let result;
     if (token) {
       console.log("[AuthContext] Token found, validating...");
-      await fetchUserProfile(); // Gọi hàm fetchUserProfile để lấy và xác thực profile
+      result = await fetchUserProfile(); // Lưu kết quả của fetchUserProfile
     } else {
       console.log("[AuthContext] No token found.");
       clearAuthData();
+      result = { success: false, error: "No token found." };
     }
-    setLoading(false); // Kết thúc loading sau khi kiểm tra trạng thái
+    setLoading(false);
     console.log("[AuthContext] Auth status check finished. IsAuthenticated:", isAuthenticated);
-  }, [fetchUserProfile, clearAuthData, isAuthenticated]); // Thêm isAuthenticated vào dependencies
+    return result; // TRẢ VỀ KẾT QUẢ CỦA fetchUserProfile
+  }, [fetchUserProfile, clearAuthData, isAuthenticated]);
 
   useEffect(() => {
+    // Luôn kiểm tra trạng thái xác thực khi AuthProvider được render
+    // hoặc khi có thay đổi liên quan đến trạng thái loading/isAuthenticated
     checkAuthStatus();
   }, [checkAuthStatus]);
 
@@ -112,18 +111,16 @@ export const AuthProvider = ({ children }) => {
   const login = useCallback(async (email, password, role) => {
     console.log("[AuthContext] Attempting login with:", { email, password, role });
     setLoading(true);
-    setAuthError(null); // Xóa lỗi trước khi login
+    setAuthError(null);
 
     try {
       const result = await authAPI.login(email, password, role);
       console.log("[AuthContext] Login API result:", result);
 
       if (result && result.success && result.token) {
-        // Token đã được lưu trong authAPI, giờ chỉ cần fetch user profile
-        const profileFetchResult = await fetchUserProfile(); // profileFetchResult sẽ chứa { success: true, user: fetchedUser }
+        const profileFetchResult = await fetchUserProfile();
         if (profileFetchResult.success) { 
           console.log("[AuthContext] Login successful. User profile fetched.");
-          // SỬA ĐỔI QUAN TRỌNG Ở ĐÂY: Trả về user từ profileFetchResult.user
           return { success: true, user: profileFetchResult.user }; 
         } else {
           console.warn("[AuthContext] Failed to fetch user profile after login, but token is valid:", profileFetchResult.error);
@@ -144,9 +141,8 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
       console.log("[AuthContext] Login process finished.");
     }
-  }, [clearAuthData, fetchUserProfile]); // Đã xóa 'user' khỏi dependencies
+  }, [clearAuthData, fetchUserProfile]);
 
-  // Hàm đăng ký (signup)
   const signup = useCallback(async (userData) => {
     console.log("[AuthContext] Attempting signup with userData:", userData);
     setLoading(true);
@@ -172,7 +168,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Hàm đăng xuất (logout)
   const logout = useCallback(async () => {
     console.log("[AuthContext] Logging out...");
     setLoading(true);
@@ -191,7 +186,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, [clearAuthData, user]);
 
-  // Hàm quên mật khẩu (forgotPassword)
   const forgotPassword = useCallback(async (email) => {
     console.log("[AuthContext] Requesting password reset for:", email);
     setLoading(true);
@@ -213,53 +207,20 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // SỬA ĐỔI QUAN TRỌNG: Hàm login với Google OAuth
   const loginWithGoogle = useCallback(() => {
-    console.log("[AuthContext] Initiating Google login.");
-    const backendOAuthUrl = `${process.env.REACT_APP_API_URL || "http://localhost:8080/api"}/oauth2/authorize`; 
-    const frontendCallbackUrl = `${window.location.origin}/oauth2/callback`;
-    // Loại bỏ tham số 'role' ở đây, backend sẽ xác định vai trò
-    const authorizeUrl = `${backendOAuthUrl}?provider=google&redirect_uri=${encodeURIComponent(frontendCallbackUrl)}`; 
+    console.log("[AuthContext] Initiating Google login (Spring Security OAuth2 default URL).");
+    const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
+    const backendBaseUrl = apiBaseUrl.replace('/api', '');
+
+    const authorizeUrl = `${backendBaseUrl}/oauth2/authorization/google`; 
+    
+    console.log("[AuthContext] Constructed Google OAuth URL:", authorizeUrl);
+    
     window.location.href = authorizeUrl;
   }, []);
 
-  // SỬA ĐỔI QUAN TRỌNG: Hàm xử lý OAuth2 callback
-  const handleGoogleOAuthCallback = useCallback(async (code) => {
-    console.log("[AuthContext] Handling Google OAuth callback with code.");
-    setLoading(true);
-    setAuthError(null);
-    try {
-      // GỌI API backend để trao đổi code và nhận token/profile
-      // Loại bỏ tham số 'role' ở đây nếu backend không cần nó cho OAuth callback
-      const result = await authAPI.loginWithGoogleOAuth(code); 
-      console.log("[AuthContext] Google OAuth API result:", result);
+  // Đã xóa hàm handleGoogleOAuthCallback khỏi đây.
 
-      if (result.success && result.token) {
-        localStorage.setItem("token", result.token);
-        // Sau khi nhận token, fetch user profile để cập nhật AuthContext state
-        const profileFetchResult = await fetchUserProfile();
-        if (profileFetchResult.success) {
-          console.log("[AuthContext] Google OAuth login successful. User profile fetched.");
-          return { success: true, user: profileFetchResult.user };
-        } else {
-          console.warn("[AuthContext] Google OAuth login successful, but failed to fetch profile:", profileFetchResult.error);
-          clearAuthData();
-          return { success: false, error: profileFetchResult.error || "Google OAuth login successful but failed to fetch user profile." };
-        }
-      } else {
-        throw new Error(result.error || "Google OAuth login failed.");
-      }
-    } catch (error) {
-      console.error("[AuthContext] Google OAuth callback error:", error);
-      setAuthError(error.message);
-      clearAuthData();
-      return { success: false, error: error.message || "Google OAuth login failed unexpectedly." };
-    } finally {
-      setLoading(false);
-    }
-  }, [clearAuthData, fetchUserProfile]);
-
-  // Hàm xác minh OTP
   const verifyOTP = useCallback(async (email, otp) => {
     console.log("[AuthContext] Verifying OTP for:", { email, otp });
     setLoading(true);
@@ -277,7 +238,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Hàm gửi lại OTP
   const resendOTP = useCallback(async (email) => {
     console.log("[AuthContext] Resending OTP for:", { email });
     setLoading(true);
@@ -295,7 +255,6 @@ export const AuthProvider = ({ children }) => {
     }
   }, []);
 
-  // Hàm cập nhật thông tin user trong context (ví dụ sau khi update profile)
   const updateUserContext = useCallback((updatedUserData) => {
     console.log("[AuthContext] Updating user context with:", updatedUserData);
     setUser(prevUser => {
@@ -305,13 +264,11 @@ export const AuthProvider = ({ children }) => {
     });
   }, []);
 
-  // Hàm xử lý login đặc biệt cho Super Recruiter (nếu cần, có thể không cần thiết nếu logic login chung đã đủ)
   const handleSpecialRecruiterLoginSuccess = useCallback(async (email) => {
     console.log("[AuthContext] Handling special recruiter login success for:", email);
     setLoading(true);
     setAuthError(null);
     try {
-      // Sau khi login form thành công, fetch user profile để lấy cờ isSuperRecruiter
       const profileResult = await fetchUserProfile();
       if (profileResult.success) {
         console.log("[AuthContext] Special recruiter login successful. User profile fetched.");
@@ -336,17 +293,16 @@ export const AuthProvider = ({ children }) => {
     user,
     loading,
     isAuthenticated,
-    authError, // Export lỗi xác thực
+    authError,
     login,
     signup,
     logout,
     forgotPassword,
     loginWithGoogle,
-    handleGoogleOAuthCallback,
     verifyOTP,
     resendOTP,
     updateUserContext,
-    checkAuthStatus, // Export để có thể gọi lại nếu cần
+    checkAuthStatus, // Export checkAuthStatus để OAuth2CallbackHandler có thể gọi nó
     handleSpecialRecruiterLoginSuccess,
   };
 

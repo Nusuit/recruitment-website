@@ -1,6 +1,6 @@
 // src/pages/admin/analytics/RecruitmentAnalytics.jsx
 import React, { useState, useEffect } from "react";
-// import { recruiterAPI } from '../../../api/recruiter';
+import { recruiterAPI } from '../../../api/recruiter';
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Bar, Line } from "react-chartjs-2";
@@ -32,6 +32,13 @@ const RecruitmentAnalytics = () => {
       setLoading(true);
       setError(null);
       try {
+        const [recruitmentResponse, interviewResponse] = await Promise.all([
+            recruiterAPI.getOverallRecruitmentAnalytics({ timeframe }),
+            recruiterAPI.getInterviewFunnelAnalytics({ timeframe }) // Example
+        ]);
+        setAnalytics(recruitmentResponse.payload);
+        setInterviewData(interviewResponse.payload);
+
         // TODO: Replace with actual API calls
         // const [recruitmentResponse, interviewResponse] = await Promise.all([
         //     recruiterAPI.getOverallRecruitmentAnalytics({ timeframe }),
@@ -40,79 +47,79 @@ const RecruitmentAnalytics = () => {
         // setAnalytics(recruitmentResponse.data);
         // setInterviewData(interviewResponse.data);
 
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        setAnalytics({
-          timeToHire: 28,
-          timeToHireChange: -5, // days, percentage
-          interviewSuccessRate: 60,
-          successRateChange: 2, // percentage
-          offerAcceptanceRate: 85,
-          acceptanceRateChange: 3,
-          dropOffRate: 15,
-          dropOffRateChange: -2, // percentage of candidates dropping off
-          funnelMetrics: {
-            applications: 500,
-            screened: 300,
-            interviewed: 150,
-            offered: 90,
-            hired: 75,
-          },
-          stageAnalysis: [
-            {
-              name: "Application Screening",
-              avgTime: 3,
-              passRate: 60,
-              bottleneckScore: 4,
-            },
-            {
-              name: "First Interview",
-              avgTime: 7,
-              passRate: 50,
-              bottleneckScore: 6,
-            },
-            {
-              name: "Technical Assessment",
-              avgTime: 5,
-              passRate: 70,
-              bottleneckScore: 3,
-            },
-            {
-              name: "Final Interview",
-              avgTime: 7,
-              passRate: 80,
-              bottleneckScore: 2,
-            },
-            {
-              name: "Offer Stage",
-              avgTime: 4,
-              passRate: 85,
-              bottleneckScore: 1,
-            },
-          ],
-          efficiencyInsights: [
-            {
-              title: "Screening Bottleneck",
-              description: "High drop-off after initial screening.",
-              recommendation:
-                "Review screening criteria or provide more training to screeners.",
-              impact: "High",
-            },
-            {
-              title: "Offer Acceptance High",
-              description:
-                "Strong offer acceptance rate indicates competitive offers.",
-              recommendation: "Maintain current offer strategy.",
-              impact: "Low",
-            },
-          ],
-        });
-        setInterviewData({
-          interviewTrend: {
-            labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-            scheduled: [20, 25, 22, 30],
-            completed: [18, 22, 20, 28],
-          },
-        });
+        // await new Promise((resolve) => setTimeout(resolve, 800));
+        // setAnalytics({
+        //   timeToHire: 28,
+        //   timeToHireChange: -5, // days, percentage
+        //   interviewSuccessRate: 60,
+        //   successRateChange: 2, // percentage
+        //   offerAcceptanceRate: 85,
+        //   acceptanceRateChange: 3,
+        //   dropOffRate: 15,
+        //   dropOffRateChange: -2, // percentage of candidates dropping off
+        //   funnelMetrics: {
+        //     applications: 500,
+        //     screened: 300,
+        //     interviewed: 150,
+        //     offered: 90,
+        //     hired: 75,
+        //   },
+        //   stageAnalysis: [
+        //     {
+        //       name: "Application Screening",
+        //       avgTime: 3,
+        //       passRate: 60,
+        //       bottleneckScore: 4,
+        //     },
+        //     {
+        //       name: "First Interview",
+        //       avgTime: 7,
+        //       passRate: 50,
+        //       bottleneckScore: 6,
+        //     },
+        //     {
+        //       name: "Technical Assessment",
+        //       avgTime: 5,
+        //       passRate: 70,
+        //       bottleneckScore: 3,
+        //     },
+        //     {
+        //       name: "Final Interview",
+        //       avgTime: 7,
+        //       passRate: 80,
+        //       bottleneckScore: 2,
+        //     },
+        //     {
+        //       name: "Offer Stage",
+        //       avgTime: 4,
+        //       passRate: 85,
+        //       bottleneckScore: 1,
+        //     },
+        //   ],
+        //   efficiencyInsights: [
+        //     {
+        //       title: "Screening Bottleneck",
+        //       description: "High drop-off after initial screening.",
+        //       recommendation:
+        //         "Review screening criteria or provide more training to screeners.",
+        //       impact: "High",
+        //     },
+        //     {
+        //       title: "Offer Acceptance High",
+        //       description:
+        //         "Strong offer acceptance rate indicates competitive offers.",
+        //       recommendation: "Maintain current offer strategy.",
+        //       impact: "Low",
+        //     },
+        //   ],
+        // });
+        // setInterviewData({
+        //   interviewTrend: {
+        //     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+        //     scheduled: [20, 25, 22, 30],
+        //     completed: [18, 22, 20, 28],
+        //   },
+        // });
       } catch (err) {
         console.error("Error fetching recruitment analytics:", err);
         setError("Failed to load recruitment analytics data.");

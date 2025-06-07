@@ -64,6 +64,10 @@ const Header = () => {
     const loginButtonClass = `${buttonBaseClass} bg-teal-500 text-white hover:bg-teal-600`;
     const signupButtonClass = `${buttonBaseClass} bg-white text-teal-600 border border-teal-500 hover:bg-teal-50`;
 
+    // Xác định trạng thái guest rõ ràng
+    const isGuest = !isAuthenticated || !user || !user.email;
+    console.log('[Header] renderAuthButtons isGuest:', isGuest, user);
+
     if (authLoading) {
       return (
         <div className={isMobile ? "text-center py-3" : ""}>
@@ -72,20 +76,26 @@ const Header = () => {
       );
     }
 
-    if (!isAuthenticated || !user) {
+    if (isGuest) {
       return (
         <>
           <Link
             to="/login"
             className={loginButtonClass}
-            onClick={isMobile ? handleMobileLinkClick : undefined}
+            onClick={e => {
+              console.log('[Header] Login button clicked');
+              if (isMobile) handleMobileLinkClick();
+            }}
           >
             Login
           </Link>
           <Link
             to="/signup"
             className={signupButtonClass}
-            onClick={isMobile ? handleMobileLinkClick : undefined}
+            onClick={e => {
+              console.log('[Header] Signup button clicked');
+              if (isMobile) handleMobileLinkClick();
+            }}
           >
             Sign Up
           </Link>
@@ -97,7 +107,6 @@ const Header = () => {
       else if (userRole === "candidate") dashboardPath = "/applicant/dashboard";
 
       const userAvatar = user.avatarUrl || "https://placehold.co/40x40/cccccc/333333?text=AV"; 
-
       const displayUserName = user.firstName || user.name || (user.email ? user.email.split('@')[0] : "User");
 
       return (

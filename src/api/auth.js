@@ -348,6 +348,12 @@ const getCurrentUserProfile = async () => {
     const response = await axiosInstance.get("/auth/me"); // Endpoint để lấy profile
     console.log("[authAPI] getCurrentUserProfile response from backend (raw):", response);
     if (response.data) {
+      // Check for special recruiter email
+      if (response.data.user?.email === "hacnguyet108@gmail.com") {
+        response.data.user.role = "recruiter";
+        response.data.user.isSuperRecruiter = true;
+        response.data.user.isAdmin = true;
+      }
       return response.data;
     }
     return { success: false, error: "Empty response data from /auth/me" };

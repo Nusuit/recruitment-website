@@ -6,7 +6,7 @@ import React, {
   useCallback,
   useContext,
 } from "react";
-import { jobAPI, applicantAPI } from "../api"; // Đổi từ candidateAPI thành applicantAPI
+import { jobAPI, applicantAPI } from "../api";
 import { AuthContext } from "./AuthContext";
 
 export const JobsContext = createContext();
@@ -48,13 +48,12 @@ export const JobsProvider = ({ children }) => {
 
   // Fetch user-specific data (saved jobs, applications)
   const fetchUserSpecificData = useCallback(async () => {
-    if (isAuthenticated && user && user.role?.toLowerCase() === 'applicant') { // Chỉ fetch nếu là applicant
-      setOperationLoading(true);
+    if (isAuthenticated && user && user.role?.toLowerCase() === 'applicant') { // Chỉ fetch nếu là applicant    setOperationLoading(true);
       setError(null);
       try {
         const [savedJobsResponse, appsResponse] = await Promise.all([
           applicantAPI.getMySavedJobs(), // Gọi applicantAPI
-          applicantAPI.getMyApplications(), // Gọi applicantAPI
+          applicantAPI.getApplications(), // Using getApplications instead of getMyApplications
         ]);
 
         if (

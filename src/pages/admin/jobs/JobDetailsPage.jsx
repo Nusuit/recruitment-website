@@ -5,7 +5,7 @@ import { recruiterAPI } from "../../../api/recruiter"; // Assuming API functions
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import EmptyState from "../../../components/common/EmptyState";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { formatDate, formatApplicationStatus } from "../../../utils/formatters";
+import { formatDate, formatApplicationStatus, formatSalaryRange } from "../../../utils/formatters";
 import Pagination from "../../../components/common/Pagination";
 
 const AdminJobDetailsPage = () => {
@@ -32,105 +32,23 @@ const AdminJobDetailsPage = () => {
   ];
 
   useEffect(() => {
+    if (!jobId) {
+      return;
+    }
+
     const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
-        // TODO: Replace with actual API calls
-        // const jobResponse = await recruiterAPI.getJobDetailsForAdmin(jobId);
-        // const appsResponse = await recruiterAPI.getApplicationsForJobAdmin(jobId, { status: filterStatus });
-        // setJob(jobResponse.job);
-        // setApplications(appsResponse.applications || []);
+        const jobResponse = await recruiterAPI.getJobDetail(jobId);
+        const appsResponse = await recruiterAPI.getAllApplications({ jobId, status: filterStatus });
 
-        // Mock data
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        const mockJob = {
-          id: jobId,
-          title: `Senior Fashion Designer - ${jobId}`,
-          location: "New York, NY",
-          type: "FULL_TIME",
-          status: "ACTIVE",
-          department: "Design",
-          experienceRequired: "5+ Years",
-          salaryRange: "$80k - $120k",
-          postedDate: new Date(
-            Date.now() - 10 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          deadline: new Date(
-            Date.now() + 20 * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          description:
-            "Lead our design team to create innovative fashion lines...",
-          requirements:
-            "Degree in Fashion Design\nPortfolio of work\nTeam leadership skills",
-          benefits: "Health Insurance\nPaid Time Off\nEmployee Discount",
-          skills: [
-            { id: "s1", name: "Sketching" },
-            { id: "s2", name: "Adobe Suite" },
-            { id: "s3", name: "Pattern Making" },
-          ],
-        };
-        setJob(mockJob);
+        setJob(jobResponse.payload);
+        setApplications(appsResponse.payload.content || []);
 
-        const mockApplications = [
-          {
-            id: "app1",
-            applicantName: "John Doe",
-            submittedAt: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "SHORTLISTED",
-            email: "john@example.com",
-          },
-          {
-            id: "app2",
-            applicantName: "Jane Smith",
-            submittedAt: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "PENDING_REVIEW",
-            email: "jane@example.com",
-          },
-          {
-            id: "app3",
-            applicantName: "Alice Brown",
-            submittedAt: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "INTERVIEW_SCHEDULED",
-            email: "alice@example.com",
-          },
-          {
-            id: "app4",
-            applicantName: "Bob White",
-            submittedAt: new Date(
-              Date.now() - 4 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "HIRED",
-            email: "bob@example.com",
-          },
-          {
-            id: "app5",
-            applicantName: "Carol Green",
-            submittedAt: new Date(
-              Date.now() - 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "REJECTED",
-            email: "carol@example.com",
-          },
-          {
-            id: "app6",
-            applicantName: "David Black",
-            submittedAt: new Date(
-              Date.now() - 6 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "PENDING_REVIEW",
-            email: "david@example.com",
-          },
-        ].filter(
-          (app) => filterStatus === "ALL" || app.status === filterStatus
-        );
-        setApplications(mockApplications);
+        // Mock data removed
+
+
       } catch (err) {
         console.error("Error fetching job data:", err);
         setError("Failed to load job data. Please try again.");
@@ -210,11 +128,6 @@ const AdminJobDetailsPage = () => {
                 {job.location}
               </span>
               <span className="mx-2">|</span>
-              <span>
-                <FontAwesomeIcon icon="briefcase" className="mr-1.5" />
-                {job.type}
-              </span>
-              <span className="mx-2">|</span>
               <span
                 className={`px-2 py-0.5 text-xs font-semibold rounded-full ${getStatusPillClass(
                   job.status
@@ -232,16 +145,10 @@ const AdminJobDetailsPage = () => {
           </Link>
         </div>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 text-sm text-gray-700">
-          <InfoPill label="Department" value={job.department} icon="building" />
-          <InfoPill
-            label="Experience"
-            value={job.experienceRequired}
-            icon="star"
-          />
-          <InfoPill label="Salary" value={job.salaryRange} icon="dollar-sign" />
+          <InfoPill label="Salary" value={formatSalaryRange(job.minSalary, job.maxSalary)} icon="dollar-sign" />
           <InfoPill
             label="Posted"
-            value={formatDate(job.postedDate)}
+            value={formatDate(job.createdAt)}
             icon="calendar-alt"
           />
           <InfoPill
@@ -251,7 +158,7 @@ const AdminJobDetailsPage = () => {
           />
           <InfoPill
             label="Total Apps"
-            value={applications.length.toString()}
+            value={job.applicationQuantity}
             icon="users"
           />
         </div>
@@ -263,12 +170,12 @@ const AdminJobDetailsPage = () => {
           <ContentSection title="Job Description" content={job.description} />
           <ContentSection
             title="Key Responsibilities"
-            content={job.requirements}
+            content={job.requirement}
             isList
           />
           <ContentSection
             title="Benefits Offered"
-            content={job.benefits}
+            content={job.benefit}
             isList
           />
           <div>

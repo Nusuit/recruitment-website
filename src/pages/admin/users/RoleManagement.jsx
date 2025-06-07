@@ -44,46 +44,46 @@ const RoleManagement = () => {
     setLoading(true);
     setError(null);
     try {
-      // const response = await recruiterAPI.getRolesList(); // Replace with actual API call
-      // setRoles(response.roles || []);
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      setRoles([
-        {
-          id: "role1",
-          name: "Administrator",
-          description: "Full access to all system features.",
-          permissions: ALL_PERMISSIONS_LIST.reduce(
-            (acc, perm) => ({ ...acc, [perm.id]: true }),
-            {}
-          ),
-        },
-        {
-          id: "role2",
-          name: "Recruiter",
-          description: "Can manage jobs and applicants.",
-          permissions: {
-            ...ALL_PERMISSIONS_LIST.reduce(
-              (acc, perm) => ({ ...acc, [perm.id]: false }),
-              {}
-            ),
-            manageJobs: true,
-            viewApplicants: true,
-            manageApplicants: true,
-          },
-        },
-        {
-          id: "role3",
-          name: "Hiring Manager",
-          description: "Can view applicants for their assigned jobs.",
-          permissions: {
-            ...ALL_PERMISSIONS_LIST.reduce(
-              (acc, perm) => ({ ...acc, [perm.id]: false }),
-              {}
-            ),
-            viewApplicants: true,
-          },
-        },
-      ]);
+      const response = await recruiterAPI.getRolesList(); // Replace with actual API call
+      setRoles(response.payload.content || []); // Assuming roles are in payload.content
+      // await new Promise((resolve) => setTimeout(resolve, 500));
+      // setRoles([
+      //   {
+      //     id: "role1",
+      //     name: "Administrator",
+      //     description: "Full access to all system features.",
+      //     permissions: ALL_PERMISSIONS_LIST.reduce(
+      //       (acc, perm) => ({ ...acc, [perm.id]: true }),
+      //       {}
+      //     ),
+      //   },
+      //   {
+      //     id: "role2",
+      //     name: "Recruiter",
+      //     description: "Can manage jobs and applicants.",
+      //     permissions: {
+      //       ...ALL_PERMISSIONS_LIST.reduce(
+      //         (acc, perm) => ({ ...acc, [perm.id]: false }),
+      //         {}
+      //       ),
+      //       manageJobs: true,
+      //       viewApplicants: true,
+      //       manageApplicants: true,
+      //     },
+      //   },
+      //   {
+      //     id: "role3",
+      //     name: "Hiring Manager",
+      //     description: "Can view applicants for their assigned jobs.",
+      //     permissions: {
+      //       ...ALL_PERMISSIONS_LIST.reduce(
+      //         (acc, perm) => ({ ...acc, [perm.id]: false }),
+      //         {}
+      //       ),
+      //       viewApplicants: true,
+      //     },
+      //   },
+      // ]);
     } catch (err) {
       console.error("Error fetching roles:", err);
       setError("Failed to load roles. Please try again.");
@@ -158,16 +158,22 @@ const RoleManagement = () => {
     setLoading(true); // Consider a different loading state for form submission
     setError(null);
     try {
+      const permissionsArray = ALL_PERMISSIONS_LIST
+        .filter(p => formData.permissions[p.id])
+        .map(p => ({ permissionId: p.id })); // Assuming backend expects permissionId
+
+      const payload = { ...formData, permissions: permissionsArray };
+
       if (editingRole) {
-        // await recruiterAPI.updateRole(editingRole.id, formData);
-        setRoles(
-          roles.map((r) =>
-            r.id === editingRole.id ? { ...editingRole, ...formData } : r
-          )
-        ); // Mock update
+        await recruiterAPI.updateRole(editingRole.id, payload);
+        // setRoles(
+        //   roles.map((r) =>
+        //     r.id === editingRole.id ? { ...editingRole, ...formData } : r
+        //   )
+        // ); // Mock update
       } else {
-        // await recruiterAPI.createRole(formData);
-        setRoles([...roles, { ...formData, id: `role${Date.now()}` }]); // Mock create
+        await recruiterAPI.createRole(payload);
+        // setRoles([...roles, { ...formData, id: `role${Date.now()}` }]); // Mock create
       }
       fetchRoles(); // Re-fetch or update local state
       handleCloseModal();
@@ -186,9 +192,13 @@ const RoleManagement = () => {
       )
     )
       return;
-    // await recruiterAPI.deleteRole(roleId);
-    setRoles(roles.filter((r) => r.id !== roleId)); // Mock delete
-    fetchRoles(); // Re-fetch
+    try {
+      await recruiterAPI.deleteRole(roleId);
+      fetchRoles(); // Re-fetch roles after deletion
+    } catch (err) {
+      console.error("Error deleting role:", err);
+      setError("Failed to delete role. Please try again.");
+    }
   };
 
   if (loading && roles.length === 0)

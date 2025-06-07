@@ -113,8 +113,11 @@ const CreateJobPage = ({ isEditing = false }) => {
       ...formData,
       salaryMin: formData.salaryMin ? parseInt(formData.salaryMin, 10) : null,
       salaryMax: formData.salaryMax ? parseInt(formData.salaryMax, 10) : null,
-      skills: formData.selectedSkills, // Send array of skill IDs
-      status: targetStatus || formData.status, // Use targetStatus if provided (for "Save Draft")
+      skills: formData.selectedSkills.map(skillId => ({
+        skillId: skillId,
+        required: true // Since these are required skills
+      })),
+      status: targetStatus || formData.status,
     };
 
     try {

@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { objectToQueryString } from '../utils/helpers';
+import axiosInstance from "./config/axiosConfig";
 
 // Create axios instance for applications API
 const applicationsAPI = axios.create({
@@ -158,123 +159,49 @@ const mockApplications = [
 // Get user applications (for applicants)
 export const getUserApplications = async (params = {}) => {
   try {
-    // Mô phỏng lấy đơn ứng tuyển của người dùng hiện tại
-    const currentUser = JSON.parse(localStorage.getItem('user')) || { id: 1 }; // Giả sử user ID = 1 nếu không có
-    
-    let userApplications = mockApplications.filter(app => app.userId === currentUser.id);
-    
-    // Lọc theo trạng thái nếu có
-    if (params.status) {
-      userApplications = userApplications.filter(app => app.status === params.status);
-    }
-    
-    // Mô phỏng phân trang
-    const page = params.page || 1;
-    const limit = params.limit || 10;
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedApplications = userApplications.slice(startIndex, endIndex);
-    
-    return {
-      success: true,
-      applications: paginatedApplications,
-      totalApplications: userApplications.length,
-      totalPages: Math.ceil(userApplications.length / limit)
-    };
+    const queryString = objectToQueryString(params);
+    const response = await axiosInstance.get(`/api/applicant/applications?${queryString}`);
+    return response.data;
   } catch (error) {
-    console.error('Get user applications error:', error);
-    return { success: false, error: 'Failed to fetch applications.' };
+    console.error("[applicationsAPI] getUserApplications error:", error);
+    throw error;
   }
 };
 
 // Get application details
-export const getApplicationById = async (applicationId) => {
+export const getApplicationDetails = async (applicationId) => {
   try {
-    const application = mockApplications.find(app => app.id === parseInt(applicationId));
-    
-    if (application) {
-      return {
-        success: true,
-        application
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Application not found'
-      };
-    }
+    const response = await axiosInstance.get(`/api/applicant/applications/${applicationId}`);
+    return response.data;
   } catch (error) {
-    console.error(`Get application ${applicationId} error:`, error);
-    return { success: false, error: 'Failed to fetch application details.' };
+    console.error("[applicationsAPI] getApplicationDetails error:", error);
+    throw error;
   }
 };
 
 // Get applications for a job (for recruiters)
 export const getJobApplications = async (jobId, params = {}) => {
   try {
-    let jobApplications = mockApplications.filter(app => app.jobId === parseInt(jobId));
-    
-    // Lọc theo trạng thái nếu có
-    if (params.status) {
-      jobApplications = jobApplications.filter(app => app.status === params.status);
-    }
-    
-    // Mô phỏng phân trang
-    const page = params.page || 1;
-    const limit = params.limit || 10;
-    const startIndex = (page - 1) * limit;
-    const endIndex = page * limit;
-    const paginatedApplications = jobApplications.slice(startIndex, endIndex);
-    
-    return {
-      success: true,
-      applications: paginatedApplications,
-      totalApplications: jobApplications.length,
-      totalPages: Math.ceil(jobApplications.length / limit)
-    };
+    const queryString = objectToQueryString(params);
+    const response = await axiosInstance.get(`/api/recruiter/jobs/${jobId}/applications?${queryString}`);
+    return response.data;
   } catch (error) {
-    console.error(`Get applications for job ${jobId} error:`, error);
-    return { success: false, error: 'Failed to fetch job applications.' };
+    console.error("[applicationsAPI] getJobApplications error:", error);
+    throw error;
   }
 };
 
 // Update application status (for recruiters)
-export const updateApplicationStatus = async (applicationId, status, recruiterNote = '') => { // Đổi notes thành recruiterNote
+export const updateApplicationStatus = async (applicationId, status, feedback = null) => {
   try {
-    const index = mockApplications.findIndex(app => app.id === parseInt(applicationId));
-    
-    if (index !== -1) {
-      // Cập nhật trạng thái và ghi chú
-      mockApplications[index] = {
-        ...mockApplications[index],
-        status,
-        recruiterNote: recruiterNote || mockApplications[index].recruiterNote // Cập nhật recruiterNote
-      };
-
-      // Thêm event vào timeline
-      const newTimelineEvent = {
-        date: new Date().toISOString(),
-        title: `Status updated to ${status.replace(/_/g, ' ')}`,
-        description: recruiterNote || `Application status changed to ${status.replace(/_/g, ' ')}.`
-      };
-      if (!mockApplications[index].timeline) {
-        mockApplications[index].timeline = [];
-      }
-      mockApplications[index].timeline.push(newTimelineEvent);
-      
-      return {
-        success: true,
-        application: mockApplications[index]
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Application not found'
-      };
-    }
+    const response = await axiosInstance.patch(`/api/recruiter/applications/${applicationId}/status`, {
+      status,
+      feedback
+    });
+    return response.data;
   } catch (error) {
-    console.error(`Update application ${applicationId} status error:`, error);
-    return { success: false, error: 'Failed to update application status.' };
+    console.error("[applicationsAPI] updateApplicationStatus error:", error);
+    throw error;
   }
 };
 
@@ -355,83 +282,22 @@ export const getInterviewDetails = async (applicationId) => {
 // Withdraw application (for applicants)
 export const withdrawApplication = async (applicationId) => {
   try {
-    const index = mockApplications.findIndex(app => app.id === parseInt(applicationId));
-    
-    if (index !== -1) {
-      // Cập nhật trạng thái thành "WITHDRAWN"
-      mockApplications[index] = {
-        ...mockApplications[index],
-        status: 'WITHDRAWN'
-      };
-      // Thêm event vào timeline
-      const newTimelineEvent = {
-        date: new Date().toISOString(),
-        title: "Application Withdrawn",
-        description: "Candidate withdrew the application."
-      };
-      if (!mockApplications[index].timeline) {
-        mockApplications[index].timeline = [];
-      }
-      mockApplications[index].timeline.push(newTimelineEvent);
-
-      setApplicationsToStorage(mockApplications); // Cập nhật localStorage
-      
-      return {
-        success: true,
-        message: 'Application withdrawn successfully'
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Application not found'
-      };
-    }
+    const response = await axiosInstance.delete(`/api/applicant/applications/${applicationId}`);
+    return response.data;
   } catch (error) {
-    console.error(`Withdraw application ${applicationId} error:`, error);
-    return { success: false, error: 'Failed to withdraw application.' };
+    console.error("[applicationsAPI] withdrawApplication error:", error);
+    throw error;
   }
 };
 
 // Get application statistics (for recruiters)
-export const getApplicationStats = async () => {
+export const getApplicationStats = async (jobId) => {
   try {
-    // Tính toán thống kê đơn giản
-    const totalApplications = mockApplications.length;
-    
-    // Đếm theo trạng thái
-    const statusCounts = {
-      PENDING_REVIEW: 0,
-      IN_REVIEW: 0,
-      SHORTLISTED: 0,
-      INTERVIEW_SCHEDULED: 0,
-      OFFER_EXTENDED: 0,
-      HIRED: 0,
-      REJECTED: 0,
-      WITHDRAWN: 0
-    };
-    
-    mockApplications.forEach(app => {
-      if (statusCounts.hasOwnProperty(app.status)) {
-        statusCounts[app.status]++;
-      }
-    });
-    
-    // Tính tỷ lệ chấp nhận (ví dụ)
-    const offeredCount = statusCounts.OFFER_EXTENDED || 0;
-    const totalProcessed = totalApplications - (statusCounts.PENDING_REVIEW || 0) - (statusCounts.IN_REVIEW || 0); // Ví dụ: chỉ tính trên các đơn đã xử lý
-    const acceptanceRate = totalProcessed > 0 ? ((offeredCount / totalProcessed) * 100).toFixed(2) : 0;
-    
-    return {
-      success: true,
-      stats: {
-        totalApplications,
-        statusCounts,
-        acceptanceRate
-      }
-    };
+    const response = await axiosInstance.get(`/api/recruiter/jobs/${jobId}/applications/stats`);
+    return response.data;
   } catch (error) {
-    console.error('Get application stats error:', error);
-    return { success: false, error: 'Failed to fetch application statistics.' };
+    console.error("[applicationsAPI] getApplicationStats error:", error);
+    throw error;
   }
 };
 
@@ -459,7 +325,7 @@ export const downloadResume = async (applicationId) => {
 
 export default {
   getUserApplications,
-  getApplicationById,
+  getApplicationDetails,
   getJobApplications,
   updateApplicationStatus,
   scheduleInterview,

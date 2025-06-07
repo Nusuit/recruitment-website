@@ -1,7 +1,7 @@
 // src/pages/applicant/profile/ProfilePage.jsx
 import React, { useState, useEffect, useContext } from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { candidateAPI } from "../../../api/applicant"; // Assuming candidateAPI for profile actions
+import { applicantAPI } from "../../../api";
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom"; // Import Link cho Go to Login button
@@ -40,6 +40,14 @@ const ProfilePage = () => {
   const [avatarPreview, setAvatarPreview] = useState("");
   const [cvFileName, setCvFileName] = useState("");
 
+  // Add errors state
+  const [errors, setErrors] = useState({
+    firstName: "",
+    lastName: "",
+    phone: "",
+    cvFile: "",
+  });
+
   // Fetch profile data and other necessary data (genders, skills)
   useEffect(() => {
     const fetchData = async () => {
@@ -55,7 +63,7 @@ const ProfilePage = () => {
       setSubmitError(null);
       try {
         // Fetch profile data
-        const profileResponse = await candidateAPI.getProfile(); // API to get candidate's own profile
+        const profileResponse = await applicantAPI.getProfile(); // API to get applicant's own profile
         const currentProfile = profileResponse.profile || profileResponse.user || {}; // backend có thể trả về 'profile' hoặc 'user'
         
         setProfileData({
@@ -100,11 +108,13 @@ const ProfilePage = () => {
     };
     fetchData();
   }, [user, authLoading]); // Re-fetch if user changes (e.g., after login)
-
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setProfileData((prev) => ({ ...prev, [name]: value }));
     if (submitError) setSubmitError(null);
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
+    }
   };
 
   const handleSkillChange = (skillIdOrName) => {
@@ -129,30 +139,45 @@ const ProfilePage = () => {
       setSubmitError(null);
     }
   };
-
   const handleCvChange = (e) => {
     const file = e.target.files[0];
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
         // 5MB limit for CV
-        setSubmitError("CV file size should not exceed 5MB.");
+        setErrors(prev => ({ ...prev, cvFile: "CV file size should not exceed 5MB" }));
         return;
       }
       setCvFile(file);
       setCvFileName(file.name);
+      setErrors(prev => ({ ...prev, cvFile: '' }));
       setSubmitError(null);
     }
   };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitError(null);
     setSubmitSuccess(false);
-    // setIsEditing(true); // Keep in editing mode while submitting - removed, now handle through loading state
+    setErrors({
+      firstName: '',
+      lastName: '',
+      phone: '',
+      cvFile: ''
+    });
 
-    // Basic Validation (can be expanded)
-    if (!profileData.firstName || !profileData.lastName) {
-      setSubmitError("First name and last name are required.");
+    // Basic Validation
+    const newErrors = {};
+    if (!profileData.firstName?.trim()) {
+      newErrors.firstName = "First name is required";
+    }
+    if (!profileData.lastName?.trim()) {
+      newErrors.lastName = "Last name is required";
+    }
+    if (profileData.phone && !/^\+?[\d\s-]+$/.test(profileData.phone)) {
+      newErrors.phone = "Invalid phone number format";
+    }
+    
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
       return;
     }
 
@@ -162,7 +187,7 @@ const ProfilePage = () => {
       // 1. Upload avatar if changed
       let newAvatarUrl = profileData.avatarUrl;
       if (avatarFile) {
-        const avatarUploadResponse = await candidateAPI.uploadProfilePicture(avatarFile); // Pass file directly
+        const avatarUploadResponse = await applicantAPI.uploadProfilePicture(avatarFile); // Pass file directly
         if (avatarUploadResponse.success && avatarUploadResponse.avatarUrl) {
           newAvatarUrl = avatarUploadResponse.avatarUrl;
         } else {
@@ -173,7 +198,7 @@ const ProfilePage = () => {
       // 2. Upload CV if changed
       let newCvUrl = profileData.cvUrl;
       if (cvFile) {
-        const cvUploadResponse = await candidateAPI.uploadCV(cvFile); // Pass file directly
+        const cvUploadResponse = await applicantAPI.uploadCV(cvFile); // Pass file directly
         if (cvUploadResponse.success && cvUploadResponse.cvUrl) {
           newCvUrl = cvUploadResponse.cvUrl;
         } else {
@@ -192,7 +217,7 @@ const ProfilePage = () => {
       // delete profilePayload.avatarFile; // This is handled by not including them in profileData directly
       // delete profilePayload.cvFile;
 
-      const updateResponse = await candidateAPI.updateProfile(profilePayload);
+      const updateResponse = await applicantAPI.updateProfile(profilePayload);
 
       // Update AuthContext user if update was successful
       if (updateResponse.success && updateResponse.profile) { // Check for success flag from API

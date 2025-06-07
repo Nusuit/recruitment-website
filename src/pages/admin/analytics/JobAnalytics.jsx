@@ -1,43 +1,13 @@
 // src/pages/admin/analytics/JobAnalytics.jsx
-import React, { useState, useEffect } from "react";
-// import { recruiterAPI } from '../../../api/recruiter'; // API for fetching analytics data
+import React, { useState, useEffect, useRef } from "react";
+import { recruiterAPI } from '../../../api/recruiter'; // API for fetching analytics data
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Bar, Line, Pie } from "react-chartjs-2";
+import { defaultChartOptions } from "../../../config/chartConfig";
 // Chart.js elements should be registered globally, e.g., in App.js or a chart config file
 // import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend } from 'chart.js';
 // ChartJS.register(CategoryScale, LinearScale, BarElement, LineElement, PointElement, ArcElement, Title, Tooltip, Legend);
-
-const chartOptionsBase = {
-  responsive: true,
-  maintainAspectRatio: false,
-  plugins: {
-    legend: {
-      position: "top",
-      labels: {
-        font: { size: 10 }, // Smaller legend font
-      },
-    },
-    title: {
-      display: true,
-      font: { size: 14, weight: "bold" }, // Title font
-    },
-    tooltip: {
-      bodyFont: { size: 10 },
-      titleFont: { size: 12 },
-    },
-  },
-  scales: {
-    x: {
-      ticks: { font: { size: 10 } }, // X-axis ticks font
-      grid: { display: false },
-    },
-    y: {
-      ticks: { font: { size: 10 } }, // Y-axis ticks font
-      beginAtZero: true,
-    },
-  },
-};
 
 const JobAnalytics = () => {
   const [metrics, setMetrics] = useState(null);
@@ -45,57 +15,57 @@ const JobAnalytics = () => {
   const [timeframe, setTimeframe] = useState("last30days");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const chartRefs = useRef({});
 
   useEffect(() => {
     const fetchAnalytics = async () => {
       setLoading(true);
       setError(null);
       try {
-        // TODO: Replace with actual API calls
-        // const metricsResponse = await recruiterAPI.getRecruitmentMetrics(timeframe);
-        // const jobStatsResponse = await recruiterAPI.getJobAnalytics({ timeframe });
-        // setMetrics(metricsResponse.metrics);
-        // setJobStats(jobStatsResponse.stats);
+        const metricsResponse = await recruiterAPI.getRecruitmentMetrics(timeframe);
+        const jobStatsResponse = await recruiterAPI.getJobAnalytics({ timeframe });
+        setMetrics(metricsResponse.payload.metrics);
+        setJobStats(jobStatsResponse.payload.stats);
 
         // Mock data for now
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        setMetrics({
-          activeJobs: 32,
-          activeJobsChange: 5, // percentage change
-          avgTimeToFill: 28,
-          avgTimeToFillChange: -2, // percentage change (negative is good)
-          successRate: 65,
-          successRateChange: 3,
-          costPerHire: 1150,
-          costPerHireChange: 10,
-        });
-        setJobStats({
-          jobTrend: {
-            labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-            data: [10, 15, 12, 18],
-          },
-          byDepartment: [
-            { department: "Design", count: 12 },
-            { department: "Marketing", count: 8 },
-            { department: "Sales", count: 7 },
-            { department: "Engineering", count: 5 },
-          ],
-          byType: [
-            { type: "Full Time", count: 20 },
-            { type: "Part Time", count: 5 },
-            { type: "Contract", count: 4 },
-            { type: "Internship", count: 3 },
-          ],
-          insights: {
-            topDepartment: "Design",
-            topDepartmentHires: 10, // Example
-            mostCompetitiveRole: "Senior Fashion Designer",
-            applicantsPerRole: 50,
-            fastestHiringDepartment: "Marketing",
-            avgHiringDays: 22,
-            interviewToHireRatio: 3, // 3 interviews per hire
-          },
-        });
+        // await new Promise((resolve) => setTimeout(resolve, 800));
+        // setMetrics({
+        //   activeJobs: 32,
+        //   activeJobsChange: 5, // percentage change
+        //   avgTimeToFill: 28,
+        //   avgTimeToFillChange: -2, // percentage change (negative is good)
+        //   successRate: 65,
+        //   successRateChange: 3,
+        //   costPerHire: 1150,
+        //   costPerHireChange: 10,
+        // });
+        // setJobStats({
+        //   jobTrend: {
+        //     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+        //     data: [10, 15, 12, 18],
+        //   },
+        //   byDepartment: [
+        //     { department: "Design", count: 12 },
+        //     { department: "Marketing", count: 8 },
+        //     { department: "Sales", count: 7 },
+        //     { department: "Engineering", count: 5 },
+        //   ],
+        //   byType: [
+        //     { type: "Full Time", count: 20 },
+        //     { type: "Part Time", count: 5 },
+        //     { type: "Contract", count: 4 },
+        //     { type: "Internship", count: 3 },
+        //   ],
+        //   insights: {
+        //     topDepartment: "Design",
+        //     topDepartmentHires: 10, // Example
+        //     mostCompetitiveRole: "Senior Fashion Designer",
+        //     applicantsPerRole: 50,
+        //     fastestHiringDepartment: "Marketing",
+        //     avgHiringDays: 22,
+        //     interviewToHireRatio: 3, // 3 interviews per hire
+        //   },
+        // });
       } catch (err) {
         console.error("Error fetching job analytics:", err);
         setError("Failed to load job analytics data.");
@@ -105,6 +75,17 @@ const JobAnalytics = () => {
     };
     fetchAnalytics();
   }, [timeframe]);
+
+  // Cleanup charts on unmount
+  useEffect(() => {
+    return () => {
+      Object.values(chartRefs.current).forEach(chart => {
+        if (chart) {
+          chart.destroy();
+        }
+      });
+    };
+  }, []);
 
   if (loading)
     return <LoadingSpinner fullPage message="Loading job analytics..." />;
@@ -224,12 +205,13 @@ const JobAnalytics = () => {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <ChartCard title="Job Posting Trends">
           <Line
+            ref={(ref) => (chartRefs.current.jobTrend = ref?.chartInstance)}
             options={{
-              ...chartOptionsBase,
+              ...defaultChartOptions,
               plugins: {
-                ...chartOptionsBase.plugins,
+                ...defaultChartOptions.plugins,
                 title: {
-                  ...chartOptionsBase.plugins.title,
+                  ...defaultChartOptions.plugins.title,
                   text: "Jobs Posted Over Time",
                 },
               },
@@ -239,12 +221,13 @@ const JobAnalytics = () => {
         </ChartCard>
         <ChartCard title="Job Types Distribution">
           <Pie
+            ref={(ref) => (chartRefs.current.jobType = ref?.chartInstance)}
             options={{
-              ...chartOptionsBase,
+              ...defaultChartOptions,
               plugins: {
-                ...chartOptionsBase.plugins,
+                ...defaultChartOptions.plugins,
                 title: {
-                  ...chartOptionsBase.plugins.title,
+                  ...defaultChartOptions.plugins.title,
                   text: "Jobs by Employment Type",
                 },
                 legend: { position: "right" },
@@ -255,12 +238,13 @@ const JobAnalytics = () => {
         </ChartCard>
         <ChartCard title="Jobs by Department" className="lg:col-span-2">
           <Bar
+            ref={(ref) => (chartRefs.current.department = ref?.chartInstance)}
             options={{
-              ...chartOptionsBase,
+              ...defaultChartOptions,
               plugins: {
-                ...chartOptionsBase.plugins,
+                ...defaultChartOptions.plugins,
                 title: {
-                  ...chartOptionsBase.plugins.title,
+                  ...defaultChartOptions.plugins.title,
                   text: "Job Distribution by Department",
                 },
               },

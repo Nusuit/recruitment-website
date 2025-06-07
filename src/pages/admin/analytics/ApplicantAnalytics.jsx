@@ -1,6 +1,6 @@
 // src/pages/admin/analytics/ApplicantAnalytics.jsx
 import React, { useState, useEffect } from "react";
-// import { recruiterAPI } from '../../../api/recruiter';
+import { recruiterAPI } from '../../../api/recruiter';
 import LoadingSpinner from "../../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Bar, Line, Doughnut } from "react-chartjs-2";
@@ -31,65 +31,68 @@ const ApplicantAnalytics = () => {
       setLoading(true);
       setError(null);
       try {
+        const response = await recruiterAPI.getApplicantAnalyticsData({ timeframe });
+        setAnalytics(response.payload);
+
         // TODO: Replace with actual API call
         // const response = await recruiterAPI.getApplicantAnalyticsData({ timeframe });
         // setAnalytics(response.data);
 
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        setAnalytics({
-          totalApplicants: 1250,
-          applicantChange: 15, // percentage
-          applicationRate: 12, // percentage of site visitors who apply
-          rateChange: 2,
-          avgApplicationsPerJob: 21,
-          avgChange: -1,
-          qualifiedRate: 45, // percentage of applicants deemed qualified
-          qualifiedChange: 5,
-          applicationTrend: {
-            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-            data: [150, 200, 180, 220, 250, 210],
-          },
-          applicationSources: [
-            { name: "LinkedIn", count: 400 },
-            { name: "Company Website", count: 350 },
-            { name: "Referrals", count: 200 },
-            { name: "Job Boards", count: 250 },
-            { name: "Other", count: 50 },
-          ],
-          applicationStatusDistribution: [
-            // Renamed from applicationStatus
-            { status: "Pending Review", count: 300 },
-            { status: "In Review", count: 250 },
-            { status: "Shortlisted", count: 150 },
-            { status: "Interviewing", count: 100 },
-            { status: "Offered", count: 80 },
-            { status: "Hired", count: 75 },
-            { status: "Rejected", count: 295 },
-          ],
-          popularJobs: [
-            { title: "Senior Fashion Designer", applications: 75 },
-            { title: "Marketing Manager", applications: 60 },
-            { title: "Retail Store Supervisor", applications: 55 },
-          ],
-          topSkills: [
-            { name: "Adobe Creative Suite", demand: 60 },
-            { name: "Digital Marketing", demand: 55 },
-            { name: "Sales Strategy", demand: 50 },
-          ],
-          bestSources: [
-            // Source effectiveness
-            { name: "Referrals", hireRate: 25 }, // 25% of referred applicants hired
-            { name: "LinkedIn", hireRate: 15 },
-            { name: "Company Website", hireRate: 10 },
-          ],
-          timeToProgress: [
-            // Avg days per stage
-            { stage: "Application to Screen", days: 3 },
-            { stage: "Screen to Interview", days: 7 },
-            { stage: "Interview to Offer", days: 10 },
-            { stage: "Offer to Hire", days: 5 },
-          ],
-        });
+        // await new Promise((resolve) => setTimeout(resolve, 800));
+        // setAnalytics({
+        //   totalApplicants: 1250,
+        //   applicantChange: 15, // percentage
+        //   applicationRate: 12, // percentage of site visitors who apply
+        //   rateChange: 2,
+        //   avgApplicationsPerJob: 21,
+        //   avgChange: -1,
+        //   qualifiedRate: 45, // percentage of applicants deemed qualified
+        //   qualifiedChange: 5,
+        //   applicationTrend: {
+        //     labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        //     data: [150, 200, 180, 220, 250, 210],
+        //   },
+        //   applicationSources: [
+        //     { name: "LinkedIn", count: 400 },
+        //     { name: "Company Website", count: 350 },
+        //     { name: "Referrals", count: 200 },
+        //     { name: "Job Boards", count: 250 },
+        //     { name: "Other", count: 50 },
+        //   ],
+        //   applicationStatusDistribution: [
+        //     // Renamed from applicationStatus
+        //     { status: "Pending Review", count: 300 },
+        //     { status: "In Review", count: 250 },
+        //     { status: "Shortlisted", count: 150 },
+        //     { status: "Interviewing", count: 100 },
+        //     { status: "Offered", count: 80 },
+        //     { status: "Hired", count: 75 },
+        //     { status: "Rejected", count: 295 },
+        //   ],
+        //   popularJobs: [
+        //     { title: "Senior Fashion Designer", applications: 75 },
+        //     { title: "Marketing Manager", applications: 60 },
+        //     { title: "Retail Store Supervisor", applications: 55 },
+        //   ],
+        //   topSkills: [
+        //     { name: "Adobe Creative Suite", demand: 60 },
+        //     { name: "Digital Marketing", demand: 55 },
+        //     { name: "Sales Strategy", demand: 50 },
+        //   ],
+        //   bestSources: [
+        //     // Source effectiveness
+        //     { name: "Referrals", hireRate: 25 }, // 25% of referred applicants hired
+        //     { name: "LinkedIn", hireRate: 15 },
+        //     { name: "Company Website", hireRate: 10 },
+        //   ],
+        //   timeToProgress: [
+        //     // Avg days per stage
+        //     { stage: "Application to Screen", days: 3 },
+        //     { stage: "Screen to Interview", days: 7 },
+        //     { stage: "Interview to Offer", days: 10 },
+        //     { stage: "Offer to Hire", days: 5 },
+        //   ],
+        // });
       } catch (err) {
         console.error("Error fetching applicant analytics:", err);
         setError("Failed to load applicant analytics data.");

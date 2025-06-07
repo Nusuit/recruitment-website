@@ -258,7 +258,7 @@ export const validateJobPostingForm = (values) => {
   if (!isNotEmpty(values.location)) errors.location = 'Location is required';
   if (!isNotEmpty(values.type)) errors.jobType = 'Job type is required'; // e.g., full-time, part-time
   if (!isNotEmpty(values.description)) errors.description = 'Job description is required';
-  if (!isNotEmpty(values.requirements)) errors.requirements = 'Requirements are required';
+  if (!isNotEmpty(values.requirement)) errors.requirement = 'Requirements are required';
   
   if (values.salaryMin && !isNumeric(values.salaryMin)) {
     errors.salaryMin = 'Minimum salary must be a number.';

@@ -1,6 +1,6 @@
 // src/pages/admin/SettingsPage.jsx
 import React, { useState, useEffect } from "react";
-// import { recruiterAPI } from '../../api/recruiter'; // Assuming API for settings
+import { recruiterAPI } from '../../api/recruiter'; // Assuming API for settings
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -43,11 +43,11 @@ const SettingsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        // const response = await recruiterAPI.getSystemSettings(); // Replace with actual API call
-        // setSettings(response.settings || initialSettings);
+        const response = await recruiterAPI.getSystemSettings(); // Replace with actual API call
+        setSettings(response.payload || initialSettings);
 
         // Mock data for now
-        await new Promise((resolve) => setTimeout(resolve, 600));
+        // await new Promise((resolve) => setTimeout(resolve, 600));
         // You can merge fetched settings with initialSettings to ensure all keys exist
         // For mock, we just use initialSettings or a slightly modified version
         // setSettings(prev => ({ ...prev, ...mockFetchedSettings }));
@@ -89,8 +89,8 @@ const SettingsPage = () => {
     setError(null);
     setSuccessMessage("");
     try {
-      // await recruiterAPI.updateSystemSettings(settings); // Replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
+      await recruiterAPI.updateSystemSettings(settings); // Replace with actual API call
+      // await new Promise((resolve) => setTimeout(resolve, 1000)); // Simulate API call
       setSuccessMessage("Settings saved successfully!");
       setTimeout(() => setSuccessMessage(""), 3000);
     } catch (err) {

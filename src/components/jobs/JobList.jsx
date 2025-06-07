@@ -1,33 +1,79 @@
 // src/components/jobs/JobList.jsx
-import React from "react";
+import React, { useEffect, useState } from "react";
 import PropTypes from "prop-types";
-import JobCard from "./JobCard"; // Assuming JobCard is refactored and uses context for save status
-import EmptyState from "../common/EmptyState"; // Assuming EmptyState is refactored
+import JobCard from "./JobCard";
+import EmptyState from "../common/EmptyState";
+import Pagination from "../common/Pagination";
+import { getJobs } from "../../api/jobs";
 
-const JobList = ({ jobs, loading, error }) => {
+const JobList = ({ filters, onError }) => {
+  const [jobs, setJobs] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalItems: 0,
+    itemsPerPage: 10
+  });
+
+  const fetchJobs = async (page = 1) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      const response = await getJobs({
+        ...filters,
+        page,
+        limit: pagination.itemsPerPage
+      });
+
+      if (response.success) {
+        setJobs(response.payload.content);
+        setPagination({
+          currentPage: response.payload.number + 1,
+          totalPages: response.payload.totalPages,
+          totalItems: response.payload.totalElements,
+          itemsPerPage: response.payload.size
+        });
+      } else {
+        setError(response.message || "Failed to fetch jobs");
+        onError?.(response.message);
+      }
+    } catch (err) {
+      const errorMessage = err.response?.data?.message || "Failed to fetch jobs";
+      setError(errorMessage);
+      onError?.(errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchJobs(1);
+  }, [filters]); // Refetch when filters change
+
+  const handlePageChange = (newPage) => {
+    fetchJobs(newPage);
+  };
+
   if (loading) {
-    // You might want a more subtle loading indicator here if it's part of a larger page
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map(
-          (
-            _,
-            i // Skeleton loaders
-          ) => (
-            <div
-              key={i}
-              className="bg-white p-6 rounded-lg shadow-md animate-pulse"
-            >
-              <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
-              <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-              <div className="flex justify-between">
-                <div className="h-4 bg-gray-200 rounded w-1/4"></div>
-                <div className="h-8 bg-gray-300 rounded w-1/3"></div>
-              </div>
+        {[...Array(6)].map((_, i) => (
+          <div
+            key={i}
+            className="bg-white p-6 rounded-lg shadow-md animate-pulse"
+          >
+            <div className="h-6 bg-gray-200 rounded w-3/4 mb-3"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/2 mb-2"></div>
+            <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
+            <div className="flex justify-between">
+              <div className="h-4 bg-gray-200 rounded w-1/4"></div>
+              <div className="h-8 bg-gray-300 rounded w-1/3"></div>
             </div>
-          )
-        )}
+          </div>
+        ))}
       </div>
     );
   }
@@ -44,7 +90,7 @@ const JobList = ({ jobs, loading, error }) => {
     return (
       <div className="py-10">
         <EmptyState
-          icon="search" // Or a more specific "no results" icon
+          icon="search"
           title="No Jobs Found"
           description="We couldn't find any jobs matching your criteria at the moment. Please try broadening your search or check back later."
         />
@@ -53,32 +99,43 @@ const JobList = ({ jobs, loading, error }) => {
   }
 
   return (
-    <div className="job-list space-y-6">
-      {jobs.map((job) => (
-        <JobCard key={job.id} job={job} />
-      ))}
+    <div className="space-y-6">
+      <div className="job-list space-y-6">
+        {jobs.map((job) => (
+          <JobCard key={job.id} job={job} />
+        ))}
+      </div>
+      
+      {pagination.totalPages > 1 && (
+        <div className="mt-8">
+          <Pagination
+            currentPage={pagination.currentPage}
+            totalPages={pagination.totalPages}
+            onPageChange={handlePageChange}
+          />
+        </div>
+      )}
     </div>
   );
 };
 
 JobList.propTypes = {
-  jobs: PropTypes.arrayOf(
-    PropTypes.shape({
-      id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
-      // Add other essential job prop types if JobCard expects them
-      title: PropTypes.string.isRequired,
-      company: PropTypes.string.isRequired,
-      // ... other job properties
-    })
-  ),
-  loading: PropTypes.bool,
-  error: PropTypes.string,
+  filters: PropTypes.shape({
+    keyword: PropTypes.string,
+    category: PropTypes.string,
+    location: PropTypes.string,
+    experience: PropTypes.arrayOf(PropTypes.string),
+    salary: PropTypes.arrayOf(PropTypes.string),
+    jobType: PropTypes.arrayOf(PropTypes.string),
+    education: PropTypes.arrayOf(PropTypes.string),
+    jobLevel: PropTypes.arrayOf(PropTypes.string)
+  }),
+  onError: PropTypes.func
 };
 
 JobList.defaultProps = {
-  jobs: [],
-  loading: false,
-  error: null,
+  filters: {},
+  onError: () => {}
 };
 
 export default JobList;

@@ -7,6 +7,14 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Button from "../../components/common/Button";
 import Input from "../../components/common/Input";
 
+// Thêm hàm này trước component AdminProfilePage
+const getValidAvatar = (url) => {
+  if (!url || url.includes("api/recruiter/profile/avatar")) {
+    return "/assets/images/admin-avatar.png";
+  }
+  return url;
+};
+
 const AdminProfilePage = () => {
   const {
     user,
@@ -224,7 +232,7 @@ const AdminProfilePage = () => {
         <section className="text-center">
           <div className="relative inline-block mb-4">
             <img
-              src={avatarPreview || "/assets/images/admin-avatar.png"} // SỬA ĐỔI: Avatar mặc định cho admin
+              src={getValidAvatar(avatarPreview)} // SỬA: fallback ảnh mặc định nếu avatar lỗi
               alt="Admin Avatar"
               className="w-32 h-32 md:w-40 md:h-40 rounded-full object-cover border-4 border-gray-200 shadow-md"
             />
@@ -262,7 +270,6 @@ const AdminProfilePage = () => {
               onChange={handleChange}
               disabled={!isEditing}
               required
-              error={errors.firstName}
             />
             <Input
               label="Last Name*"
@@ -271,7 +278,6 @@ const AdminProfilePage = () => {
               onChange={handleChange}
               disabled={!isEditing}
               required
-              error={errors.lastName}
             />
             <Input
               label="Email Address"

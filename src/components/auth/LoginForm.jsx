@@ -59,19 +59,24 @@ const LoginForm = () => {
 
   // SỬA ĐỔI QUAN TRỌNG: Sử dụng useEffect để theo dõi isAuthenticated và user
   useEffect(() => {
-    // Chỉ điều hướng khi đã xác thực và user object đã có giá trị
+    // Only navigate when authentication is confirmed and user data is available
     if (isAuthenticated && authContextUser && authContextUser.role) {
       const userRole = authContextUser.role?.toLowerCase();
       let dashboardPath;
 
-      if (userRole === "recruiter" || userRole === "admin") {
+      // Special handling for recruiter account
+      if (authContextUser.email?.toLowerCase() === "hacnguyet108@gmail.com") {
+        dashboardPath = "/admin/dashboard";
+      } else if (userRole === "admin") {
         dashboardPath = "/admin/dashboard";
       } else if (userRole === "applicant") {
         dashboardPath = "/applicant/dashboard";
       } else {
+        // Default path for any other cases
         dashboardPath = "/";
       }
-      console.log("[LoginForm - useEffect] Navigating to user dashboard:", dashboardPath);
+
+      console.log("[LoginForm - useEffect] Navigating to dashboard:", dashboardPath);
       navigate(dashboardPath, { replace: true });
     }
   }, [isAuthenticated, authContextUser, navigate]); // Dependencies: isAuthenticated, authContextUser, navigate
@@ -104,20 +109,14 @@ const LoginForm = () => {
     setIsSubmitting(true);
     setSubmitError("");
 
-    try {
-      const { email, password } = values;
-      let loginRole;
+    try {      const { email, password } = values;
+      console.log("[LoginForm] Attempting login with:", email);
+      
+      // Automatically determine role based on email
+      const loginRole = email.toLowerCase() === "hacnguyet108@gmail.com" ? "recruiter" : "applicant";
+      console.log("[LoginForm] Determined login role:", loginRole);
 
-      // Xác định vai trò đăng nhập dựa trên email hardcode
-      if (email === "hacnguyet108@gmail.com" && password === "123123") {
-        loginRole = "recruiter";
-        console.log("[LoginForm] Determined login role: hardcoded recruiter.");
-      } else {
-        loginRole = "applicant";
-        console.log("[LoginForm] Determined login role: applicant.");
-      }
-
-      // GỌI HÀM LOGIN CHUNG TỪ AUTHCONTEXT CHO TẤT CẢ CÁC TRƯỜNG HỢP
+      // Call login with the determined role
       const result = await login(email, password, loginRole);
       console.log("[LoginForm] Result from login context:", result);
 

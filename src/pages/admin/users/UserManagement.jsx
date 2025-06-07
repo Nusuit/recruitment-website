@@ -30,61 +30,61 @@ const UserManagement = () => {
       setLoading(true);
       setError(null);
       try {
-        // const response = await recruiterAPI.getUsersList(); // Replace with actual API call
-        // setUsers(response.users || []);
+        const response = await recruiterAPI.getUsersList(); // Replace with actual API call
+        setUsers(response.payload.content || []); // Assuming users are in payload.content
 
         // Mock data for now
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        setUsers([
-          {
-            id: "user1",
-            firstName: "Admin",
-            lastName: "User",
-            email: "admin@example.com",
-            role: "ADMIN",
-            status: "ACTIVE",
-            joinedDate: new Date(
-              Date.now() - 30 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            avatarUrl: "/assets/images/admin-avatar.png",
-          },
-          {
-            id: "user2",
-            firstName: "Recruiter",
-            lastName: "One",
-            email: "recruiter1@example.com",
-            role: "RECRUITER",
-            status: "ACTIVE",
-            joinedDate: new Date(
-              Date.now() - 60 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            avatarUrl: "/assets/images/default-avatar.png",
-          },
-          {
-            id: "user3",
-            firstName: "Candidate",
-            lastName: "Alpha",
-            email: "candidate.alpha@example.com",
-            role: "CANDIDATE",
-            status: "INACTIVE",
-            joinedDate: new Date(
-              Date.now() - 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            avatarUrl: null,
-          },
-          {
-            id: "user4",
-            firstName: "Candidate",
-            lastName: "Beta",
-            email: "candidate.beta@example.com",
-            role: "CANDIDATE",
-            status: "BLOCKED",
-            joinedDate: new Date(
-              Date.now() - 10 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            avatarUrl: "/assets/images/default-avatar.png",
-          },
-        ]);
+        // await new Promise((resolve) => setTimeout(resolve, 700));
+        // setUsers([
+        //   {
+        //     id: "user1",
+        //     firstName: "Admin",
+        //     lastName: "User",
+        //     email: "admin@example.com",
+        //     role: "ADMIN",
+        //     status: "ACTIVE",
+        //     joinedDate: new Date(
+        //       Date.now() - 30 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     avatarUrl: "/assets/images/admin-avatar.png",
+        //   },
+        //   {
+        //     id: "user2",
+        //     firstName: "Recruiter",
+        //     lastName: "One",
+        //     email: "recruiter1@example.com",
+        //     role: "RECRUITER",
+        //     status: "ACTIVE",
+        //     joinedDate: new Date(
+        //       Date.now() - 60 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     avatarUrl: "/assets/images/default-avatar.png",
+        //   },
+        //   {
+        //     id: "user3",
+        //     firstName: "Candidate",
+        //     lastName: "Alpha",
+        //     email: "candidate.alpha@example.com",
+        //     role: "CANDIDATE",
+        //     status: "INACTIVE",
+        //     joinedDate: new Date(
+        //       Date.now() - 5 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     avatarUrl: null,
+        //   },
+        //   {
+        //     id: "user4",
+        //     firstName: "Candidate",
+        //     lastName: "Beta",
+        //     email: "candidate.beta@example.com",
+        //     role: "CANDIDATE",
+        //     status: "BLOCKED",
+        //     joinedDate: new Date(
+        //       Date.now() - 10 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     avatarUrl: "/assets/images/default-avatar.png",
+        //   },
+        // ]);
       } catch (err) {
         console.error("Error fetching users:", err);
         setError("Failed to load users. Please try again.");
@@ -97,28 +97,36 @@ const UserManagement = () => {
 
   const handleUpdateStatus = async () => {
     if (!selectedUser || !newStatus) return;
-    // TODO: API call to update status
-    // await recruiterAPI.updateUserStatus(selectedUser.id, newStatus);
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.id === selectedUser.id ? { ...u, status: newStatus } : u
-      )
-    );
-    setShowStatusModal(false);
-    setSelectedUser(null);
+    try {
+      await recruiterAPI.updateUserStatus(selectedUser.id, { status: newStatus });
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === selectedUser.id ? { ...u, status: newStatus } : u
+        )
+      );
+      setShowStatusModal(false);
+      setSelectedUser(null);
+    } catch (err) {
+      console.error("Error updating user status:", err);
+      setError("Failed to update user status. Please try again.");
+    }
   };
 
   const handleUpdateRole = async () => {
     if (!selectedUser || !newRole) return;
-    // TODO: API call to update role
-    // await recruiterAPI.updateUserRole(selectedUser.id, newRole);
-    setUsers((prevUsers) =>
-      prevUsers.map((u) =>
-        u.id === selectedUser.id ? { ...u, role: newRole } : u
-      )
-    );
-    setShowRoleModal(false);
-    setSelectedUser(null);
+    try {
+      await recruiterAPI.updateUserRole(selectedUser.id, { role: newRole });
+      setUsers((prevUsers) =>
+        prevUsers.map((u) =>
+          u.id === selectedUser.id ? { ...u, role: newRole } : u
+        )
+      );
+      setShowRoleModal(false);
+      setSelectedUser(null);
+    } catch (err) {
+      console.error("Error updating user role:", err);
+      setError("Failed to update user role. Please try again.");
+    }
   };
 
   const filteredUsers = useMemo(() => {

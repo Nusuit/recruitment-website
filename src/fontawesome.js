@@ -91,6 +91,7 @@ import {
   faSort, // ĐÃ THÊM: Biểu tượng sort
   faSortUp, // ĐÃ THÊM: Biểu tượng sort up
   faSortDown, // ĐÃ THÊM: Biểu tượng sort down
+  faGlobe,
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -204,6 +205,7 @@ library.add(
   faSort, // ĐÃ THÊM: Biểu tượng sort
   faSortUp, // ĐÃ THÊM: Biểu tượng sort up
   faSortDown, // ĐÃ THÊM: Biểu tượng sort down
+  faGlobe,
   // Regular icons
   farHeart, // Regular heart
   farBookmark, // Regular bookmark

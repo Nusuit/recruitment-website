@@ -28,79 +28,83 @@ const AdminDashboard = () => {
       setError(null);
       try {
         // In a real application, these would be separate API calls
-        // const statsData = await recruiterAPI.getDashboardStats();
-        // const jobsData = await recruiterAPI.getRecentJobs({ limit: 5 });
-        // const appsData = await recruiterAPI.getRecentApplications({ limit: 5 });
+        const statsData = await recruiterAPI.getDashboardStats();
+        const jobsData = await recruiterAPI.getRecentJobs({ limit: 5 });
+        const appsData = await recruiterAPI.getRecentApplications({ limit: 5 });
 
         // Mocking data for now
-        await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate API delay
+        // await new Promise((resolve) => setTimeout(resolve, 800)); // Simulate API delay
 
-        setStats({
-          totalJobs: 58,
-          activeJobs: 32,
-          totalApplications: 450,
-          newApplicationsToday: 12,
-          interviewsScheduled: 25,
-          candidatesHiredThisMonth: 5,
-        });
+        setStats(statsData.payload);
+        setRecentJobs(jobsData.payload.content);
+        setRecentApplications(appsData.payload.content);
 
-        setRecentJobs([
-          {
-            id: "job1",
-            title: "Senior Fashion Designer",
-            applicationsCount: 35,
-            status: "ACTIVE",
-            postedDate: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: "job2",
-            title: "Retail Store Manager",
-            applicationsCount: 22,
-            status: "ACTIVE",
-            postedDate: new Date(
-              Date.now() - 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: "job3",
-            title: "Digital Marketing Lead",
-            applicationsCount: 58,
-            status: "PAUSED",
-            postedDate: new Date(
-              Date.now() - 10 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-        ]);
+        // setStats({
+        //   totalJobs: 58,
+        //   activeJobs: 32,
+        //   totalApplications: 450,
+        //   newApplicationsToday: 12,
+        //   interviewsScheduled: 25,
+        //   candidatesHiredThisMonth: 5,
+        // });
 
-        setRecentApplications([
-          {
-            id: "app1",
-            applicantName: "Alice Wonderland",
-            jobTitle: "Senior Fashion Designer",
-            appliedDate: new Date().toISOString(),
-            status: "PENDING_REVIEW",
-          },
-          {
-            id: "app2",
-            applicantName: "Bob The Builder",
-            jobTitle: "Retail Store Manager",
-            appliedDate: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "SHORTLISTED",
-          },
-          {
-            id: "app3",
-            applicantName: "Charlie Brown",
-            jobTitle: "Digital Marketing Lead",
-            appliedDate: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "INTERVIEW_SCHEDULED",
-          },
-        ]);
+        // setRecentJobs([
+        //   {
+        //     id: "job1",
+        //     title: "Senior Fashion Designer",
+        //     applicationsCount: 35,
+        //     status: "ACTIVE",
+        //     postedDate: new Date(
+        //       Date.now() - 2 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //   },
+        //   {
+        //     id: "job2",
+        //     title: "Retail Store Manager",
+        //     applicationsCount: 22,
+        //     status: "ACTIVE",
+        //     postedDate: new Date(
+        //       Date.now() - 5 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //   },
+        //   {
+        //     id: "job3",
+        //     title: "Digital Marketing Lead",
+        //     applicationsCount: 58,
+        //     status: "PAUSED",
+        //     postedDate: new Date(
+        //       Date.now() - 10 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //   },
+        // ]);
+
+        // setRecentApplications([
+        //   {
+        //     id: "app1",
+        //     applicantName: "Alice Wonderland",
+        //     jobTitle: "Senior Fashion Designer",
+        //     appliedDate: new Date().toISOString(),
+        //     status: "PENDING_REVIEW",
+        //   },
+        //   {
+        //     id: "app2",
+        //     applicantName: "Bob The Builder",
+        //     jobTitle: "Retail Store Manager",
+        //     appliedDate: new Date(
+        //       Date.now() - 1 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     status: "SHORTLISTED",
+        //   },
+        //   {
+        //     id: "app3",
+        //     applicantName: "Charlie Brown",
+        //     jobTitle: "Digital Marketing Lead",
+        //     appliedDate: new Date(
+        //       Date.now() - 2 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     status: "INTERVIEW_SCHEDULED",
+        //   },
+        // ]);
       } catch (err) {
         console.error("Error fetching dashboard data:", err);
         setError("Failed to load dashboard data. Please try again.");

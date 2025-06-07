@@ -7,34 +7,87 @@ import Header from "../common/Header"; // Admin có thể có Header riêng ho�
 
 // Mảng các mục menu cho Admin
 const adminMenuItems = [
-  { label: "Tổng quan", path: "/admin/dashboard", icon: "gauge-high", roles: ["admin", "recruiter"] },
-  { label: "Quản lý việc làm", path: "/admin/jobs", icon: "briefcase", roles: ["admin", "recruiter"] },
-  { label: "Quản lý ứng viên", path: "/admin/applicants", icon: "users", roles: ["admin", "recruiter"] },
-  { label: "Hồ sơ công ty", path: "/admin/company-profile", icon: "building", roles: ["admin", "recruiter"] },
-  { label: "Báo cáo", path: "/admin/reports", icon: "chart-pie", roles: ["admin", "recruiter"] },
-  { label: "Cài đặt", path: "/admin/settings", icon: "cog", roles: ["admin"] }, // Chỉ admin mới có quyền truy cập settings
-  { label: "Quản lý người dùng", path: "/admin/users", icon: "user-shield", roles: ["admin"] }, // Chỉ admin mới có quyền quản lý người dùng
-  { label: "Quản lý vai trò", path: "/admin/roles", icon: "tasks", roles: ["admin"] }, // Chỉ admin mới có quyền quản lý vai trò
-  { label: "Hồ sơ cá nhân", path: "/admin/profile", icon: "user-circle", roles: ["admin", "recruiter"] },
-  // Thêm các mục phân tích
-  {
-    label: "Phân tích việc làm",
-    path: "/admin/analytics/jobs",
-    icon: "chart-line",
-    roles: ["admin", "recruiter"]
+  { 
+    label: "Tổng quan", 
+    path: "/admin/dashboard", 
+    icon: "gauge-high", 
+    roles: ["admin", "recruiter"] 
   },
+  { 
+    label: "Quản lý việc làm", 
+    path: "/admin/jobs", 
+    icon: "briefcase", 
+    roles: ["admin", "recruiter"] 
+  },
+  { 
+    label: "Quản lý ứng viên", 
+    path: "/admin/applicants", 
+    icon: "users", 
+    roles: ["admin", "recruiter"] 
+  },
+  { 
+    label: "Hồ sơ công ty", 
+    path: "/admin/company-profile", 
+    icon: "building", 
+    roles: ["admin", "recruiter"] 
+  },
+  { 
+    label: "Hồ sơ cá nhân", 
+    path: "/admin/profile", 
+    icon: "user-circle", 
+    roles: ["admin", "recruiter"] 
+  },
+  // Analytics section
   {
-    label: "Phân tích ứng viên",
-    path: "/admin/analytics/applicants",
-    icon: "chart-bar",
-    roles: ["admin", "recruiter"]
-  }, // faChartBar
-  {
-    label: "Phân tích tuyển dụng",
-    path: "/admin/analytics/recruitment",
-    icon: "magnifying-glass-chart",
-    roles: ["admin", "recruiter"]
-  }, // faSearchDollar hoặc tương tự
+    label: "Phân tích",
+    icon: "chart-line",
+    roles: ["admin", "recruiter"],
+    subItems: [
+      {
+        label: "Phân tích việc làm",
+        path: "/admin/analytics/jobs",
+        icon: "chart-line",
+        roles: ["admin", "recruiter"]
+      },
+      {
+        label: "Phân tích ứng viên",
+        path: "/admin/analytics/applicants",
+        icon: "chart-bar",
+        roles: ["admin", "recruiter"]
+      },
+      {
+        label: "Phân tích tuyển dụng",
+        path: "/admin/analytics/recruitment",
+        icon: "magnifying-glass-chart",
+        roles: ["admin", "recruiter"]
+      }
+    ]
+  },
+  // Admin-only section
+  { 
+    label: "Báo cáo", 
+    path: "/admin/reports", 
+    icon: "chart-pie", 
+    roles: ["admin"] 
+  },
+  { 
+    label: "Cài đặt", 
+    path: "/admin/settings", 
+    icon: "cog", 
+    roles: ["admin"] 
+  },
+  { 
+    label: "Quản lý người dùng", 
+    path: "/admin/users", 
+    icon: "user-shield", 
+    roles: ["admin"] 
+  },
+  { 
+    label: "Quản lý vai trò", 
+    path: "/admin/roles", 
+    icon: "tasks", 
+    roles: ["admin"] 
+  }
 ];
 
 const AdminLayout = () => {
@@ -58,6 +111,64 @@ const AdminLayout = () => {
     } ${sidebarOpen ? "" : "justify-center"}`;
 
   const currentUserRole = user?.role?.toLowerCase();
+
+  const renderMenuItem = (item) => {
+    if (!item.roles.includes(currentUserRole)) return null;
+
+    if (item.subItems) {
+      return (
+        <li key={item.label} className="mb-0.5">
+          <div className={`flex items-center gap-3 py-3 px-4 text-gray-300 ${sidebarOpen ? "" : "justify-center"}`}>
+            <FontAwesomeIcon
+              icon={item.icon}
+              className={`flex-shrink-0 ${sidebarOpen ? "w-5 h-5" : "w-6 h-6 mx-auto"}`}
+            />
+            {sidebarOpen && (
+              <span className="whitespace-nowrap">{item.label}</span>
+            )}
+          </div>
+          {sidebarOpen && (
+            <ul className="ml-4 mt-1">
+              {item.subItems
+                .filter(subItem => subItem.roles.includes(currentUserRole))
+                .map(subItem => (
+                  <li key={subItem.path} className="mb-0.5">
+                    <NavLink
+                      to={subItem.path}
+                      className={navLinkClasses}
+                    >
+                      <FontAwesomeIcon
+                        icon={subItem.icon}
+                        className="flex-shrink-0 w-4 h-4"
+                      />
+                      <span className="whitespace-nowrap">{subItem.label}</span>
+                    </NavLink>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </li>
+      );
+    }
+
+    return (
+      <li key={item.path} className="mb-0.5">
+        <NavLink
+          to={item.path}
+          className={navLinkClasses}
+          end={item.path === "/admin/dashboard"}
+        >
+          <FontAwesomeIcon
+            icon={item.icon}
+            className={`flex-shrink-0 ${sidebarOpen ? "w-5 h-5" : "w-6 h-6 mx-auto"}`}
+          />
+          {sidebarOpen && (
+            <span className="whitespace-nowrap">{item.label}</span>
+          )}
+        </NavLink>
+      </li>
+    );
+  };
 
   return (
     <div className="flex flex-col min-h-screen">
@@ -125,27 +236,7 @@ const AdminLayout = () => {
 
           <nav className="flex-1 py-4 overflow-y-auto">
             <ul className="list-none p-0 m-0">
-              {adminMenuItems
-                .filter(item => item.roles.includes(currentUserRole)) // Lọc menu theo quyền
-                .map((item) => (
-                <li key={item.path} className="mb-0.5">
-                  <NavLink
-                    to={item.path}
-                    className={navLinkClasses}
-                    end={item.path === "/admin/dashboard"} // `end` prop cho NavLink
-                  >
-                    <FontAwesomeIcon
-                      icon={item.icon}
-                      className={`flex-shrink-0 ${
-                        sidebarOpen ? "w-5 h-5" : "w-6 h-6 mx-auto"
-                      }`}
-                    />
-                    {sidebarOpen && (
-                      <span className="whitespace-nowrap">{item.label}</span>
-                    )}
-                  </NavLink>
-                </li>
-              ))}
+              {adminMenuItems.map(renderMenuItem)}
             </ul>
           </nav>
 

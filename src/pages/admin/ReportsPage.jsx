@@ -1,6 +1,6 @@
 // src/pages/admin/ReportsPage.jsx
 import React, { useState, useEffect } from "react";
-// import { recruiterAPI } from '../../api/recruiter'; // Assuming API for reports
+import { recruiterAPI } from '../../api/recruiter'; // Assuming API for reports
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Bar, Line, Pie } from "react-chartjs-2";
@@ -19,63 +19,8 @@ const ReportsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        // TODO: Replace with actual API call
-        // const response = await recruiterAPI.getRecruitmentReports({ timeRange });
-        // setReportData(response.data);
-
-        // Mock data for now
-        await new Promise((resolve) => setTimeout(resolve, 1000));
-        setReportData({
-          summaryStats: {
-            totalApplications: 1250,
-            totalHires: 75,
-            avgTimeToHire: 28, // days
-            offerAcceptanceRate: 85, // percentage
-            costPerHire: 1200, // currency
-          },
-          applicationsOverTime: {
-            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-            datasets: [
-              {
-                label: "Applications",
-                data: [150, 200, 180, 220, 250, 210],
-                backgroundColor: "rgba(54, 162, 235, 0.6)",
-              },
-            ],
-          },
-          hiresBySource: {
-            labels: [
-              "LinkedIn",
-              "Company Website",
-              "Referrals",
-              "Job Boards",
-              "Other",
-            ],
-            datasets: [
-              {
-                data: [30, 20, 15, 25, 10],
-                backgroundColor: [
-                  "#FF6384",
-                  "#36A2EB",
-                  "#FFCE56",
-                  "#4BC0C0",
-                  "#9966FF",
-                ],
-              },
-            ],
-          },
-          timeToFillByDepartment: {
-            labels: ["Engineering", "Marketing", "Sales", "HR", "Design"],
-            datasets: [
-              {
-                label: "Avg. Days to Fill",
-                data: [35, 25, 30, 22, 40],
-                backgroundColor: "rgba(75, 192, 192, 0.6)",
-              },
-            ],
-          },
-          // Add more detailed data structures as needed
-        });
+        const response = await recruiterAPI.getRecruitmentReports({ timeRange });
+        setReportData(response.payload);
       } catch (err) {
         console.error("Error fetching report data:", err);
         setError("Failed to load report data. Please try again.");

@@ -38,36 +38,9 @@ const CompanyProfilePage = () => {
       setLoading(true);
       setFormError(null);
       try {
-        // const response = await recruiterAPI.getCompanyProfileDetails(); // Replace with actual API call
-        // setProfile(response.company || initialValues);
-        // setLogoPreview(response.company?.logoUrl || '');
-
-        // Mock data for now
-        await new Promise((resolve) => setTimeout(resolve, 600));
-        const mockProfile = {
-          name: "MyaCorp Fashion",
-          logoUrl: "/assets/images/logo.png", // Placeholder
-          description:
-            "MyaCorp is a leading innovator in the global fashion industry, dedicated to creating stylish, sustainable, and high-quality apparel and accessories. We believe in the power of fashion to express individuality and drive positive change.",
-          website: "https://www.myacorp.com",
-          industry: "Fashion & Apparel",
-          employeeCount: "500-1000",
-          foundedYear: "2010",
-          mission:
-            "To inspire confidence and self-expression through innovative and sustainable fashion.",
-          vision:
-            "To be the most loved and responsible fashion brand globally.",
-          location: "Ho Chi Minh City, Vietnam",
-          address: "123 Fashion Avenue, District 1",
-          email: "contact@myacorp.com",
-          phone: "+84 28 3333 4444",
-          facebook: "myacorp",
-          linkedin: "myacorp",
-          twitter: "myacorp",
-          instagram: "myacorp_official",
-        };
-        setProfile(mockProfile);
-        setLogoPreview(mockProfile.logoUrl);
+        const response = await recruiterAPI.getCompanyProfileDetails(); // Replace with actual API call
+        setProfile(response.payload || initialValues);
+        setLogoPreview(response.payload?.logoUrl || '');
       } catch (err) {
         console.error("Error loading company profile:", err);
         setFormError("Failed to load company profile. Please try again.");
@@ -109,15 +82,12 @@ const CompanyProfilePage = () => {
       if (logoFile) {
         const logoFormData = new FormData();
         logoFormData.append("logo", logoFile); // Match backend field name
-        // const uploadResponse = await recruiterAPI.uploadCompanyLogoFile(logoFormData); // API to upload logo
-        // updatedLogoUrl = uploadResponse.logoUrl; // Get new URL
-        // Mock upload
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        updatedLogoUrl = logoPreview; // Use preview for mock
+        const uploadResponse = await recruiterAPI.uploadCompanyLogoFile(logoFormData); // API to upload logo
+        updatedLogoUrl = uploadResponse.payload.logoUrl; // Get new URL
       }
 
       const profileToUpdate = { ...profile, logoUrl: updatedLogoUrl };
-      // await recruiterAPI.updateCompanyProfileDetails(profileToUpdate); // API to update profile data
+      await recruiterAPI.updateCompanyProfileDetails(profileToUpdate); // API to update profile data
 
       setProfile(profileToUpdate); // Update local state with new logo URL
       setIsEditing(false);

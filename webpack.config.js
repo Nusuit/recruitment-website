@@ -40,33 +40,39 @@ module.exports = {
             presets: ["@babel/preset-env", "@babel/preset-react"],
           },
         },
-      },
-      {
+      },      {
         test: /\.(scss|css)$/,
         use: [
           "style-loader",
           {
             loader: "css-loader",
             options: {
-              importLoaders: 2, // 2 = postcss-loader + sass-loader
-              sourceMap: true,
-            },
+              importLoaders: 3,
+              sourceMap: true
+            }
           },
           {
             loader: "postcss-loader",
             options: {
-              postcssOptions: {}, // Sẽ tự động tìm postcss.config.js
-              sourceMap: true,
-            },
+              postcssOptions: {
+                plugins: [
+                  "tailwindcss",
+                  "autoprefixer"
+                ]
+              },
+              sourceMap: true
+            }
           },
           {
             loader: "sass-loader",
             options: {
-              implementation: require("sass"), // Dùng Dart Sass
               sourceMap: true,
-            },
-          },
-        ],
+              sassOptions: {
+                includePaths: ["./src/styles"]
+              }
+            }
+          }
+        ]
       },
       {
         test: /\.(png|svg|jpg|jpeg|gif)$/i,

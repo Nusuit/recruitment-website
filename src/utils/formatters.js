@@ -10,15 +10,31 @@ export const formatCurrency = (amount, currency = 'USD') => {
   
   // Format date
   export const formatDate = (dateString, options = {}) => {
-    const defaultOptions = { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    const defaultOptions = {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     };
-    
+
     const mergedOptions = { ...defaultOptions, ...options };
-    
-    return new Date(dateString).toLocaleDateString('en-US', mergedOptions);
+
+    let formattedDateString = dateString;
+    // Regex to match ISO 8601 with fractional seconds and capture up to milliseconds
+    // Example: "2025-06-07T22:41:18.576993" -> "2025-06-07T22:41:18.576"
+    const regex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3})\d*/;
+    const match = dateString.match(regex);
+
+    if (match && match[1]) {
+      formattedDateString = match[1];
+    }
+
+    const date = new Date(formattedDateString);
+
+    if (isNaN(date.getTime())) {
+      return "Invalid Date";
+    }
+
+    return date.toLocaleDateString('en-US', mergedOptions);
   };
   
   // Format date range

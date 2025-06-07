@@ -36,80 +36,84 @@ const AdminApplicationDetailPage = () => {
       setLoading(true);
       setError(null);
       try {
+        const response = await recruiterAPI.getApplicationDetailsForAdmin(applicationId);
+        setApplication(response.payload);
+        setRecruiterNote(response.payload?.recruiterNote || '');
+
         // TODO: Replace with actual API call
         // const response = await recruiterAPI.getApplicationDetailsForAdmin(applicationId);
         // setApplication(response.application);
         // setRecruiterNote(response.application?.recruiterNote || '');
 
         // Mock data
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        const mockApp = {
-          id: applicationId,
-          applicantName: `Applicant ${applicationId}`,
-          email: `applicant${applicationId}@example.com`,
-          phone: `0900000${applicationId.slice(-3)}`,
-          jobId: "job1",
-          jobTitle: "Senior Fashion Designer",
-          department: "Design",
-          location: "New York, NY",
-          appliedDate: new Date(
-            Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000
-          ).toISOString(),
-          status:
-            applicationStatuses[
-              Math.floor(Math.random() * applicationStatuses.length)
-            ],
-          resumeUrl: "#view-resume-link", // Placeholder
-          coverLetter:
-            "Passionate and driven fashion enthusiast with 5 years of experience in haute couture and ready-to-wear collections. Eager to contribute innovative designs to MyaCorp.",
-          education: "Master's in Fashion Design, Parsons School of Design",
-          experience:
-            "5 years as Lead Designer at XYZ Couture, 2 years as Junior Designer at ABC Prints",
-          skills: [
-            "Adobe Creative Suite",
-            "Pattern Making",
-            "Trend Forecasting",
-            "Textile Knowledge",
-          ],
-          linkedinProfile: "linkedin.com/in/applicantxyz",
-          portfolioUrl: "portfolio.example.com/applicantxyz",
-          recruiterNote:
-            "Strong portfolio, seems like a good fit for the team culture. Recommended for initial screening.",
-          timeline: [
-            {
-              date: new Date(
-                Date.now() - 5 * 24 * 60 * 60 * 1000
-              ).toISOString(),
-              title: "Application Submitted",
-              description: "Candidate applied for the role.",
-            },
-            {
-              date: new Date(
-                Date.now() - 3 * 24 * 60 * 60 * 1000
-              ).toISOString(),
-              title: "Application Viewed",
-              description: "Recruiter John Smith viewed the application.",
-            },
-          ],
-        };
-        if (mockApp.status === "INTERVIEW_SCHEDULED") {
-          mockApp.interviewDetails = {
-            datetime: new Date(
-              Date.now() + 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            type: "Online Video Call",
-            location: "Google Meet (link will be sent via email)", // Or actual link
-            interviewer: "Jane Doe (Hiring Manager)",
-            notes: "Prepare a 15-min presentation on your recent project.",
-          };
-          mockApp.timeline.push({
-            date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-            title: "Interview Scheduled",
-            description: "First round interview with Jane Doe.",
-          });
-        }
-        setApplication(mockApp);
-        setRecruiterNote(mockApp.recruiterNote || "");
+        // await new Promise((resolve) => setTimeout(resolve, 700));
+        // const mockApp = {
+        //   id: applicationId,
+        //   applicantName: `Applicant ${applicationId}`,
+        //   email: `applicant${applicationId}@example.com`,
+        //   phone: `0900000${applicationId.slice(-3)}`,
+        //   jobId: "job1",
+        //   jobTitle: "Senior Fashion Designer",
+        //   department: "Design",
+        //   location: "New York, NY",
+        //   appliedDate: new Date(
+        //     Date.now() - Math.floor(Math.random() * 10) * 24 * 60 * 60 * 1000
+        //   ).toISOString(),
+        //   status:
+        //     applicationStatuses[
+        //       Math.floor(Math.random() * applicationStatuses.length)
+        //     ],
+        //   resumeUrl: "#view-resume-link", // Placeholder
+        //   coverLetter:
+        //     "Passionate and driven fashion enthusiast with 5 years of experience in haute couture and ready-to-wear collections. Eager to contribute innovative designs to MyaCorp.",
+        //   education: "Master's in Fashion Design, Parsons School of Design",
+        //   experience:
+        //     "5 years as Lead Designer at XYZ Couture, 2 years as Junior Designer at ABC Prints",
+        //   skills: [
+        //     "Adobe Creative Suite",
+        //     "Pattern Making",
+        //     "Trend Forecasting",
+        //     "Textile Knowledge",
+        //   ],
+        //   linkedinProfile: "linkedin.com/in/applicantxyz",
+        //   portfolioUrl: "portfolio.example.com/applicantxyz",
+        //   recruiterNote:
+        //     "Strong portfolio, seems like a good fit for the team culture. Recommended for initial screening.",
+        //   timeline: [
+        //     {
+        //       date: new Date(
+        //         Date.now() - 5 * 24 * 60 * 60 * 1000
+        //       ).toISOString(),
+        //       title: "Application Submitted",
+        //       description: "Candidate applied for the role.",
+        //     },
+        //     {
+        //       date: new Date(
+        //         Date.now() - 3 * 24 * 60 * 60 * 1000
+        //       ).toISOString(),
+        //       title: "Application Viewed",
+        //       description: "Recruiter John Smith viewed the application.",
+        //     },
+        //   ],
+        // };
+        // if (mockApp.status === "INTERVIEW_SCHEDULED") {
+        //   mockApp.interviewDetails = {
+        //     datetime: new Date(
+        //       Date.now() + 5 * 24 * 60 * 60 * 1000
+        //     ).toISOString(),
+        //     type: "Online Video Call",
+        //     location: "Google Meet (link will be sent via email)", // Or actual link
+        //     interviewer: "Jane Doe (Hiring Manager)",
+        //     notes: "Prepare a 15-min presentation on your recent project.",
+        //   };
+        //   mockApp.timeline.push({
+        //     date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+        //     title: "Interview Scheduled",
+        //     description: "First round interview with Jane Doe.",
+        //   });
+        // }
+        // setApplication(mockApp);
+        // setRecruiterNote(mockApp.recruiterNote || "");
       } catch (err) {
         console.error("Error fetching application details:", err);
         setError("Failed to load application details. Please try again.");
@@ -123,23 +127,26 @@ const AdminApplicationDetailPage = () => {
 
   const handleUpdateStatus = async () => {
     if (!application || !newStatus) return;
-    // TODO: API call to update status
-    // await recruiterAPI.updateApplicationStatus(application.id, newStatus);
-    setApplication((prev) => ({ ...prev, status: newStatus }));
-    setShowStatusModal(false);
+    try {
+      await recruiterAPI.updateApplicationStatus(application.id, { status: newStatus });
+      setApplication((prev) => ({ ...prev, status: newStatus }));
+      setShowStatusModal(false);
+    } catch (err) {
+      console.error("Error updating application status:", err);
+      alert("Failed to update status. Please try again.");
+    }
   };
 
   const handleSaveNote = async () => {
     if (!application) return;
     setIsNoteSaving(true);
     try {
-      // TODO: API call to save note
-      // await recruiterAPI.updateApplicationNote(application.id, recruiterNote);
+      await recruiterAPI.updateApplicationNote(application.id, { note: recruiterNote });
       setApplication((prev) => ({ ...prev, recruiterNote })); // Optimistic update
-      alert("Note saved successfully (mock).");
+      alert("Note saved successfully!");
     } catch (err) {
       console.error("Error saving note:", err);
-      alert("Failed to save note.");
+      alert("Failed to save note. Please try again.");
     } finally {
       setIsNoteSaving(false);
     }

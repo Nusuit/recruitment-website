@@ -24,83 +24,11 @@ const JobManagement = () => {
       setLoading(true);
       setError(null);
       try {
-        // const response = await recruiterAPI.getAllJobsManagedByRecruiter(); // Replace with actual API call
-        // setJobs(response.jobs || []);
+        const response = await recruiterAPI.getJobs(); // Using the actual API call
+        setJobs(response.content || []);
 
-        // Mock data for now
-        await new Promise((resolve) => setTimeout(resolve, 700));
-        setJobs([
-          {
-            id: "job1",
-            title: "Senior Fashion Designer",
-            location: "New York, NY",
-            type: "FULL_TIME",
-            status: "ACTIVE",
-            applicationsCount: 35,
-            postedDate: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            deadline: new Date(
-              Date.now() + 28 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: "job2",
-            title: "Retail Store Manager",
-            location: "Paris, FR",
-            type: "FULL_TIME",
-            status: "ACTIVE",
-            applicationsCount: 22,
-            postedDate: new Date(
-              Date.now() - 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            deadline: new Date(
-              Date.now() + 25 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: "job3",
-            title: "Digital Marketing Lead",
-            location: "Remote",
-            type: "CONTRACT",
-            status: "PAUSED",
-            applicationsCount: 58,
-            postedDate: new Date(
-              Date.now() - 10 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            deadline: new Date(
-              Date.now() + 20 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: "job4",
-            title: "Fashion Intern",
-            location: "London, UK",
-            type: "INTERNSHIP",
-            status: "DRAFT",
-            applicationsCount: 5,
-            postedDate: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            deadline: new Date(
-              Date.now() + 60 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-          {
-            id: "job5",
-            title: "Expired Test Job",
-            location: "Milan, IT",
-            type: "FULL_TIME",
-            status: "EXPIRED",
-            applicationsCount: 10,
-            postedDate: new Date(
-              Date.now() - 40 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            deadline: new Date(
-              Date.now() - 10 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-          },
-        ]);
+        // Mock data removed
+
       } catch (err) {
         console.error("Error fetching jobs:", err);
         setError("Failed to load jobs. Please try again.");
@@ -120,8 +48,8 @@ const JobManagement = () => {
       return;
     }
     try {
-      // await recruiterAPI.deleteJob(jobId); // Actual API call
-      setJobs((prevJobs) => prevJobs.filter((job) => job.id !== jobId));
+      await recruiterAPI.deleteJob(jobId); // Actual API call
+      setJobs((prevJobs) => prevJobs.filter((job) => job.jobId !== jobId));
       // Add a success notification if desired
     } catch (err) {
       console.error("Error deleting job:", err);
@@ -131,10 +59,10 @@ const JobManagement = () => {
 
   const handleUpdateJobStatus = async (jobId, newStatus) => {
     try {
-      // await recruiterAPI.updateJobStatus(jobId, newStatus); // Actual API call
+      await recruiterAPI.updateJobStatus(jobId, { status: newStatus }); // Actual API call
       setJobs((prevJobs) =>
         prevJobs.map((job) =>
-          job.id === jobId ? { ...job, status: newStatus } : job
+          job.jobId === jobId ? { ...job, status: newStatus } : job
         )
       );
     } catch (err) {
@@ -198,6 +126,7 @@ const JobManagement = () => {
   const getStatusPillClass = (status) => {
     switch (status) {
       case "ACTIVE":
+      case "OPEN":
         return "bg-green-100 text-green-700";
       case "PAUSED":
         return "bg-yellow-100 text-yellow-700";
@@ -264,6 +193,7 @@ const JobManagement = () => {
           >
             <option value="ALL">All Statuses</option>
             <option value="ACTIVE">Active</option>
+            <option value="OPEN">Open</option>
             <option value="PAUSED">Paused</option>
             <option value="DRAFT">Draft</option>
             <option value="EXPIRED">Expired</option>
@@ -328,82 +258,75 @@ const JobManagement = () => {
                 >
                   Deadline {getSortIcon("deadline")}
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {filteredAndSortedJobs.map((job) => (
-                <tr key={job.id} className="hover:bg-gray-50 transition-colors">
+                <tr
+                  key={job.jobId}
+                  className="hover:bg-gray-50 cursor-pointer"
+                  onClick={() => navigate(`/admin/jobs/${job.jobId}`)}
+                >
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <Link
-                      to={`/admin/jobs/${job.id}`}
-                      className="text-sm font-medium text-blue-600 hover:text-blue-800"
-                    >
+                    <div className="text-sm font-medium text-gray-900">
                       {job.title}
-                    </Link>
-                    <div className="text-xs text-gray-500">
-                      {job.location} - {job.type}
+                    </div>
+                    <div className="text-sm text-gray-500">
+                      {job.location}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusPillClass(
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusPillClass(
                         job.status
                       )}`}
                     >
                       {job.status}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {job.applicationsCount}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {job.applicationQuantity}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {formatDate(job.postedDate)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(job.createdAt)} {/* Posted Date */}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {formatDate(job.deadline)}
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <Link
-                      to={`/admin/applications?jobId=${job.id}`}
-                      className="text-indigo-600 hover:text-indigo-900"
-                      title="View Applications"
-                    >
-                      <FontAwesomeIcon icon="users" />
-                    </Link>
-                    <Link
-                      to={`/admin/jobs/${job.id}/edit`}
-                      className="text-yellow-600 hover:text-yellow-900"
+                  <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click from firing
+                        navigate(`/admin/jobs/${job.jobId}/edit`);
+                      }}
+                      className="text-blue-600 hover:text-blue-900 mr-3"
                       title="Edit Job"
                     >
-                      <FontAwesomeIcon icon="pen" />
-                    </Link>
-                    {job.status === "ACTIVE" && (
-                      <button
-                        onClick={() => handleUpdateJobStatus(job.id, "PAUSED")}
-                        className="text-orange-600 hover:text-orange-900"
-                        title="Pause Job"
-                      >
-                        <FontAwesomeIcon icon="pause-circle" />
-                      </button>
-                    )}
-                    {job.status === "PAUSED" && (
-                      <button
-                        onClick={() => handleUpdateJobStatus(job.id, "ACTIVE")}
-                        className="text-green-600 hover:text-green-900"
-                        title="Activate Job"
-                      >
-                        <FontAwesomeIcon icon="play-circle" />
-                      </button>
-                    )}
+                      <FontAwesomeIcon icon="edit" />
+                    </button>
                     <button
-                      onClick={() => handleDeleteJob(job.id)}
+                      onClick={(e) => {
+                        e.stopPropagation(); // Prevent row click from firing
+                        handleDeleteJob(job.jobId);
+                      }}
                       className="text-red-600 hover:text-red-900"
                       title="Delete Job"
                     >
                       <FontAwesomeIcon icon="trash" />
+                    </button>
+                    {/* Add other actions like View Applicants */}
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/jobs/${job.jobId}/applicants`);
+                      }}
+                      className="text-purple-600 hover:text-purple-900 ml-3"
+                      title="View Applicants"
+                    >
+                      <FontAwesomeIcon icon="users" />
                     </button>
                   </td>
                 </tr>

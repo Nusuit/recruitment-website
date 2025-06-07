@@ -1,16 +1,18 @@
 // src/components/jobs/JobCard.jsx
-import React, { useContext } from "react";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import PropTypes from "prop-types";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { formatRelativeTime } from "../../utils/formatters";
-import { JobsContext } from "../../contexts/JobsContext";
 import { AuthContext } from "../../contexts/AuthContext";
+import { saveJob, unsaveJob } from "../../api/jobs";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
-const JobCard = ({ job, designVersion = "v1" }) => {
-  // Thêm prop designVersion
-  const { toggleSaveJob, isJobSaved } = useContext(JobsContext);
-  const { isAuthenticated, user } = useContext(AuthContext);
+const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
+  const [isSaved, setIsSaved] = useState(job.isSaved || false);
+  const [isSaving, setIsSaving] = useState(false);
+  const { isAuthenticated, user } = React.useContext(AuthContext);
   const navigate = useNavigate();
 
   if (!job) {
@@ -22,27 +24,59 @@ const JobCard = ({ job, designVersion = "v1" }) => {
     title,
     company,
     location,
-    type, // Full-Time, Part-Time
-    salary, // "$2000 - $3000" hoặc "Negotiable"
+    type,
+    salary,
     postedDate,
-    logoUrl = "/assets/images/company-logo-placeholder.png", // Default logo
-    tags, // Mảng các tag như "Marketing", "Sale", "Design", "UI/UX" theo design mới
+    logoUrl = "/assets/images/company-logo-placeholder.png",
+    tags,
   } = job;
 
-  const handleSaveClick = (e) => {
-    e.preventDefault();
+  const handleSaveClick = async (e) => {
     e.stopPropagation();
-    if (!isAuthenticated) {
-      navigate("/login", { state: { from: { pathname: location.pathname } } });
-    } else {
-      toggleSaveJob(id);
+    if (!localStorage.getItem("token")) {
+      toast.info("Please login to save jobs", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+      return;
+    }
+
+    try {
+      setIsSaving(true);
+      if (isSaved) {
+        await unsaveJob(id);
+        toast.success("Job unsaved successfully", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      } else {
+        await saveJob(id);
+        toast.success("Job saved successfully", {
+          position: "top-right",
+          autoClose: 3000,
+        });
+      }
+      setIsSaved(!isSaved);
+      if (onSaveStatusChange) {
+        onSaveStatusChange(id, !isSaved);
+      }
+    } catch (error) {
+      toast.error(error.message || "Failed to update save status", {
+        position: "top-right",
+        autoClose: 3000,
+      });
+    } finally {
+      setIsSaving(false);
     }
   };
 
-  const isSaved = isJobSaved(id);
+  const handleCardClick = () => {
+    navigate(`/jobs/${id}`);
+  };
+
   const canSave = isAuthenticated && user?.role?.toLowerCase() === "candidate";
 
-  // Design V2 (theo ảnh "image_1a6fb3.png" - phần "Lastest job open")
+  // Design V2
   if (designVersion === "v2") {
     const displayTags = Array.isArray(tags)
       ? tags
@@ -57,7 +91,6 @@ const JobCard = ({ job, designVersion = "v1" }) => {
       >
         <div className="flex items-center mb-4">
           <div className="flex-shrink-0 w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center border border-yellow-200">
-            {/* Design dùng icon túi tiền màu vàng, bạn có thể thay thế logoUrl bằng icon nếu muốn */}
             {logoUrl && !logoUrl.includes("placeholder") ? (
               <img
                 src={logoUrl}
@@ -80,16 +113,19 @@ const JobCard = ({ job, designVersion = "v1" }) => {
           {canSave && (
             <button
               onClick={handleSaveClick}
+              disabled={isSaving}
               className={`p-2 rounded-full transition-colors duration-200 text-lg ml-auto
                   ${
                     isSaved
                       ? "text-teal-500 hover:bg-teal-50"
                       : "text-gray-400 hover:text-teal-500 hover:bg-gray-100"
-                  }`}
+                  }
+                  ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
               aria-label={isSaved ? "Unsave Job" : "Save Job"}
             >
               <FontAwesomeIcon
                 icon={isSaved ? ["fas", "bookmark"] : ["far", "bookmark"]}
+                spin={isSaving}
               />
             </button>
           )}
@@ -114,22 +150,18 @@ const JobCard = ({ job, designVersion = "v1" }) => {
                     ? "bg-blue-100 text-blue-700"
                     : tag.toLowerCase() === "ui/ux"
                     ? "bg-purple-100 text-purple-700"
-                    : "bg-gray-100 text-gray-600" // Default tag style
+                    : "bg-gray-100 text-gray-600"
                 }`}
             >
               {tag}
             </span>
           ))}
         </div>
-        {/* Design không hiển thị ngày đăng, nhưng bạn có thể thêm nếu muốn */}
-        {/* <div className="text-xs text-gray-400 text-right mt-3">
-          Posted {formatRelativeTime(postedDate)}
-        </div> */}
       </Link>
     );
   }
 
-  // Design V1 (Mặc định - code cũ của bạn)
+  // Design V1
   return (
     <Link
       to={`/jobs/${id}`}
@@ -151,15 +183,17 @@ const JobCard = ({ job, designVersion = "v1" }) => {
             {canSave && (
               <button
                 onClick={handleSaveClick}
+                disabled={isSaving}
                 className={`p-2 rounded-full transition-colors duration-200 text-xl ${
                   isSaved
                     ? "text-blue-600 hover:bg-blue-100"
                     : "text-gray-400 hover:text-blue-600 hover:bg-gray-100"
-                }`}
+                } ${isSaving ? "opacity-50 cursor-not-allowed" : ""}`}
                 aria-label={isSaved ? "Unsave Job" : "Save Job"}
               >
                 <FontAwesomeIcon
                   icon={isSaved ? ["fas", "bookmark"] : ["far", "bookmark"]}
+                  spin={isSaving}
                 />
               </button>
             )}
@@ -201,9 +235,16 @@ JobCard.propTypes = {
     tags: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.string),
       PropTypes.string,
-    ]), // Thêm tags
+    ]),
+    isSaved: PropTypes.bool,
   }).isRequired,
-  designVersion: PropTypes.oneOf(["v1", "v2"]), // Thêm prop cho version
+  designVersion: PropTypes.oneOf(["v1", "v2"]),
+  onSaveStatusChange: PropTypes.func,
+};
+
+JobCard.defaultProps = {
+  designVersion: "v1",
+  onSaveStatusChange: () => {},
 };
 
 export default JobCard;

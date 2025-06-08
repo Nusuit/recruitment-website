@@ -5,58 +5,64 @@ import { AuthContext } from "../../contexts/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import Header from "../common/Header"; // Admin có thể có Header riêng hoặc dùng chung
 
-// Mảng các mục menu cho Admin
+// Array of menu items for Admin
 const adminMenuItems = [
-  { 
-    label: "Tổng quan", 
-    path: "/admin/dashboard", 
-    icon: "gauge-high", 
-    roles: ["admin", "recruiter"] 
+  {
+    label: "Overview",
+    path: "/admin/dashboard",
+    icon: "gauge-high",
+    roles: ["admin", "recruiter"]
   },
-  { 
-    label: "Quản lý việc làm", 
-    path: "/admin/jobs", 
-    icon: "briefcase", 
-    roles: ["admin", "recruiter"] 
+  {
+    label: "Job Management",
+    path: "/admin/jobs",
+    icon: "briefcase",
+    roles: ["admin", "recruiter"]
   },
-  { 
-    label: "Quản lý ứng viên", 
-    path: "/admin/applicants", 
-    icon: "users", 
-    roles: ["admin", "recruiter"] 
+  {
+    label: "Applicant Management",
+    path: "/admin/applicants",
+    icon: "users",
+    roles: ["admin", "recruiter"]
   },
-  { 
-    label: "Hồ sơ công ty", 
-    path: "/admin/company-profile", 
-    icon: "building", 
-    roles: ["admin", "recruiter"] 
+  {
+    label: "Interview Management",
+    path: "/admin/interviews",
+    icon: "calendar-check",
+    roles: ["admin", "recruiter"]
   },
-  { 
-    label: "Hồ sơ cá nhân", 
-    path: "/admin/profile", 
-    icon: "user-circle", 
-    roles: ["admin", "recruiter"] 
+  {
+    label: "Company Profile",
+    path: "/admin/company-profile",
+    icon: "building",
+    roles: ["admin", "recruiter"]
+  },
+  {
+    label: "Personal Profile",
+    path: "/admin/profile",
+    icon: "user-circle",
+    roles: ["admin", "recruiter"]
   },
   // Analytics section
   {
-    label: "Phân tích",
+    label: "Analytics",
     icon: "chart-line",
     roles: ["admin", "recruiter"],
     subItems: [
       {
-        label: "Phân tích việc làm",
+        label: "Job Analytics",
         path: "/admin/analytics/jobs",
         icon: "chart-line",
         roles: ["admin", "recruiter"]
       },
       {
-        label: "Phân tích ứng viên",
+        label: "Applicant Analytics",
         path: "/admin/analytics/applicants",
         icon: "chart-bar",
         roles: ["admin", "recruiter"]
       },
       {
-        label: "Phân tích tuyển dụng",
+        label: "Recruitment Analytics",
         path: "/admin/analytics/recruitment",
         icon: "magnifying-glass-chart",
         roles: ["admin", "recruiter"]
@@ -64,29 +70,29 @@ const adminMenuItems = [
     ]
   },
   // Admin-only section
-  { 
-    label: "Báo cáo", 
-    path: "/admin/reports", 
-    icon: "chart-pie", 
-    roles: ["admin"] 
+  {
+    label: "Reports",
+    path: "/admin/reports",
+    icon: "chart-pie",
+    roles: ["admin"]
   },
-  { 
-    label: "Cài đặt", 
-    path: "/admin/settings", 
-    icon: "cog", 
-    roles: ["admin"] 
+  {
+    label: "Settings",
+    path: "/admin/settings",
+    icon: "cog",
+    roles: ["admin"]
   },
-  { 
-    label: "Quản lý người dùng", 
-    path: "/admin/users", 
-    icon: "user-shield", 
-    roles: ["admin"] 
+  {
+    label: "User Management",
+    path: "/admin/users",
+    icon: "user-shield",
+    roles: ["admin"]
   },
-  { 
-    label: "Quản lý vai trò", 
-    path: "/admin/roles", 
-    icon: "tasks", 
-    roles: ["admin"] 
+  {
+    label: "Role Management",
+    path: "/admin/roles",
+    icon: "tasks",
+    roles: ["admin"]
   }
 ];
 
@@ -194,7 +200,7 @@ const AdminLayout = () => {
                 className="flex items-center gap-2"
               >
                 <img
-                  src="/assets/images/logo.png" // Đảm bảo đường dẫn đúng
+                  src="/assets/images/logo.png" // Ensure correct path
                   alt="MyaCorp Logo"
                   className="h-8 w-auto filter invert"
                 />

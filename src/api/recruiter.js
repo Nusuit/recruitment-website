@@ -5,152 +5,143 @@ export const recruiterAPI = {
   // Job Management
   getJobs: async () => { // Get jobs posted by this recruiter
     try {
-      const response = await axiosInstance.get('/recruiter/jobs');
-      return response.data.payload; // Assuming jobs are in payload
+      const response = await axiosInstance.get('/api/recruiter/jobs');
+      console.log("🔍 [recruiterAPI] Raw axios response:", response);
+      console.log("🔍 [recruiterAPI] response.data:", response.data);
+      console.log("🔍 [recruiterAPI] response.data.payload:", response.data.payload);
+      
+      // Return the full response.data so JobManagement can handle different structures
+      return response.data;
     } catch (error) {
+      console.error("🚨 [recruiterAPI] getJobs error:", error);
       throw error.response?.data || error;
     }
   },
 
   getJobDetail: async (jobId) => { // Get detail of a specific job
     try {
-      const response = await axiosInstance.get(`/recruiter/jobs/${jobId}`);
+      const response = await axiosInstance.get(`/api/recruiter/jobs/${jobId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  createJob: async (jobData) => { // Create new job
+  createJob: async (jobData) => { // Create a new job posting
     try {
-      const response = await axiosInstance.post('/recruiter/jobs', jobData);
+      const response = await axiosInstance.post('/api/recruiter/jobs', jobData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  updateJob: async (jobId, jobData) => { // Update existing job
+  updateJob: async (jobId, jobData) => { // Update an existing job
     try {
-      const response = await axiosInstance.put(`/recruiter/jobs/${jobId}`, jobData);
+      const response = await axiosInstance.put(`/api/recruiter/jobs/${jobId}`, jobData);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  deleteJob: async (jobId) => { // Delete a job
+  deleteJob: async (jobId) => { // Delete a job posting
     try {
-      const response = await axiosInstance.delete(`/recruiter/jobs/${jobId}`);
+      const response = await axiosInstance.delete(`/api/recruiter/jobs/${jobId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  cancelJob: async (jobId, reason) => { // Cancel a job (new endpoint)
+  // Application Management
+  getAllApplications: async (params = {}) => { // Get all applications for this recruiter
     try {
-      const response = await axiosInstance.patch(`/recruiter/jobs/${jobId}/cancel`, { reason });
+      const queryString = objectToQueryString(params);
+      const response = await axiosInstance.get(`/api/recruiter/applications${queryString}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  // Application Management (now under recruiter)
-  getAllApplications: async (params) => { // Get all applications (for all jobs or filtered)
+  getApplicationDetail: async (applicationId) => { // Get detail of a specific application
     try {
-      const response = await axiosInstance.get('/recruiter/applications', { params });
+      const response = await axiosInstance.get(`/api/recruiter/applications/${applicationId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  getApplicationDetailsForAdmin: async (applicationId) => { // Get detail of a specific application
+  updateApplicationStatus: async (applicationId, status, notes = '') => { // Update application status
     try {
-      const response = await axiosInstance.get(`/recruiter/applications/${applicationId}`);
-      return response.data.payload; // Assuming applications are in payload
+      const response = await axiosInstance.put(`/api/recruiter/applications/${applicationId}/status`, {
+        status,
+        notes
+      });
+      return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  updateApplicationStatus: async (applicationId, status) => { // Update application status
+  // Interview Management
+  getInterviews: async () => {
     try {
-      const response = await axiosInstance.patch(
-        `/recruiter/applications/${applicationId}/status`,
-        status
-      ); // status is already an object {status: newStatus}
-      return response.data.payload; // Assuming updated application or success message in payload
+      const response = await axiosInstance.get('/api/recruiter/interviews');
+      console.log('🔍 [recruiterAPI] Raw axios response:', response);
+      console.log('🔍 [recruiterAPI] response.data:', response.data);
+      console.log('🔍 [recruiterAPI] response.data.payload:', response.data.payload);
+      return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  addApplicationNote: async (applicationId, note) => { // Add/update recruiter note
+  updateInterviewStatus: async (jobId, stageId, scheduleId, interviewId, accept) => {
     try {
-      const response = await axiosInstance.patch(
-        `/recruiter/applications/${applicationId}/note`,
-        note
+      const url = scheduleId 
+        ? `/api/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}/interviews/${interviewId}?accept=${accept}`
+        : `/api/recruiter/jobs/${jobId}/stages/${stageId}/interviews/${interviewId}?accept=${accept}`;
+      
+      const response = await axiosInstance.post(url);
+      return response.data;
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  scheduleInterview: async (jobId, stageId, scheduleData) => {
+    try {
+      const response = await axiosInstance.post(
+        `/api/recruiter/jobs/${jobId}/stages/${stageId}/schedules`,
+        scheduleData
       );
-      return response.data.payload; // Assuming updated application or success message in payload
+      return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  // Skill & Process Management (newly grouped under recruiter)
-  getSkills: async (params) => { // Get list of skills
+  updateInterview: async (jobId, stageId, scheduleId, scheduleData) => {
     try {
-      const response = await axiosInstance.get('/recruiter/skills', { params });
-      return response.data.payload; // Assuming skills are in payload
+      const response = await axiosInstance.put(
+        `/api/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}`,
+        scheduleData
+      );
+      return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  getRecruitmentProcesses: async (params) => { // Get list of recruitment processes
+  getInterviewsForSchedule: async (jobId, stageId, scheduleId) => {
     try {
-      const response = await axiosInstance.get('/recruiter/processes', { params });
-      return response.data.payload; // Assuming processes are in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Schedule Management (newly grouped under recruiter)
-  createSchedule: async (jobId, stageId, scheduleData) => {
-    try {
-      const response = await axiosInstance.post(`/recruiter/jobs/${jobId}/stages/${stageId}/schedules`, scheduleData);
-      return response.data.payload; // Assuming created schedule in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getSchedules: async (jobId, stageId, params) => {
-    try {
-      const response = await axiosInstance.get(`/recruiter/jobs/${jobId}/stages/${stageId}/schedules`, { params });
-      return response.data.payload; // Assuming schedules are in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  updateSchedule: async (jobId, stageId, scheduleId, scheduleData) => {
-    try {
-      const response = await axiosInstance.put(`/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}`, scheduleData);
-      return response.data.payload; // Assuming updated schedule in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getUnassignedInterviews: async (jobId, stageId) => {
-    try {
-      const response = await axiosInstance.get(`/recruiter/jobs/${jobId}/stages/${stageId}/schedules/interviews/unassigned`);
-      return response.data.payload; // Assuming unassigned interviews in payload
+      const response = await axiosInstance.get(
+        `/api/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}/interviews`
+      );
+      return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -158,329 +149,25 @@ export const recruiterAPI = {
 
   assignInterviewToSchedule: async (jobId, stageId, scheduleId, interviewId) => {
     try {
-      const response = await axiosInstance.post(`/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}/interviews/${interviewId}/assign`);
-      return response.data.payload; // Assuming success in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  acceptRejectInterviewResult: async (jobId, stageId, scheduleId, interviewId, accept) => {
-    try {
-      const response = await axiosInstance.post(`/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}/interviews/${interviewId}?accept=${accept}`);
-      return response.data.payload; // Assuming success in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // User & Role Management (now under recruiter)
-  getUsersList: async (params) => { // Get all users (admin function)
-    try {
-      const response = await axiosInstance.get('/recruiter/users', { params });
-      return response.data.payload; // Assuming users are in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  updateUserStatus: async (userId, status) => { // Update user status (admin function)
-    try {
-      const response = await axiosInstance.patch(`/recruiter/users/${userId}/status`, status);
-      return response.data.payload; // Assuming updated user or success message in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  updateUserRole: async (userId, role) => { // Update user role (admin function)
-    try {
-      const response = await axiosInstance.patch(`/recruiter/users/${userId}/role`, role);
-      return response.data.payload; // Assuming updated user or success message in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getRoles: async () => { // Get all roles (admin function)
-    try {
-      const response = await axiosInstance.get('/recruiter/roles');
-      return response.data.payload; // Assuming roles are in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  createRole: async (roleData) => { // Create a new role (admin function)
-    try {
-      const response = await axiosInstance.post('/recruiter/roles', roleData);
-      return response.data.payload; // Assuming created role in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  updateRole: async (roleId, roleData) => { // Update a role (admin function)
-    try {
-      const response = await axiosInstance.put(`/recruiter/roles/${roleId}`, roleData);
-      return response.data.payload; // Assuming updated role in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  deleteRole: async (roleId) => { // Delete a role (admin function)
-    try {
-      const response = await axiosInstance.delete(`/recruiter/roles/${roleId}`);
-      return response.data.payload; // Assuming success message in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Analytics & Reports (now under recruiter)
-  getJobAnalytics: async (params) => {
-    try {
-      const response = await axiosInstance.get('/recruiter/analytics/jobs', { params });
-      return response.data.payload; // Assuming job analytics data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getApplicantAnalyticsData: async (params) => {
-    try {
-      const response = await axiosInstance.get('/recruiter/analytics/applicants', { params });
-      return response.data.payload; // Assuming applicant analytics data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getOverallRecruitmentAnalytics: async (params) => {
-    try {
-      const response = await axiosInstance.get('/recruiter/analytics/recruitment-overall', { params });
-      return response.data.payload; // Assuming overall recruitment analytics data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getInterviewFunnelAnalytics: async (params) => {
-    try {
-      const response = await axiosInstance.get('/recruiter/analytics/interview-funnel', { params });
-      return response.data.payload; // Assuming interview funnel analytics data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Company Profile Management (now under recruiter)
-  getCompanyProfileDetails: async () => {
-    try {
-      const response = await axiosInstance.get('/recruiter/company-profile');
-      return response.data.payload; // Assuming company profile data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  updateCompanyProfileDetails: async (profileData) => {
-    try {
-      const response = await axiosInstance.put('/recruiter/company-profile', profileData);
-      return response.data.payload; // Assuming updated company profile data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  uploadCompanyLogoFile: async (formData) => {
-    try {
-      const response = await axiosInstance.post('/recruiter/company-profile/upload-logo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data.payload; // Assuming uploaded logo URL in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  getSystemSettings: async () => {
-    try {
-      const response = await axiosInstance.get('/recruiter/settings');
-      return response.data.payload; // Assuming settings data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  updateSystemSettings: async (settingsData) => {
-    try {
-      const response = await axiosInstance.put('/recruiter/settings', settingsData);
-      return response.data.payload; // Assuming updated settings data in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // General
-  getNotifications: async (params) => {
-    try {
-      const response = await axiosInstance.get('/recruiter/notifications', { params });
-      return response.data.payload; // Assuming notifications in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  markNotificationAsRead: async (notificationId) => {
-    try {
-      const response = await axiosInstance.patch(`/recruiter/notifications/${notificationId}/read`);
-      return response.data.payload; // Assuming success message in payload
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Admin/Recruiter's own profile (now under recruiter)
-  getAdminProfile: async () => { // Renamed from getRecruiterProfile
-    try {
-      const response = await axiosInstance.get('/recruiter/profile');
+      const response = await axiosInstance.post(
+        `/api/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}/interviews/${interviewId}/assign`
+      );
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
     }
   },
 
-  updateAdminProfile: async (profileData) => { // Renamed from updateRecruiterProfile
+  acceptOrRejectInterview: async (jobId, stageId, scheduleId, interviewId, accept) => {
     try {
-      const response = await axiosInstance.patch('/recruiter/profile/info', profileData);
+      const response = await axiosInstance.post(
+        `/api/recruiter/jobs/${jobId}/stages/${stageId}/schedules/${scheduleId}/interviews/${interviewId}`,
+        null,
+        { params: { accept } }
+      );
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
-    }
-  },
-
-  uploadAdminAvatar: async (file) => { // Renamed from uploadRecruiterAvatar
-    try {
-      const formData = new FormData();
-      formData.append('avatar', file);
-      
-      const response = await axiosInstance.patch('/recruiter/profile/avatar', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (error) {
-      throw error.response?.data || error;
-    }
-  },
-
-  // Get recruiter profile
-  getRecruiterProfile: async () => {
-    try {
-      const response = await axiosInstance.get('/api/recruiter/profile');
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] getRecruiterProfile error:", error);
-      throw error;
-    }
-  },
-
-  // Update recruiter profile
-  updateRecruiterProfile: async (profileData) => {
-    try {
-      const response = await axiosInstance.put('/api/recruiter/profile', profileData);
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] updateRecruiterProfile error:", error);
-      throw error;
-    }
-  },
-
-  // Get company profile
-  getCompanyProfile: async () => {
-    try {
-      const response = await axiosInstance.get('/api/recruiter/company');
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] getCompanyProfile error:", error);
-      throw error;
-    }
-  },
-
-  // Update company profile
-  updateCompanyProfile: async (companyData) => {
-    try {
-      const response = await axiosInstance.put('/api/recruiter/company', companyData);
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] updateCompanyProfile error:", error);
-      throw error;
-    }
-  },
-
-  // Upload company logo
-  uploadCompanyLogo: async (file) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', file);
-      const response = await axiosInstance.post('/api/recruiter/company/logo', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] uploadCompanyLogo error:", error);
-      throw error;
-    }
-  },
-
-  // Get recruitment team members
-  getTeamMembers: async () => {
-    try {
-      const response = await axiosInstance.get('/api/recruiter/team');
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] getTeamMembers error:", error);
-      throw error;
-    }
-  },
-
-  // Add team member
-  addTeamMember: async (memberData) => {
-    try {
-      const response = await axiosInstance.post('/api/recruiter/team', memberData);
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] addTeamMember error:", error);
-      throw error;
-    }
-  },
-
-  // Update team member
-  updateTeamMember: async (memberId, memberData) => {
-    try {
-      const response = await axiosInstance.put(`/api/recruiter/team/${memberId}`, memberData);
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] updateTeamMember error:", error);
-      throw error;
-    }
-  },
-
-  // Remove team member
-  removeTeamMember: async (memberId) => {
-    try {
-      const response = await axiosInstance.delete(`/api/recruiter/team/${memberId}`);
-      return response.data;
-    } catch (error) {
-      console.error("[recruiterAPI] removeTeamMember error:", error);
-      throw error;
     }
   },
 
@@ -488,7 +175,91 @@ export const recruiterAPI = {
   getRecruitmentStats: async (params = {}) => {
     try {
       const queryString = objectToQueryString(params);
-      const response = await axiosInstance.get(`/api/recruiter/stats?${queryString}`);
+      const response = await axiosInstance.get(`/api/recruiter/stats${queryString}`);
+      return response.data;
+    } catch (error) {
+      console.error("[recruiterAPI] getRecruitmentStats error:", error);
+      throw error;
+    }
+  },
+
+  // Dashboard-specific functions
+  getDashboardStats: async () => {
+    try {
+      // Try to get stats from the existing endpoint first
+      try {
+        const response = await axiosInstance.get('/api/recruiter/dashboard/stats');
+        return response.data;
+      } catch (dashboardError) {
+        // If dashboard endpoint doesn't exist, aggregate from available endpoints
+        console.log("[recruiterAPI] Dashboard endpoint not found, aggregating stats...");
+        
+        const [jobsResponse, applicationsResponse] = await Promise.allSettled([
+          axiosInstance.get('/api/recruiter/jobs'),
+          axiosInstance.get('/api/recruiter/applications')
+        ]);
+
+        const jobs = jobsResponse.status === 'fulfilled' ? 
+          (jobsResponse.value.data.content || []) : [];
+        const applications = applicationsResponse.status === 'fulfilled' ? 
+          (applicationsResponse.value.data.content || []) : [];
+
+        // Calculate basic stats
+        const activeJobs = jobs.filter(job => job.status === 'ACTIVE').length;
+        const todayApplications = applications.filter(app => {
+          const appDate = new Date(app.appliedDate || app.createdDate);
+          const today = new Date();
+          return appDate.toDateString() === today.toDateString();
+        }).length;
+
+        return {
+          success: true,
+          payload: {
+            activeJobs,
+            todayApplications,
+            totalApplications: applications.length,
+            totalJobs: jobs.length
+          }
+        };
+      }
+    } catch (error) {
+      console.error("[recruiterAPI] getDashboardStats error:", error);
+      throw error;
+    }
+  },
+
+  getRecentApplications: async (params = { limit: 5 }) => {
+    try {
+      const response = await axiosInstance.get('/api/recruiter/applications', { params });
+      const applications = response.data.content || [];
+      
+      // Sort by application date and limit
+      const recentApplications = applications
+        .sort((a, b) => new Date(b.appliedDate || b.createdDate) - new Date(a.appliedDate || a.createdDate))
+        .slice(0, params.limit || 5);
+
+      return {
+        success: true,
+        payload: {
+          content: recentApplications
+        }
+      };
+    } catch (error) {
+      console.error("[recruiterAPI] getRecentApplications error:", error);
+      return {
+        success: true,
+        payload: {
+          content: []
+        }
+      };
+    }
+  },
+
+  // Continue with existing getRecruitmentStats
+  getExistingRecruitmentStats: async (params = {}) => {
+    try {
+      const queryString = objectToQueryString(params);
+      const response = await axiosInstance.get(`/api/recruiter/stats${queryString}`);
       return response.data;
     } catch (error) {
       console.error("[recruiterAPI] getRecruitmentStats error:", error);
@@ -500,11 +271,62 @@ export const recruiterAPI = {
   getRecruitmentPipeline: async (params = {}) => {
     try {
       const queryString = objectToQueryString(params);
-      const response = await axiosInstance.get(`/api/recruiter/pipeline?${queryString}`);
+      const response = await axiosInstance.get(`/api/recruiter/pipeline${queryString}`);
       return response.data;
     } catch (error) {
       console.error("[recruiterAPI] getRecruitmentPipeline error:", error);
       throw error;
+    }
+  },
+
+  // Get stage information for an interview
+  getInterviewStage: async (jobId, interviewId) => {
+    try {
+      // Since stage info is included in interview data, we'll use the interviews endpoint
+      const response = await axiosInstance.get('/api/recruiter/interviews');
+      const interviews = response.data.payload.content;
+      const interview = interviews.find(i => i.interviewId === interviewId);
+      
+      if (!interview) {
+        throw new Error('Interview not found');
+      }
+      
+      return {
+        success: true,
+        payload: {
+          id: interview.stageId,
+          name: interview.stageName
+        }
+      };
+    } catch (error) {
+      throw error.response?.data || error;
+    }
+  },
+
+  // Get schedule information for an interview
+  getInterviewSchedule: async (jobId, interviewId) => {
+    try {
+      // Since schedule info is included in interview data, we'll use the interviews endpoint
+      const response = await axiosInstance.get('/api/recruiter/interviews');
+      const interviews = response.data.payload.content;
+      const interview = interviews.find(i => i.interviewId === interviewId);
+      
+      if (!interview) {
+        throw new Error('Interview not found');
+      }
+      
+      return {
+        success: true,
+        payload: {
+          id: interview.scheduleId,
+          name: interview.scheduleName,
+          startTime: interview.scheduleStartTime,
+          location: interview.scheduleLocation,
+          interviewerName: interview.interviewerName
+        }
+      };
+    } catch (error) {
+      throw error.response?.data || error;
     }
   },
 };

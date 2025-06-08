@@ -7,6 +7,7 @@ import React, {
   useContext,
 } from "react";
 import { jobAPI, applicantAPI } from "../api";
+import { recruiterAPI } from "../api/recruiter";
 import { AuthContext } from "./AuthContext";
 
 export const JobsContext = createContext();
@@ -14,82 +15,151 @@ export const JobsContext = createContext();
 export const JobsProvider = ({ children }) => {
   const { isAuthenticated, user } = useContext(AuthContext);
 
-  const [jobs, setJobs] = useState([]); // All public/searchable jobs
+  const [jobs, setJobs] = useState([]);
   const [savedJobIds, setSavedJobIds] = useState([]);
   const [applications, setApplications] = useState([]);
 
-  const [loading, setLoading] = useState(true); // General loading for initial data
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [operationLoading, setOperationLoading] = useState(false); // For specific operations like save/apply
+  const [operationLoading, setOperationLoading] = useState(false);
 
-  // Fetch all public jobs
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalElements, setTotalElements] = useState(0);
+
+  // Keep track of current filters
+  const [currentFilters, setCurrentFilters] = useState({
+    page: 0,
+    size: 10,
+    sort: 'createdAt,desc'
+  });
+
   const fetchAllJobs = useCallback(async (filters = {}) => {
     setLoading(true);
     setError(null);
     try {
-      const response = await jobAPI.getJobs(filters); // Pass filters to API
-      if (response.success && Array.isArray(response.jobs)) { // API trả về response.jobs
-        setJobs(response.jobs);
+      let response;
+      
+      // Use different API based on user role
+      if (user?.role?.toLowerCase() === 'recruiter') {
+        console.log("🔧 [JobsContext] Fetching jobs for recruiter using recruiterAPI");
+        response = await recruiterAPI.getJobs(filters);
       } else {
-        throw new Error(response.error || "Failed to fetch jobs");
+        // For applicant/guest, use public jobs API
+        console.log("🔧 [JobsContext] Fetching public jobs for guest/applicant using jobAPI");
+        response = await jobAPI.getJobs(filters);
       }
-    } catch (err) {
-      console.error("Error fetching all jobs:", err);
-      setError(err.message || "Could not load job listings.");
+      
+      // Handle API response structure
+      if (response && response.success && response.payload) {
+        if (Array.isArray(response.payload.content)) {
+          // Filter out non-active jobs for non-recruiters
+          const jobsList = user?.role?.toLowerCase() === 'recruiter' 
+            ? response.payload.content
+            : response.payload.content.filter(job => job.status === "OPEN" || job.status === "ACTIVE");
+
+          setJobs(jobsList);
+          setTotalPages(response.payload.totalPages);
+          setTotalElements(response.payload.totalElements);
+          setCurrentFilters(filters);
+        } else if (Array.isArray(response.payload)) {
+          const jobsList = user?.role?.toLowerCase() === 'recruiter'
+            ? response.payload
+            : response.payload.filter(job => job.status === "OPEN" || job.status === "ACTIVE");
+
+          setJobs(jobsList);
+          setTotalPages(1);
+          setTotalElements(jobsList.length);
+          setCurrentFilters(filters);
+        } else {
+          console.log("🔧 [JobsContext] API returned unexpected format");
+          setJobs([]);
+          setTotalPages(1);
+          setTotalElements(0);
+        }
+      } else {
+        console.log("🔧 [JobsContext] API error:", response);
+        setJobs([]);
+        setTotalPages(1);
+        setTotalElements(0);
+      }
+    } catch (error) {
+      console.error("Error fetching all jobs:", error);
+      setError(error);
       setJobs([]);
+      setTotalPages(1);
+      setTotalElements(0);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
+  // Fetch jobs on mount and when user changes
   useEffect(() => {
-    fetchAllJobs(); // Initial fetch without filters
+    fetchAllJobs(currentFilters);
   }, [fetchAllJobs]);
 
-  // Fetch user-specific data (saved jobs, applications)
+  // Check for new jobs less frequently (every 30 seconds)
+  useEffect(() => {
+    const checkForNewJobs = () => {
+      const newJobFlag = sessionStorage.getItem('newPublicJobAvailable');
+      if (newJobFlag === 'true') {
+        console.log("🔔 [JobsContext] New public job available, refreshing...");
+        sessionStorage.removeItem('newPublicJobAvailable');
+        fetchAllJobs(currentFilters);
+      }
+    };
+
+    const interval = setInterval(() => {
+      if (!document.hidden) {
+        checkForNewJobs();
+      }
+    }, 30000); // Check every 30 seconds
+
+    return () => clearInterval(interval);
+  }, [fetchAllJobs, currentFilters]);
+
   const fetchUserSpecificData = useCallback(async () => {
-    if (isAuthenticated && user && user.role?.toLowerCase() === 'applicant') { // Chỉ fetch nếu là applicant    setOperationLoading(true);
+    if (isAuthenticated && user && user.role?.toLowerCase() === 'applicant') {
+      setOperationLoading(true);
       setError(null);
       try {
+        // Fetch saved jobs and applications
         const [savedJobsResponse, appsResponse] = await Promise.all([
-          applicantAPI.getMySavedJobs(), // Gọi applicantAPI
-          applicantAPI.getApplications(), // Using getApplications instead of getMyApplications
+          applicantAPI.getMySavedJobs(),
+          applicantAPI.getApplications(),
         ]);
 
-        if (
-          savedJobsResponse.success &&
-          Array.isArray(savedJobsResponse.data) // Backend trả về data trong payload
-        ) {
-          setSavedJobIds(
-            savedJobsResponse.data.map((job) => job.id.toString())
-          );
-        } else {
-          console.warn(
-            "Failed to fetch saved jobs or no saved jobs found:",
-            savedJobsResponse.error
-          );
-          setSavedJobIds([]);
+        // Handle saved jobs
+        let savedJobs = [];
+        if (savedJobsResponse?.success) {
+          if (Array.isArray(savedJobsResponse.payload)) {
+            savedJobs = savedJobsResponse.payload;
+          } else if (savedJobsResponse.payload?.content) {
+            savedJobs = savedJobsResponse.payload.content;
+          }
         }
+        setSavedJobIds(savedJobs.map(job => job?.id?.toString() || '').filter(Boolean));
 
-        if (appsResponse.success && Array.isArray(appsResponse.data)) { // Backend trả về data trong payload
-          setApplications(appsResponse.data);
-        } else {
-          console.warn(
-            "Failed to fetch applications or no applications found:",
-            appsResponse.error
-          );
-          setApplications([]);
+        // Handle applications
+        let applications = [];
+        if (appsResponse?.success) {
+          if (Array.isArray(appsResponse.payload)) {
+            applications = appsResponse.payload;
+          } else if (appsResponse.payload?.content) {
+            applications = appsResponse.payload.content;
+          }
         }
+        setApplications(applications);
+
       } catch (err) {
         console.error("Error fetching user-specific job data:", err);
-        setError(
-          err.message || "Could not load your saved jobs or applications."
-        );
+        setError(err.message || "Could not load your saved jobs or applications.");
+        setSavedJobIds([]);
+        setApplications([]);
       } finally {
         setOperationLoading(false);
       }
     } else {
-      // Clear data if not authenticated or not an applicant
       setSavedJobIds([]);
       setApplications([]);
     }
@@ -101,19 +171,28 @@ export const JobsProvider = ({ children }) => {
 
   const getJobById = useCallback(
     async (jobId) => {
+      // First try to find the job in the local state
       const localJob = jobs.find(
-        (job) => job && job.id && job.id.toString() === jobId.toString() // Thêm kiểm tra an toàn
+        (job) => job && (job.id?.toString() === jobId?.toString() || job.jobId?.toString() === jobId?.toString())
       );
-      if (localJob) return localJob;
+      if (localJob) {
+        console.log("🔍 [JobsContext] Found job in local state:", localJob);
+        return localJob;
+      }
 
+      // If not found locally, fetch from API
       setOperationLoading(true);
       try {
+        console.log("🔍 [JobsContext] Fetching job from API:", jobId);
         const response = await jobAPI.getJobById(jobId);
-        if (response.success && response.job) { // API trả về response.job
-          return response.job;
+        
+        if (response && response.success && response.payload) {
+          console.log("🔍 [JobsContext] API response:", response);
+          return response.payload;
         } else {
+          console.error("🔍 [JobsContext] Invalid API response:", response);
           throw new Error(
-            response.error || `Job with ID ${jobId} not found via API.`
+            response?.message || `Job with ID ${jobId} not found via API.`
           );
         }
       } catch (err) {
@@ -138,24 +217,24 @@ export const JobsProvider = ({ children }) => {
       try {
         let response;
         if (currentlySaved) {
-          response = await applicantAPI.unsaveJob(jobId); // Gọi applicantAPI
+          response = await applicantAPI.unsaveJob(jobId);
         } else {
-          response = await applicantAPI.saveJob(jobId); // Gọi applicantAPI
+          response = await applicantAPI.saveJob(jobId);
         }
 
-        if (response.success) {
+        if (response) { 
           setSavedJobIds((prevIds) =>
             currentlySaved
               ? prevIds.filter((id) => id !== jobId.toString())
               : [...prevIds, jobId.toString()]
           );
+          return { success: true, isSaved: !currentlySaved };
         } else {
           throw new Error(
-            response.error ||
+            response?.message ||
               `Failed to ${currentlySaved ? "unsave" : "save"} job.`
           );
         }
-        return { success: true, isSaved: !currentlySaved };
       } catch (err) {
         console.error("Error toggling save job:", err);
         alert(err.message);
@@ -175,7 +254,6 @@ export const JobsProvider = ({ children }) => {
   );
 
   const getSavedJobs = useCallback(() => {
-    // THÊM KIỂM TRA AN TOÀN CHO job và job.id
     return jobs.filter((job) => job && job.id && savedJobIds.includes(job.id.toString()));
   }, [jobs, savedJobIds]);
 
@@ -185,28 +263,47 @@ export const JobsProvider = ({ children }) => {
         alert("Please log in as an applicant to apply for jobs.");
         return { success: false, error: "Not authenticated or not an applicant" };
       }
+
+      if (!jobId) {
+        console.error("No job ID provided for application");
+        return { success: false, error: "No job ID provided" };
+      }
+
+      // Convert jobId to number
+      const numericJobId = parseInt(jobId, 10);
+      if (isNaN(numericJobId)) {
+        console.error("Invalid job ID:", jobId);
+        return { success: false, error: "Invalid job ID" };
+      }
+
       setOperationLoading(true);
       try {
-        // SỬA Ở ĐÂY: jobAPI.applyForJob (theo file jobs.js)
-        const response = await jobAPI.applyForJob(jobId, applicationData);
-
-        if (response.success && response.application) {
-          setApplications((prev) => [...prev, response.application]);
-          return { success: true, application: response.application };
+        console.log("Submitting application for job ID:", numericJobId);
+        const requestData = {
+          coverLetter: applicationData.coverLetter || ""
+        };
+        const response = await applicantAPI.applyJob(numericJobId, requestData);
+        
+        if (response.success) {
+          // Refresh the applications list to get the latest data
+          await fetchUserSpecificData();
+          return { success: true, data: response.payload };
         } else {
-          throw new Error(response.error || "Application submission failed");
+          throw new Error(response.message || "Failed to submit application");
         }
-      } catch (err) {
-        console.error("Error submitting application:", err);
+      } catch (error) {
+        console.error("Error submitting application:", error);
+        // Refresh the applications list even on error to ensure we have the latest state
+        await fetchUserSpecificData();
         return {
           success: false,
-          error: err.message || "Failed to submit application.",
+          error: error.message || "Failed to submit application"
         };
       } finally {
         setOperationLoading(false);
       }
     },
-    [isAuthenticated, user]
+    [isAuthenticated, user, fetchUserSpecificData]
   );
 
   const getUserApplications = useCallback(() => {
@@ -216,7 +313,7 @@ export const JobsProvider = ({ children }) => {
   const hasAppliedToJob = useCallback(
     (jobId) => {
       return applications.some(
-        (app) => app && app.jobId && app.jobId.toString() === jobId.toString() // Thêm kiểm tra an toàn
+        (app) => app && app.jobId && app.jobId.toString() === jobId.toString()
       );
     },
     [applications]
@@ -227,10 +324,10 @@ export const JobsProvider = ({ children }) => {
     loading,
     error,
     operationLoading,
-    setLoading,
-    setError,
+    totalPages,
+    totalElements,
+    currentFilters,
     fetchAllJobs,
-    fetchUserSpecificData,
     getJobById,
     toggleSaveJob,
     isJobSaved,
@@ -238,9 +335,12 @@ export const JobsProvider = ({ children }) => {
     submitApplication,
     getUserApplications,
     hasAppliedToJob,
+    setLoading,
   };
 
   return (
-    <JobsContext.Provider value={contextValue}>{children}</JobsContext.Provider>
+    <JobsContext.Provider value={contextValue}>
+      {children}
+    </JobsContext.Provider>
   );
 };

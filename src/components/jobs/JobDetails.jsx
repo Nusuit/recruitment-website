@@ -33,7 +33,7 @@ const JobDetailsComponent = ({
   const isSaved = isJobSaved(job.id);
   const alreadyApplied = hasAppliedToJob(job.id);
   const canSaveOrApply =
-    isAuthenticated && user?.role?.toLowerCase() === "candidate";
+    isAuthenticated && user?.role?.toLowerCase() === "applicant";
 
   const handleInternalApplyClick = () => {
     if (onApplyClick) {
@@ -41,7 +41,7 @@ const JobDetailsComponent = ({
     } else if (canSaveOrApply) {
       navigate(`/applicant/jobs/${job.id}/apply`);
     } else if (!isAuthenticated) {
-      navigate("/login", { state: { from: { pathname: `/jobs/${job.id}` } } });
+      navigate("/login", { state: { from: { pathname: `/applicant/jobs/${job.id}/apply` } } });
     }
   };
 

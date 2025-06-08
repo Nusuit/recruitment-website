@@ -7,7 +7,7 @@ import Button from "../common/Button";
 import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
-// SVG cho Google Logo
+// SVG for Google Logo
 const GoogleIcon = () => (
   <svg
     width="18"
@@ -74,7 +74,6 @@ const SignUpForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("[SignUpForm] Form submitted. Current formData:", formData);
     setSubmitError("");
 
     const validationData = {
@@ -83,23 +82,17 @@ const SignUpForm = () => {
         confirmPassword: formData.confirmPassword,
     };
 
-    console.log("[SignUpForm] Data for validation:", validationData);
     const validationErrors = validateSignupForm(validationData); 
-    console.log("[SignUpForm] Validation errors (before agreeTerms):", validationErrors);
 
     if (!formData.agreeTerms) {
       validationErrors.agreeTerms = "You must agree to the Terms of Services.";
     }
     setErrors(validationErrors);
-    console.log("[SignUpForm] Final validation errors:", validationErrors);
-
 
     if (Object.keys(validationErrors).length > 0) {
-      console.log("[SignUpForm] Validation failed. Stopping submission.");
       return; 
     }
 
-    console.log("[SignUpForm] Validation passed. Proceeding to submit.");
     setIsSubmitting(true);
     try {
       const payload = {
@@ -107,33 +100,23 @@ const SignUpForm = () => {
         password: formData.password,
       };
       
-      console.log("[SignUpForm] Payload to be sent to signup context (always applicant):", payload);
-
       const result = await signup(payload);
-      console.log("[SignUpForm] Result from signup context:", result);
-
 
       if (result && result.success) {
-        console.log("[SignUpForm] Signup success, navigating...");
-        navigate("/verify-email", { state: { email: formData.email } }); // Luôn chuyển hướng cho applicant
+        navigate("/verify-email", { state: { email: formData.email } });
       } else {
         const errorMessage = result ? (result.error || "Registration failed. Please try again.") : "Registration failed due to an unknown error.";
-        console.log("[SignUpForm] Signup failed, setting submitError:", errorMessage);
         setSubmitError(errorMessage);
       }
     } catch (error) {
-      console.error("[SignUpForm] Signup submission error (catch block):", error);
       setSubmitError("An unexpected error occurred during registration.");
     } finally {
       setIsSubmitting(false);
-      console.log("[SignUpForm] Submission process finished.");
     }
   };
   
   const handleGoogleSignup = () => {
-    // Google signup sẽ luôn được coi là applicant
-    console.log("[SignUpForm] Initiating Google signup for role: applicant");
-    loginWithGoogle(); // Không cần truyền role, mặc định là applicant
+    loginWithGoogle();
   };
 
 
@@ -246,7 +229,6 @@ const SignUpForm = () => {
         <div className="grid grid-cols-2 gap-3">
           <button
             type="button"
-            // onClick={handleFacebookSignup} // Facebook login not implemented
             disabled={isSubmitting || authLoading}
             style={{
               backgroundColor: "#3b5998",

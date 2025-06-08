@@ -10,6 +10,10 @@ export const formatCurrency = (amount, currency = 'USD') => {
   
   // Format date
   export const formatDate = (dateString, options = {}) => {
+    if (!dateString) {
+      return "N/A";
+    }
+
     const defaultOptions = {
       year: 'numeric',
       month: 'short',
@@ -22,7 +26,7 @@ export const formatCurrency = (amount, currency = 'USD') => {
     // Regex to match ISO 8601 with fractional seconds and capture up to milliseconds
     // Example: "2025-06-07T22:41:18.576993" -> "2025-06-07T22:41:18.576"
     const regex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3})\d*/;
-    const match = dateString.match(regex);
+    const match = dateString.toString().match(regex);
 
     if (match && match[1]) {
       formattedDateString = match[1];

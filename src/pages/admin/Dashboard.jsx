@@ -141,8 +141,91 @@ const AdminDashboard = () => {
 
   if (error) {
     return (
-      <div className="p-4 text-red-600 bg-red-100 rounded-md text-center">
-        {error}
+      <div className="admin-dashboard p-4 md:p-6 space-y-8">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">
+              Welcome, {user?.firstName || user?.name || "Admin"}!
+            </h1>
+            <p className="text-gray-600">
+              Here's an overview of your recruitment activities.
+            </p>
+          </div>
+          <Link
+            to="/admin/jobs/create"
+            className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+          >
+            <FontAwesomeIcon icon="plus" />
+            Post New Job
+          </Link>
+        </div>
+
+        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-xl border border-blue-200">
+          <div className="text-center">
+            <div className="mb-4">
+              <FontAwesomeIcon icon="exclamation-triangle" className="text-yellow-500 text-4xl mb-4" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Dashboard Temporarily Unavailable
+            </h2>
+            <p className="text-gray-600 mb-6">
+              We're having trouble loading your dashboard data. This might be because you haven't created any jobs yet, or there's a temporary connection issue.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => window.location.reload()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <FontAwesomeIcon icon="refresh" className="mr-2" />
+                Retry Loading
+              </button>
+              <Link
+                to="/admin/jobs/create"
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
+              >
+                <FontAwesomeIcon icon="plus" className="mr-2" />
+                Create Your First Job
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">
+            Quick Actions
+          </h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Link
+              to="/admin/jobs/create"
+              className="bg-blue-500 text-white p-6 rounded-lg hover:bg-blue-600 transition-colors shadow-md flex flex-col items-center justify-center text-center"
+            >
+              <FontAwesomeIcon icon="plus-circle" size="2x" className="mb-2" />
+              <span className="font-medium">Post a New Job</span>
+            </Link>
+            <Link
+              to="/admin/jobs"
+              className="bg-indigo-500 text-white p-6 rounded-lg hover:bg-indigo-600 transition-colors shadow-md flex flex-col items-center justify-center text-center"
+            >
+              <FontAwesomeIcon icon="briefcase" size="2x" className="mb-2" />
+              <span className="font-medium">Manage Jobs</span>
+            </Link>
+            <Link
+              to="/admin/applicants"
+              className="bg-green-500 text-white p-6 rounded-lg hover:bg-green-600 transition-colors shadow-md flex flex-col items-center justify-center text-center"
+            >
+              <FontAwesomeIcon icon="users" size="2x" className="mb-2" />
+              <span className="font-medium">View Applicants</span>
+            </Link>
+            <Link
+              to="/admin/company"
+              className="bg-purple-500 text-white p-6 rounded-lg hover:bg-purple-600 transition-colors shadow-md flex flex-col items-center justify-center text-center"
+            >
+              <FontAwesomeIcon icon="building" size="2x" className="mb-2" />
+              <span className="font-medium">Company Profile</span>
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -271,15 +354,23 @@ const AdminDashboard = () => {
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
-                    {job.applicationsCount} Applications
+                    {job.applicationsCount || 0} Applications
                   </p>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500 text-center py-4">
-              No recent job postings.
-            </p>
+            <div className="text-center py-8">
+              <FontAwesomeIcon icon="briefcase" className="text-gray-300 text-4xl mb-4" />
+              <p className="text-gray-500 mb-4">No job postings yet.</p>
+              <Link
+                to="/admin/jobs/create"
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                <FontAwesomeIcon icon="plus" className="mr-2" />
+                Create Your First Job
+              </Link>
+            </div>
           )}
         </div>
 
@@ -320,7 +411,7 @@ const AdminDashboard = () => {
                         app.status
                       )}`}
                     >
-                      {app.status.replace("_", " ")}
+                      {app.status?.replace("_", " ") || "Pending"}
                     </span>
                   </div>
                   <p className="text-sm text-gray-600 mt-1">
@@ -336,9 +427,20 @@ const AdminDashboard = () => {
               ))}
             </ul>
           ) : (
-            <p className="text-gray-500 text-center py-4">
-              No recent applications.
-            </p>
+            <div className="text-center py-8">
+              <FontAwesomeIcon icon="user-clock" className="text-gray-300 text-4xl mb-4" />
+              <p className="text-gray-500 mb-4">No applications received yet.</p>
+              <p className="text-sm text-gray-400 mb-4">
+                Once you post jobs, applications will appear here.
+              </p>
+              <Link
+                to="/admin/jobs/create"
+                className="inline-flex items-center px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+              >
+                <FontAwesomeIcon icon="plus" className="mr-2" />
+                Post a Job to Start Receiving Applications
+              </Link>
+            </div>
           )}
         </div>
       </div>

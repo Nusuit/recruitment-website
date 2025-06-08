@@ -37,7 +37,7 @@ const EmployeeReviews = () => {
         "The collaborative environment at MyaCorp is fantastic. We are constantly pushing boundaries and supporting each other's growth.",
       author: "Alex Green",
       position: "UX Researcher",
-      avatar: "/assets/images/avatars/alex-green.png", // Thêm avatar mới
+      avatar: "/assets/images/avatars/alex-green.png",
       rating: 4,
     },
     {
@@ -46,14 +46,14 @@ const EmployeeReviews = () => {
         "MyaCorp's commitment to sustainability is what drew me in, and the innovative projects keep me excited every day.",
       author: "Maria Rodriguez",
       position: "Sustainability Lead",
-      avatar: "/assets/images/avatars/maria-rodriguez.png", // Thêm avatar mới
+      avatar: "/assets/images/avatars/maria-rodriguez.png",
       rating: 5,
     },
   ];
 
-  const itemsPerPage = 3; // Số review hiển thị mỗi lần trên desktop
+  const itemsPerPage = 3; // Number of reviews displayed per page on desktop
   const totalPages = Math.ceil(reviewsData.length / itemsPerPage);
-  const [currentPage, setCurrentPage] = useState(0); // Index của "trang" hiện tại
+  const [currentPage, setCurrentPage] = useState(0); // Current page index
 
   const handlePrev = () => {
     setCurrentPage((prevPage) =>
@@ -67,9 +67,9 @@ const EmployeeReviews = () => {
     );
   };
 
-  // Optional: Auto-slide functionality
+  // Auto-slide functionality
   useEffect(() => {
-    if (reviewsData.length <= itemsPerPage) return; // Không auto-slide nếu không đủ item để trượt
+    if (reviewsData.length <= itemsPerPage) return; // Skip auto-slide if not enough items
     const timer = setTimeout(() => {
       handleNext();
     }, 7000); // Change slide every 7 seconds
@@ -82,7 +82,7 @@ const EmployeeReviews = () => {
       stars.push(
         <FontAwesomeIcon
           key={i}
-          icon={i <= rating ? ["fas", "star"] : ["far", "star"]} // SỬA ĐỔI: Sử dụng "fas" cho sao đầy, "far" cho sao rỗng
+          icon={i <= rating ? ["fas", "star"] : ["far", "star"]}
           className="text-yellow-400"
         />
       );
@@ -98,8 +98,6 @@ const EmployeeReviews = () => {
 
   return (
     <section className="employee-reviews-section py-16 md:py-24 bg-white">
-      {" "}
-      {/* Nền trắng theo design */}
       <div className="container mx-auto px-4">
         <div className="text-center mb-12 md:mb-16">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
@@ -108,8 +106,6 @@ const EmployeeReviews = () => {
         </div>
 
         <div className="relative max-w-6xl mx-auto">
-          {" "}
-          {/* Increased max-width for 3 cards */}
           <div className="overflow-hidden relative">
             <div
               className="flex transition-transform duration-500 ease-in-out"
@@ -121,8 +117,6 @@ const EmployeeReviews = () => {
                   className="page-slide w-full flex-shrink-0"
                 >
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 px-2">
-                    {" "}
-                    {/* Grid for 3 cards */}
                     {pageItems.map((review) => (
                       <div
                         key={review.id}
@@ -166,7 +160,7 @@ const EmployeeReviews = () => {
                           <div
                             key={`empty-${i}`}
                             className="hidden md:block"
-                          ></div> // Hidden on mobile, placeholder on desktop
+                          ></div>
                         ))}
                   </div>
                 </div>
@@ -180,14 +174,14 @@ const EmployeeReviews = () => {
                 className="absolute left-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 hover:bg-white rounded-full shadow-md transition-all text-gray-600 hover:text-teal-600 -ml-4 md:-ml-8"
                 aria-label="Previous review page"
               >
-                <FontAwesomeIcon icon="angle-left" /> {/* SỬA ĐỔI: Sử dụng "angle-left" */}
+                <FontAwesomeIcon icon="angle-left" />
               </button>
               <button
                 onClick={handleNext}
                 className="absolute right-0 top-1/2 -translate-y-1/2 z-10 p-3 bg-white/80 hover:bg-white rounded-full shadow-md transition-all text-gray-600 hover:text-teal-600 -mr-4 md:-mr-8"
                 aria-label="Next review page"
               >
-                <FontAwesomeIcon icon="angle-right" /> {/* SỬA ĐỔI: Sử dụng "angle-right" */}
+                <FontAwesomeIcon icon="angle-right" />
               </button>
             </>
           )}

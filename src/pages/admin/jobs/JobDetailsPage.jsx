@@ -40,18 +40,33 @@ const AdminJobDetailsPage = () => {
       setLoading(true);
       setError(null);
       try {
-        const jobResponse = await recruiterAPI.getJobDetail(jobId);
-        const appsResponse = await recruiterAPI.getAllApplications({ jobId, status: filterStatus });
+        // Convert jobId to number and validate
+        const numericJobId = parseInt(jobId, 10);
+        if (isNaN(numericJobId)) {
+          throw new Error("Invalid job ID");
+        }
 
-        setJob(jobResponse.payload);
-        setApplications(appsResponse.payload.content || []);
+        // Call API with numeric jobId
+        const jobResponse = await recruiterAPI.getJobDetail(numericJobId);
+        console.log("✅ [JobDetailsPage] Job response:", jobResponse);
+        
+        const jobData = jobResponse?.payload || jobResponse?.data || jobResponse;
+        if (!jobData) {
+          throw new Error("Invalid job data received from server");
+        }
+        
+        const appsResponse = await recruiterAPI.getAllApplications({ 
+          jobId: numericJobId, 
+          status: filterStatus 
+        });
+        console.log("✅ [JobDetailsPage] Applications response:", appsResponse);
 
-        // Mock data removed
-
+        setJob(jobData);
+        setApplications(appsResponse?.payload?.content || appsResponse?.content || []);
 
       } catch (err) {
         console.error("Error fetching job data:", err);
-        setError("Failed to load job data. Please try again.");
+        setError(err.message || "Failed to load job data. Please try again.");
         if (err.response?.status === 404) setJob(null); // Handle job not found
       } finally {
         setLoading(false);

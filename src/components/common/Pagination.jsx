@@ -1,125 +1,111 @@
 // src/components/common/Pagination.jsx
 import React from "react";
 import PropTypes from "prop-types";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Box, Button, IconButton } from '@mui/material';
+import { ChevronLeft, ChevronRight } from '@mui/icons-material';
 
 const Pagination = ({ currentPage, totalPages, onPageChange }) => {
   if (totalPages <= 1) {
     return null; // Don't render pagination if there's only one page or less
   }
 
-  const handlePageClick = (page) => {
-    if (page >= 1 && page <= totalPages && page !== currentPage) {
+  const handlePageChange = (page) => {
+    if (page >= 0 && page < totalPages) {
       onPageChange(page);
     }
   };
 
   const renderPageNumbers = () => {
-    const pageNumbers = [];
-    const maxPagesToShow = 5; // Max number of page links to show
-    const halfPages = Math.floor(maxPagesToShow / 2);
+    const pages = [];
+    const maxVisiblePages = 5;
+    let startPage = Math.max(0, currentPage - Math.floor(maxVisiblePages / 2));
+    let endPage = Math.min(totalPages - 1, startPage + maxVisiblePages - 1);
 
-    let startPage = Math.max(1, currentPage - halfPages);
-    let endPage = Math.min(totalPages, currentPage + halfPages);
-
-    // Adjust start/end if near the beginning or end
-    if (currentPage - halfPages < 1) {
-      endPage = Math.min(totalPages, maxPagesToShow);
-    }
-    if (currentPage + halfPages > totalPages) {
-      startPage = Math.max(1, totalPages - maxPagesToShow + 1);
+    // Adjust startPage if we're near the end
+    if (endPage - startPage + 1 < maxVisiblePages) {
+      startPage = Math.max(0, endPage - maxVisiblePages + 1);
     }
 
-    // Add first page and ellipsis if needed
-    if (startPage > 1) {
-      pageNumbers.push(
-        <button
-          key={1}
-          onClick={() => handlePageClick(1)}
-          className="px-4 py-2 mx-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+    // First page
+    if (startPage > 0) {
+      pages.push(
+        <Button
+          key={0}
+          onClick={() => handlePageChange(0)}
+          variant={currentPage === 0 ? 'contained' : 'outlined'}
+          size="small"
+          sx={{ mx: 0.5 }}
         >
           1
-        </button>
+        </Button>
       );
-      if (startPage > 2) {
-        pageNumbers.push(
-          <span key="start-ellipsis" className="px-4 py-2 mx-1 text-gray-500">
+      if (startPage > 1) {
+        pages.push(
+          <Box key="start-ellipsis" component="span" sx={{ mx: 1 }}>
             ...
-          </span>
+          </Box>
         );
       }
     }
 
-    // Add page numbers
+    // Page numbers
     for (let i = startPage; i <= endPage; i++) {
-      pageNumbers.push(
-        <button
+      pages.push(
+        <Button
           key={i}
-          onClick={() => handlePageClick(i)}
-          className={`px-4 py-2 mx-1 border border-gray-300 rounded transition-colors duration-150 ${
-            i === currentPage
-              ? "bg-blue-600 text-white border-blue-600"
-              : "text-gray-700 bg-white hover:bg-gray-100"
-          }`}
+          onClick={() => handlePageChange(i)}
+          variant={currentPage === i ? 'contained' : 'outlined'}
+          size="small"
+          sx={{ mx: 0.5 }}
         >
-          {i}
-        </button>
+          {i + 1}
+        </Button>
       );
     }
 
-    // Add last page and ellipsis if needed
-    if (endPage < totalPages) {
-      if (endPage < totalPages - 1) {
-        pageNumbers.push(
-          <span key="end-ellipsis" className="px-4 py-2 mx-1 text-gray-500">
+    // Last page
+    if (endPage < totalPages - 1) {
+      if (endPage < totalPages - 2) {
+        pages.push(
+          <Box key="end-ellipsis" component="span" sx={{ mx: 1 }}>
             ...
-          </span>
+          </Box>
         );
       }
-      pageNumbers.push(
-        <button
-          key={totalPages}
-          onClick={() => handlePageClick(totalPages)}
-          className="px-4 py-2 mx-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50"
+      pages.push(
+        <Button
+          key={totalPages - 1}
+          onClick={() => handlePageChange(totalPages - 1)}
+          variant={currentPage === totalPages - 1 ? 'contained' : 'outlined'}
+          size="small"
+          sx={{ mx: 0.5 }}
         >
           {totalPages}
-        </button>
+        </Button>
       );
     }
 
-    return pageNumbers;
+    return pages;
   };
 
   return (
-    <nav
-      className="flex justify-center items-center mt-8 py-4"
-      aria-label="Pagination"
-    >
-      <button
-        onClick={() => handlePageClick(currentPage - 1)}
-        disabled={currentPage === 1}
-        className="px-4 py-2 mx-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+    <Box display="flex" alignItems="center" justifyContent="center" my={2}>
+      <IconButton
+        onClick={() => handlePageChange(currentPage - 1)}
+        disabled={currentPage === 0}
+        size="small"
       >
-        <FontAwesomeIcon icon="chevron-left" />
-        <span>Previous</span>
-      </button>
-
-      <div className="hidden sm:flex">{renderPageNumbers()}</div>
-      <div className="flex sm:hidden">
-        <span className="px-4 py-2 mx-1 text-gray-700">
-          Page {currentPage} of {totalPages}
-        </span>
-      </div>
-
-      <button
-        onClick={() => handlePageClick(currentPage + 1)}
-        disabled={currentPage === totalPages}
-        className="px-4 py-2 mx-1 border border-gray-300 rounded text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        <ChevronLeft />
+      </IconButton>
+      {renderPageNumbers()}
+      <IconButton
+        onClick={() => handlePageChange(currentPage + 1)}
+        disabled={currentPage === totalPages - 1}
+        size="small"
       >
-        <span>Next</span>
-        <FontAwesomeIcon icon="chevron-right" />
-      </button>
-    </nav>
+        <ChevronRight />
+      </IconButton>
+    </Box>
   );
 };
 

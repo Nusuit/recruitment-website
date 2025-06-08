@@ -19,7 +19,7 @@ const ApplicantJobSearchPage = () => {
     jobs: allJobs,
     loading: contextLoading,
     error: contextError,
-    setLoading: setContextLoading,
+    setLoading,
   } = useContext(JobsContext);
   const location = useLocation();
   const navigate = useNavigate();
@@ -62,7 +62,7 @@ const ApplicantJobSearchPage = () => {
 
   useEffect(() => {
     if (!contextLoading && allJobs.length > 0) {
-      setContextLoading(true);
+      setLoading(true);
       let tempFilteredJobs = allJobs.filter((job) => {
         const keywordMatch =
           !searchParams.keyword ||
@@ -144,13 +144,13 @@ const ApplicantJobSearchPage = () => {
       const startIndex = (currentPage - 1) * JOBS_PER_PAGE;
       const endIndex = startIndex + JOBS_PER_PAGE;
       setFilteredJobs(tempFilteredJobs.slice(startIndex, endIndex));
-      setContextLoading(false);
+      setLoading(false);
     } else if (!contextLoading && allJobs.length === 0) {
       setFilteredJobs([]);
       setTotalJobsCount(0);
       setTotalPages(1);
     }
-  }, [allJobs, searchParams, currentPage, contextLoading, setContextLoading]);
+  }, [allJobs, searchParams, currentPage, contextLoading, setLoading]);
 
   const handleFilterChange = (newFilters) => {
     const updatedSearchParams = { ...searchParams, ...newFilters };

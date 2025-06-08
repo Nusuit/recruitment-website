@@ -22,50 +22,52 @@ const JobAnalytics = () => {
       setLoading(true);
       setError(null);
       try {
-        const metricsResponse = await recruiterAPI.getRecruitmentMetrics(timeframe);
-        const jobStatsResponse = await recruiterAPI.getJobAnalytics({ timeframe });
-        setMetrics(metricsResponse.payload.metrics);
-        setJobStats(jobStatsResponse.payload.stats);
+        // TODO: Replace with actual API calls when backend is ready
+        // const metricsResponse = await recruiterAPI.getRecruitmentMetrics(timeframe);
+        // const jobStatsResponse = await recruiterAPI.getJobAnalytics({ timeframe });
+        // setMetrics(metricsResponse.payload.metrics);
+        // setJobStats(jobStatsResponse.payload.stats);
 
-        // Mock data for now
-        // await new Promise((resolve) => setTimeout(resolve, 800));
-        // setMetrics({
-        //   activeJobs: 32,
-        //   activeJobsChange: 5, // percentage change
-        //   avgTimeToFill: 28,
-        //   avgTimeToFillChange: -2, // percentage change (negative is good)
-        //   successRate: 65,
-        //   successRateChange: 3,
-        //   costPerHire: 1150,
-        //   costPerHireChange: 10,
-        // });
-        // setJobStats({
-        //   jobTrend: {
-        //     labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
-        //     data: [10, 15, 12, 18],
-        //   },
-        //   byDepartment: [
-        //     { department: "Design", count: 12 },
-        //     { department: "Marketing", count: 8 },
-        //     { department: "Sales", count: 7 },
-        //     { department: "Engineering", count: 5 },
-        //   ],
-        //   byType: [
-        //     { type: "Full Time", count: 20 },
-        //     { type: "Part Time", count: 5 },
-        //     { type: "Contract", count: 4 },
-        //     { type: "Internship", count: 3 },
-        //   ],
-        //   insights: {
-        //     topDepartment: "Design",
-        //     topDepartmentHires: 10, // Example
-        //     mostCompetitiveRole: "Senior Fashion Designer",
-        //     applicantsPerRole: 50,
-        //     fastestHiringDepartment: "Marketing",
-        //     avgHiringDays: 22,
-        //     interviewToHireRatio: 3, // 3 interviews per hire
-        //   },
-        // });
+        // Mock data for demonstration
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        setMetrics({
+          activeJobs: 32,
+          activeJobsChange: 5, // percentage change
+          avgTimeToFill: 28,
+          avgTimeToFillChange: -2, // percentage change (negative is good)
+          successRate: 65,
+          successRateChange: 3,
+          costPerHire: 1150,
+          costPerHireChange: 10,
+        });
+        setJobStats({
+          jobTrend: {
+            labels: ["Week 1", "Week 2", "Week 3", "Week 4"],
+            data: [10, 15, 12, 18],
+          },
+          byDepartment: [
+            { department: "AI Team", count: 12 },
+            { department: "Marketing", count: 8 },
+            { department: "Sales", count: 7 },
+            { department: "Engineering", count: 5 },
+            { department: "Design", count: 4 },
+          ],
+          byType: [
+            { type: "Full Time", count: 20 },
+            { type: "Part Time", count: 5 },
+            { type: "Contract", count: 4 },
+            { type: "Internship", count: 3 },
+          ],
+          insights: {
+            topDepartment: "AI Team",
+            topDepartmentHires: 10,
+            mostCompetitiveRole: "Software Engineer",
+            applicantsPerRole: 50,
+            fastestHiringDepartment: "Marketing",
+            avgHiringDays: 22,
+            interviewToHireRatio: 3, // 3 interviews per hire
+          },
+        });
       } catch (err) {
         console.error("Error fetching job analytics:", err);
         setError("Failed to load job analytics data.");

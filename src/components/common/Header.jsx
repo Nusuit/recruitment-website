@@ -5,20 +5,18 @@ import { AuthContext } from "../../contexts/AuthContext";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const Header = () => {
-  const { isAuthenticated, user, logout, loading: authLoading } = useContext(AuthContext); // Thêm authLoading
+  const { isAuthenticated, user, logout, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userRole, setUserRole] = useState("guest"); // Mặc định là guest
+  const [userRole, setUserRole] = useState("guest");
 
   useEffect(() => {
-    console.log("[Header] AuthContext user changed:", user); // Thêm console.log để kiểm tra
-    console.log("[Header] AuthContext isAuthenticated changed:", isAuthenticated); // Thêm console.log để kiểm tra
     if (isAuthenticated && user) {
       setUserRole(user.role?.toLowerCase() || "guest");
     } else {
       setUserRole("guest");
     }
-  }, [isAuthenticated, user]); // Dependencies: isAuthenticated, user
+  }, [isAuthenticated, user]);
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -31,7 +29,7 @@ const Header = () => {
   };
 
   const handleLogout = () => {
-    logout(); // Hàm logout trong AuthContext sẽ tự động xử lý role
+    logout();
     navigate("/login");
     handleMobileLinkClick();
   };
@@ -64,9 +62,7 @@ const Header = () => {
     const loginButtonClass = `${buttonBaseClass} bg-teal-500 text-white hover:bg-teal-600`;
     const signupButtonClass = `${buttonBaseClass} bg-white text-teal-600 border border-teal-500 hover:bg-teal-50`;
 
-    // Xác định trạng thái guest rõ ràng
     const isGuest = !isAuthenticated || !user || !user.email;
-    console.log('[Header] renderAuthButtons isGuest:', isGuest, user);
 
     if (authLoading) {
       return (
@@ -83,7 +79,6 @@ const Header = () => {
             to="/login"
             className={loginButtonClass}
             onClick={e => {
-              console.log('[Header] Login button clicked');
               if (isMobile) handleMobileLinkClick();
             }}
           >
@@ -93,7 +88,6 @@ const Header = () => {
             to="/signup"
             className={signupButtonClass}
             onClick={e => {
-              console.log('[Header] Signup button clicked');
               if (isMobile) handleMobileLinkClick();
             }}
           >
@@ -104,7 +98,7 @@ const Header = () => {
     } else {
       let dashboardPath = "/";
       if (userRole === "admin" || userRole === "recruiter") dashboardPath = "/admin/dashboard";
-      else if (userRole === "candidate") dashboardPath = "/applicant/dashboard";
+      else if (userRole === "applicant") dashboardPath = "/applicant/dashboard";
 
       const userAvatar = user.avatarUrl || "https://placehold.co/40x40/cccccc/333333?text=AV"; 
       const displayUserName = user.firstName || user.name || (user.email ? user.email.split('@')[0] : "User");
@@ -170,20 +164,17 @@ const Header = () => {
 
   return (
     <header className="bg-white shadow-sm sticky top-0 z-50 h-20">
-      {" "}
-      {/* Increased height */}
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center h-full">
         <div className="flex-shrink-0">
           <Link to="/">
             <img
-              src="/assets/images/logo.png" // Assuming this is the path to your new logo
-              alt="SIUUUcorp Logo" // Updated alt text
-              className="h-12 w-auto" // Adjusted logo size
+              src="/assets/images/logo.png"
+              alt="SIUUUcorp Logo"
+              className="h-12 w-auto"
             />
           </Link>
         </div>
 
-        {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center space-x-6">
           {commonNavLinks.map((link) => (
             <NavLink
@@ -195,19 +186,15 @@ const Header = () => {
               {link.label}
             </NavLink>
           ))}
-          {/* Language Icon - Placeholder */}
           <button className="text-gray-600 hover:text-teal-600">
-            <FontAwesomeIcon icon="globe" />{" "}
-            {/* Assuming 'globe' is registered */}
+            <FontAwesomeIcon icon="globe" /> Language
           </button>
         </nav>
 
-        {/* Desktop Auth Buttons / User Menu */}
         <div className="hidden md:flex items-center space-x-3">
           {renderAuthButtons(false)}
         </div>
 
-        {/* Mobile Menu Button */}
         <button
           className="md:hidden flex items-center justify-center w-10 h-10 p-0 relative z-[51] bg-transparent border-none cursor-pointer"
           onClick={toggleMobileMenu}
@@ -220,7 +207,6 @@ const Header = () => {
           />
         </button>
       </div>
-      {/* Mobile Menu Panel */}
       <div
         className={`fixed top-20 left-0 right-0 bottom-0 bg-white p-6 shadow-xl z-50 transform transition-transform duration-300 ease-in-out md:hidden ${
           mobileMenuOpen ? "translate-x-0" : "translate-x-full"

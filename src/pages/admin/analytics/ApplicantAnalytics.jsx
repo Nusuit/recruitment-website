@@ -31,68 +31,76 @@ const ApplicantAnalytics = () => {
       setLoading(true);
       setError(null);
       try {
-        const response = await recruiterAPI.getApplicantAnalyticsData({ timeframe });
-        setAnalytics(response.payload);
-
-        // TODO: Replace with actual API call
+        // TODO: Replace with actual API call when backend is ready
         // const response = await recruiterAPI.getApplicantAnalyticsData({ timeframe });
-        // setAnalytics(response.data);
+        // setAnalytics(response.payload);
 
-        // await new Promise((resolve) => setTimeout(resolve, 800));
-        // setAnalytics({
-        //   totalApplicants: 1250,
-        //   applicantChange: 15, // percentage
-        //   applicationRate: 12, // percentage of site visitors who apply
-        //   rateChange: 2,
-        //   avgApplicationsPerJob: 21,
-        //   avgChange: -1,
-        //   qualifiedRate: 45, // percentage of applicants deemed qualified
-        //   qualifiedChange: 5,
-        //   applicationTrend: {
-        //     labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-        //     data: [150, 200, 180, 220, 250, 210],
-        //   },
-        //   applicationSources: [
-        //     { name: "LinkedIn", count: 400 },
-        //     { name: "Company Website", count: 350 },
-        //     { name: "Referrals", count: 200 },
-        //     { name: "Job Boards", count: 250 },
-        //     { name: "Other", count: 50 },
-        //   ],
-        //   applicationStatusDistribution: [
-        //     // Renamed from applicationStatus
-        //     { status: "Pending Review", count: 300 },
-        //     { status: "In Review", count: 250 },
-        //     { status: "Shortlisted", count: 150 },
-        //     { status: "Interviewing", count: 100 },
-        //     { status: "Offered", count: 80 },
-        //     { status: "Hired", count: 75 },
-        //     { status: "Rejected", count: 295 },
-        //   ],
-        //   popularJobs: [
-        //     { title: "Senior Fashion Designer", applications: 75 },
-        //     { title: "Marketing Manager", applications: 60 },
-        //     { title: "Retail Store Supervisor", applications: 55 },
-        //   ],
-        //   topSkills: [
-        //     { name: "Adobe Creative Suite", demand: 60 },
-        //     { name: "Digital Marketing", demand: 55 },
-        //     { name: "Sales Strategy", demand: 50 },
-        //   ],
-        //   bestSources: [
-        //     // Source effectiveness
-        //     { name: "Referrals", hireRate: 25 }, // 25% of referred applicants hired
-        //     { name: "LinkedIn", hireRate: 15 },
-        //     { name: "Company Website", hireRate: 10 },
-        //   ],
-        //   timeToProgress: [
-        //     // Avg days per stage
-        //     { stage: "Application to Screen", days: 3 },
-        //     { stage: "Screen to Interview", days: 7 },
-        //     { stage: "Interview to Offer", days: 10 },
-        //     { stage: "Offer to Hire", days: 5 },
-        //   ],
-        // });
+        // Mock data for demonstration with realistic applicant emails
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        setAnalytics({
+          totalApplicants: 1250,
+          applicantChange: 15, // percentage
+          applicationRate: 12, // percentage of site visitors who apply
+          rateChange: 2,
+          avgApplicationsPerJob: 21,
+          avgChange: -1,
+          qualifiedRate: 45, // percentage of applicants deemed qualified
+          qualifiedChange: 5,
+          applicationTrend: {
+            labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+            data: [150, 200, 180, 220, 250, 210],
+          },
+          applicationSources: [
+            { name: "LinkedIn", count: 400 },
+            { name: "Company Website", count: 350 },
+            { name: "Referrals", count: 200 },
+            { name: "Job Boards", count: 250 },
+            { name: "Other", count: 50 },
+          ],
+          applicationStatusDistribution: [
+            { status: "Pending Review", count: 300 },
+            { status: "In Review", count: 250 },
+            { status: "Shortlisted", count: 150 },
+            { status: "Interviewing", count: 100 },
+            { status: "Offered", count: 80 },
+            { status: "Hired", count: 75 },
+            { status: "Rejected", count: 295 },
+          ],
+          popularJobs: [
+            { title: "Software Engineer", applications: 85 },
+            { title: "AI/ML Engineer", applications: 75 },
+            { title: "Full Stack Developer", applications: 60 },
+            { title: "Data Scientist", applications: 55 },
+            { title: "Product Manager", applications: 45 },
+          ],
+          topSkills: [
+            { name: "React/JavaScript", demand: 65 },
+            { name: "Python/Machine Learning", demand: 60 },
+            { name: "Node.js/Express", demand: 55 },
+            { name: "SQL/Database", demand: 50 },
+            { name: "AWS/Cloud", demand: 45 },
+          ],
+          bestSources: [
+            { name: "Referrals", hireRate: 25 }, // 25% of referred applicants hired
+            { name: "LinkedIn", hireRate: 15 },
+            { name: "Company Website", hireRate: 10 },
+            { name: "Job Boards", hireRate: 8 },
+          ],
+          timeToProgress: [
+            { stage: "Application to Screen", days: 3 },
+            { stage: "Screen to Interview", days: 7 },
+            { stage: "Interview to Offer", days: 10 },
+            { stage: "Offer to Hire", days: 5 },
+          ],
+          // Realistic applicant emails for detailed views
+          recentApplicants: [
+            { email: "john.doe@gmail.com", name: "John Doe", position: "Software Engineer", status: "In Review" },
+            { email: "sarah.johnson@outlook.com", name: "Sarah Johnson", position: "AI/ML Engineer", status: "Shortlisted" },
+            { email: "mike.chen@yahoo.com", name: "Mike Chen", position: "Full Stack Developer", status: "Interviewing" },
+            { email: "emily.davis@gmail.com", name: "Emily Davis", position: "Data Scientist", status: "Offered" },
+            { email: "alex.smith@hotmail.com", name: "Alex Smith", position: "Product Manager", status: "Hired" },
+          ],
+        });
       } catch (err) {
         console.error("Error fetching applicant analytics:", err);
         setError("Failed to load applicant analytics data.");

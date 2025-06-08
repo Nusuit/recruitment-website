@@ -70,8 +70,9 @@ export const generateId = (length = 8) => {
         value.forEach(item => {
           params.append(`${key}[]`, item);
         });
-      } else if (value !== undefined && value !== null && value !== '') {
-        params.append(key, value);
+      } else {
+        // Always append the value, even if it's null
+        params.append(key, value === null ? '' : value);
       }
     });
     

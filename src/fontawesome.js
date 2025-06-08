@@ -92,6 +92,13 @@ import {
   faSortUp, // ĐÃ THÊM: Biểu tượng sort up
   faSortDown, // ĐÃ THÊM: Biểu tượng sort down
   faGlobe,
+  faChevronLeft, // ADDED: Missing chevron-left icon
+  faSync, // ADDED: Missing refresh icon (sync is the refresh icon)
+  faUserClock, // ADDED: User clock icon for applications waiting
+  faPlusCircle, // ADDED: Plus circle icon
+  faLightbulb, // ADDED: Lightbulb icon for insights
+  faArrowUp, // ADDED: Arrow up icon for metrics
+  faArrowDown, // ADDED: Arrow down icon for metrics
 } from '@fortawesome/free-solid-svg-icons';
 
 import {
@@ -206,6 +213,13 @@ library.add(
   faSortUp, // ĐÃ THÊM: Biểu tượng sort up
   faSortDown, // ĐÃ THÊM: Biểu tượng sort down
   faGlobe,
+  faChevronLeft, // ADDED: Missing chevron-left icon
+  faSync, // ADDED: Missing refresh icon
+  faUserClock, // ADDED: User clock icon for applications waiting
+  faPlusCircle, // ADDED: Plus circle icon
+  faLightbulb, // ADDED: Lightbulb icon for insights
+  faArrowUp, // ADDED: Arrow up icon for metrics
+  faArrowDown, // ADDED: Arrow down icon for metrics
   // Regular icons
   farHeart, // Regular heart
   farBookmark, // Regular bookmark

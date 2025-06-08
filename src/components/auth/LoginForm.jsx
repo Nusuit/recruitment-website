@@ -1,5 +1,5 @@
 // src/components/auth/LoginForm.jsx
-import React, { useState, useContext, useEffect } from "react"; // Thêm useEffect
+import React, { useState, useContext, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { validateLoginForm } from "../../utils/validators";
@@ -8,7 +8,7 @@ import Input from "../common/Input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import axios from 'axios';
 
-// SVG cho Google Logo
+// SVG for Google Logo
 const GoogleIcon = () => (
   <svg
     width="18"
@@ -41,8 +41,8 @@ const LoginForm = () => {
     login,
     loginWithGoogle,
     loading: authLoading,
-    isAuthenticated, // Lấy isAuthenticated từ AuthContext
-    user: authContextUser, // Lấy user từ AuthContext
+    isAuthenticated,
+    user: authContextUser,
   } = useContext(AuthContext);
   const navigate = useNavigate();
   const location = useLocation();
@@ -57,7 +57,6 @@ const LoginForm = () => {
   const [submitError, setSubmitError] = useState(location.state?.error || "");
   const [showPassword, setShowPassword] = useState(false);
 
-  // SỬA ĐỔI QUAN TRỌNG: Sử dụng useEffect để theo dõi isAuthenticated và user
   useEffect(() => {
     // Only navigate when authentication is confirmed and user data is available
     if (isAuthenticated && authContextUser && authContextUser.role) {
@@ -76,10 +75,9 @@ const LoginForm = () => {
         dashboardPath = "/";
       }
 
-      console.log("[LoginForm - useEffect] Navigating to dashboard:", dashboardPath);
       navigate(dashboardPath, { replace: true });
     }
-  }, [isAuthenticated, authContextUser, navigate]); // Dependencies: isAuthenticated, authContextUser, navigate
+  }, [isAuthenticated, authContextUser, navigate]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -101,41 +99,32 @@ const LoginForm = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log("[LoginForm] Form submitted. Current values:", values);
     if (!validateForm()) {
-      console.log("[LoginForm] Validation failed.");
       return;
     }
     setIsSubmitting(true);
     setSubmitError("");
 
     try {      const { email, password } = values;
-      console.log("[LoginForm] Attempting login with:", email);
       
       // Automatically determine role based on email
       const loginRole = email.toLowerCase() === "hacnguyet108@gmail.com" ? "recruiter" : "applicant";
-      console.log("[LoginForm] Determined login role:", loginRole);
 
       // Call login with the determined role
       const result = await login(email, password, loginRole);
-      console.log("[LoginForm] Result from login context:", result);
 
-      if (result && result.success) { // CHỈ KIỂM TRA result.success
-        // Điều hướng sẽ được xử lý bởi useEffect khi isAuthenticated và user cập nhật
-        console.log("[LoginForm] Login successful, waiting for AuthContext state update for navigation.");
-        setSubmitError(""); // Xóa lỗi nếu login thành công
+      if (result && result.success) {
+        setSubmitError("");
       } else {
-        console.log("[LoginForm] Login failed:", result?.error);
-        setSubmitError(result?.error || "Email or password invalid.");
+        setSubmitError(result?.error || "Invalid email or password.");
       }
     } catch (error) {
-      console.error("[LoginForm] Login submission error (catch block):", error);
       let errorMessage = "An unexpected error occurred. Please try again later.";
       if (error.response) {
         if (error.response.status === 401 || error.response.status === 403) {
-          errorMessage = "Tên đăng nhập hoặc mật khẩu không đúng.";
+          errorMessage = "Invalid email or password.";
         } else if (error.response.data && typeof error.response.data === 'string') {
-          errorMessage = "Đăng nhập thất bại. Vui lòng kiểm tra lại thông tin.";
+          errorMessage = "Login failed. Please check your information.";
         } else if (error.response.data && error.response.data.message) {
           errorMessage = error.response.data.message;
         }
@@ -145,12 +134,10 @@ const LoginForm = () => {
       setSubmitError(errorMessage);
     } finally {
       setIsSubmitting(false);
-      console.log("[LoginForm] Submission process finished.");
     }
   };
 
   const handleGoogleLogin = () => {
-    console.log("[LoginForm] Initiating Google login for role: applicant");
     loginWithGoogle();
   };
 

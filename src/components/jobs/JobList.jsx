@@ -1,63 +1,27 @@
 // src/components/jobs/JobList.jsx
-import React, { useEffect, useState } from "react";
+import React, { useContext, useEffect } from "react";
 import PropTypes from "prop-types";
+import { JobsContext } from "../../contexts/JobsContext";
 import JobCard from "./JobCard";
 import EmptyState from "../common/EmptyState";
 import Pagination from "../common/Pagination";
-import { getJobs } from "../../api/jobs";
 
 const JobList = ({ filters, onError }) => {
-  const [jobs, setJobs] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [pagination, setPagination] = useState({
-    currentPage: 1,
-    totalPages: 1,
-    totalItems: 0,
-    itemsPerPage: 10
-  });
+  const {
+    jobs,
+    loading: jobsLoading,
+    error: jobsError,
+    totalPages,
+    totalElements,
+    fetchAllJobs
+  } = useContext(JobsContext);
 
-  const fetchJobs = async (page = 1) => {
-    try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await getJobs({
-        ...filters,
-        page,
-        limit: pagination.itemsPerPage
-      });
-
-      if (response.success) {
-        setJobs(response.payload.content);
-        setPagination({
-          currentPage: response.payload.number + 1,
-          totalPages: response.payload.totalPages,
-          totalItems: response.payload.totalElements,
-          itemsPerPage: response.payload.size
-        });
-      } else {
-        setError(response.message || "Failed to fetch jobs");
-        onError?.(response.message);
-      }
-    } catch (err) {
-      const errorMessage = err.response?.data?.message || "Failed to fetch jobs";
-      setError(errorMessage);
-      onError?.(errorMessage);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Fetch jobs when filters change
   useEffect(() => {
-    fetchJobs(1);
-  }, [filters]); // Refetch when filters change
+    fetchAllJobs(filters);
+  }, [filters, fetchAllJobs]);
 
-  const handlePageChange = (newPage) => {
-    fetchJobs(newPage);
-  };
-
-  if (loading) {
+  if (jobsLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
@@ -78,10 +42,11 @@ const JobList = ({ filters, onError }) => {
     );
   }
 
-  if (error) {
+  if (jobsError) {
+    onError?.(jobsError);
     return (
       <div className="text-center py-10">
-        <p className="text-red-500 bg-red-100 p-4 rounded-md">{error}</p>
+        <p className="text-red-500 bg-red-100 p-4 rounded-md">{jobsError}</p>
       </div>
     );
   }
@@ -102,16 +67,16 @@ const JobList = ({ filters, onError }) => {
     <div className="space-y-6">
       <div className="job-list space-y-6">
         {jobs.map((job) => (
-          <JobCard key={job.id} job={job} />
+          <JobCard key={job.id || job.jobId} job={job} />
         ))}
       </div>
       
-      {pagination.totalPages > 1 && (
+      {totalPages > 1 && (
         <div className="mt-8">
           <Pagination
-            currentPage={pagination.currentPage}
-            totalPages={pagination.totalPages}
-            onPageChange={handlePageChange}
+            currentPage={filters.page || 1}
+            totalPages={totalPages}
+            onPageChange={(page) => fetchAllJobs({ ...filters, page })}
           />
         </div>
       )}
@@ -128,7 +93,8 @@ JobList.propTypes = {
     salary: PropTypes.arrayOf(PropTypes.string),
     jobType: PropTypes.arrayOf(PropTypes.string),
     education: PropTypes.arrayOf(PropTypes.string),
-    jobLevel: PropTypes.arrayOf(PropTypes.string)
+    jobLevel: PropTypes.arrayOf(PropTypes.string),
+    page: PropTypes.number
   }),
   onError: PropTypes.func
 };

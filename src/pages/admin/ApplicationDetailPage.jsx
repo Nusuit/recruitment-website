@@ -227,15 +227,29 @@ const AdminApplicationDetailPage = () => {
           >
             {formatApplicationStatus(application.status)}
           </span>
-          <button
-            onClick={() => {
-              setNewStatus(application.status);
-              setShowStatusModal(true);
-            }}
-            className="px-4 py-2 bg-yellow-500 text-white font-semibold rounded-lg hover:bg-yellow-600 text-sm flex items-center gap-2"
-          >
-            <FontAwesomeIcon icon="edit" /> Change Status
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowStatusModal(true)}
+              className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon="edit" />
+              Update Status
+            </button>
+            <Link
+              to={`/admin/interviews?applicationId=${application.id}`}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon="calendar-check" />
+              Schedule Interview
+            </Link>
+            <Link
+              to={`/admin/interviews?applicationId=${application.id}`}
+              className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600 transition-colors flex items-center gap-2"
+            >
+              <FontAwesomeIcon icon="calendar-check" />
+              Schedule Interview
+            </Link>
+          </div>
         </div>
       </div>
 

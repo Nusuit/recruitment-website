@@ -25,35 +25,47 @@ const JobApplyPage = () => {
       return;
     }
     setIsLoading(true);
-    try {
-      const fetchedJob = getJobById(jobId);
-      if (fetchedJob) {
-        setJob(fetchedJob);
-      } else {
-        // setError('Job not found.'); // This error will be handled by EmptyState
+    const fetchJob = async () => {
+      try {
+        if (!jobId) {
+          console.error("JobApplyPage - No jobId provided");
+          return;
+        }
+        const fetchedJob = await getJobById(jobId);
+        if (fetchedJob) {
+          setJob(fetchedJob);
+          console.log("JobApplyPage - Fetched job:", fetchedJob);
+        } else {
+          console.error("JobApplyPage - Job not found");
+        }
+      } catch (err) {
+        console.error("Error fetching job details for apply page:", err);
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching job details for apply page:", err);
-      // setError('Failed to load job details.');
-    } finally {
-      setIsLoading(false);
-    }
+    };
+    fetchJob();
   }, [jobId, getJobById, jobsLoading]);
 
   const handleApplicationSuccess = (submittedApplication) => {
-    // Navigate to applications page with a success message
     navigate("/applicant/applications", {
       state: {
-        successMessage: `Successfully applied for ${
-          submittedApplication.jobTitle || job?.title
-        }!`,
+        successMessage: `Successfully applied for ${submittedApplication.job?.title || job?.title}!`,
       },
     });
   };
 
   if (isLoading) {
+    return <LoadingSpinner fullPage message="Loading job application form..." />;
+  }
+
+  if (!jobId) {
     return (
-      <LoadingSpinner fullPage message="Loading job application form..." />
+      <EmptyState
+        title="Invalid Job"
+        description="No job ID was provided. Please select a job to apply for."
+        icon="exclamation-triangle"
+      />
     );
   }
 
@@ -99,7 +111,7 @@ const JobApplyPage = () => {
 
         <div className="bg-white p-6 md:p-10 rounded-xl shadow-2xl border border-gray-100">
           <ApplyForm
-            jobId={job.id}
+            jobId={jobId}
             jobTitle={job.title}
             onSubmitSuccess={handleApplicationSuccess}
           />

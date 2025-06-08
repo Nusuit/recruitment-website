@@ -26,41 +26,44 @@ const JobDetailsPage = () => {
 
   useEffect(() => {
     setIsLoading(true);
-    try {
-      // Wait for jobs context to finish loading before trying to get job
-      if (!jobsLoading) {
-        const fetchedJob = getJobById(id); // Use context function
-        if (fetchedJob) {
-          setJob(fetchedJob);
-          setError(null);
-        } else {
-          setError("Job not found.");
+    const fetchJob = async () => {
+      try {
+        // Wait for jobs context to finish loading before trying to get job
+        if (!jobsLoading) {
+          const fetchedJob = await getJobById(id); // Use context function
+          if (fetchedJob) {
+            setJob(fetchedJob);
+            setError(null);
+          } else {
+            setError("Job not found.");
+          }
+          setIsLoading(false);
         }
+      } catch (err) {
+        console.error("Error fetching job details:", err);
+        setError("Failed to load job details.");
         setIsLoading(false);
       }
-    } catch (err) {
-      console.error("Error fetching job details:", err);
-      setError("Failed to load job details.");
-      setIsLoading(false);
-    }
+    };
+    fetchJob();
   }, [id, getJobById, jobsLoading]); // Re-run when ID or context changes
 
   const handleApplyNow = () => {
     if (!isAuthenticated) {
       navigate("/login", {
-        state: { from: { pathname: `/jobs/${id}/apply` } },
+        state: { from: { pathname: `/applicant/jobs/${id}/apply` } },
       });
-    } else if (user?.role?.toLowerCase() === "candidate") {
+    } else if (user?.role?.toLowerCase() === "applicant") {
       navigate(`/applicant/jobs/${id}/apply`);
     } else {
       // Handle cases where non-candidates try to apply (e.g., show a message)
-      alert("Only candidates can apply for jobs.");
+      alert("Only applicants can apply for jobs.");
     }
   };
 
   const handleSaveJob = () => {
     if (!isAuthenticated) {
-      navigate("/login", { state: { from: { pathname: `/jobs/${id}` } } });
+      navigate("/login", { state: { from: { pathname: `/applicant/jobs/${id}` } } });
     } else {
       // THÊM KIỂM TRA AN TOÀN CHO job.id TRƯỚC KHI GỌI toggleSaveJob
       if (job && job.id) {
@@ -109,7 +112,7 @@ const JobDetailsPage = () => {
               {job.title}
             </h1>
             <div className="flex items-center space-x-3 mt-2 md:mt-0">
-              {isAuthenticated && user?.role?.toLowerCase() === "candidate" && (
+              {isAuthenticated && user?.role?.toLowerCase() === "applicant" && (
                 <button
                   onClick={handleSaveJob}
                   className={`p-3 rounded-full border transition-colors duration-200 ${
@@ -152,7 +155,7 @@ const JobDetailsPage = () => {
             </div>
           </div>
           <div className="text-sm text-gray-500 mt-3">
-            <span>Posted {formatTimeAgo(job.postedDate)}</span>
+            <span>Posted {formatTimeAgo(job.createdAt)}</span>
             <span className="mx-2">|</span>
             <span>
               Apply before {new Date(job.deadline).toLocaleDateString()}
@@ -177,33 +180,63 @@ const JobDetailsPage = () => {
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Responsibilities
               </h2>
-              <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
-                {job.responsibilities?.split("\n").map((res, index) => (
-                  <li key={index}>{res}</li>
-                ))}
-              </ul>
+              {job.responsibilities ? (
+                <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                  {Array.isArray(job.responsibilities)
+                    ? job.responsibilities.map((res, index) => (
+                        <li key={index}>{res}</li>
+                      ))
+                    : typeof job.responsibilities === 'string'
+                      ? job.responsibilities.split("\n").map((res, index) => (
+                          <li key={index}>{res}</li>
+                        ))
+                      : null}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No responsibilities listed.</p>
+              )}
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Requirements
               </h2>
-              <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
-                {job.requirements?.split("\n").map((req, index) => (
-                  <li key={index}>{req}</li>
-                ))}
-              </ul>
+              {job.requirements ? (
+                <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                  {Array.isArray(job.requirements)
+                    ? job.requirements.map((req, index) => (
+                        <li key={index}>{req}</li>
+                      ))
+                    : typeof job.requirements === 'string'
+                      ? job.requirements.split("\n").map((req, index) => (
+                          <li key={index}>{req}</li>
+                        ))
+                      : null}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No requirements listed.</p>
+              )}
             </section>
 
             <section>
               <h2 className="text-2xl font-semibold text-gray-800 mb-4">
                 Benefits
               </h2>
-              <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
-                {job.benefits?.split("\n").map((ben, index) => (
-                  <li key={index}>{ben}</li>
-                ))}
-              </ul>
+              {job.benefits ? (
+                <ul className="list-disc list-inside text-gray-700 leading-relaxed space-y-2">
+                  {Array.isArray(job.benefits)
+                    ? job.benefits.map((ben, index) => (
+                        <li key={index}>{ben}</li>
+                      ))
+                    : typeof job.benefits === 'string'
+                      ? job.benefits.split("\n").map((ben, index) => (
+                          <li key={index}>{ben}</li>
+                        ))
+                      : null}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No benefits listed.</p>
+              )}
             </section>
           </div>
 
@@ -218,7 +251,7 @@ const JobDetailsPage = () => {
                   <strong className="font-medium text-gray-600">
                     Posted Date:
                   </strong>
-                  <span>{new Date(job.postedDate).toLocaleDateString()}</span>
+                  <span>{new Date(job.createdAt).toLocaleDateString()}</span>
                 </li>
                 <li className="flex justify-between">
                   <strong className="font-medium text-gray-600">
@@ -260,14 +293,25 @@ const JobDetailsPage = () => {
                 Required Skills
               </h3>
               <div className="flex flex-wrap gap-2">
-                {job.skills?.split(",").map((skill, index) => (
-                  <span
-                    key={index}
-                    className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
-                  >
-                    {skill.trim()}
-                  </span>
-                ))}
+                {Array.isArray(job.skills)
+                  ? job.skills.map((skill, index) => (
+                      <span
+                        key={index}
+                        className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
+                      >
+                        {typeof skill === 'string' ? skill : skill.name}
+                      </span>
+                    ))
+                  : typeof job.skills === 'string'
+                    ? job.skills.split(",").map((skill, index) => (
+                        <span
+                          key={index}
+                          className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full"
+                        >
+                          {skill.trim()}
+                        </span>
+                      ))
+                    : null}
               </div>
 
               {/* TODO: Add Company Info Section Here */}

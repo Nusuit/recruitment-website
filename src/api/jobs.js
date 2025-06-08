@@ -4,8 +4,36 @@ import { objectToQueryString } from '../utils/helpers';
 // Get all jobs with filtering, sorting, and pagination
 export const getJobs = async (params = {}) => {
   try {
-    const queryString = objectToQueryString(params);
-    const response = await axiosInstance.get(`/applicant/jobs?${queryString}`);
+    // Add default pagination parameters if not provided
+    const defaultParams = {
+      page: params.page || 0,
+      size: params.size || 10,
+      sort: params.sort || 'createdAt,desc'
+    };
+    
+    // Convert filter parameters to match backend JobFilterDto
+    const filterParams = {
+      title: params.title || '',
+      industry: params.industry || '',
+      deadlineFrom: params.deadlineFrom || '',
+      deadlineTo: params.deadlineTo || '',
+      minSalary: params.minSalary || '',
+      maxSalary: params.maxSalary || ''
+    };
+
+    // Merge pagination and filter parameters
+    const queryParams = {
+      ...defaultParams,
+      ...filterParams
+    };
+
+    const queryString = objectToQueryString(queryParams);
+    const response = await axiosInstance.get(`/api/applicant/jobs${queryString}`);
+    
+    if (!response.data || !response.data.success) {
+      throw new Error(response.data?.message || 'Failed to fetch jobs');
+    }
+    
     return response.data;
   } catch (error) {
     console.error("[jobsAPI] getJobs error:", error);
@@ -16,7 +44,7 @@ export const getJobs = async (params = {}) => {
 // Get job by ID
 export const getJobById = async (jobId) => {
   try {
-    const response = await axiosInstance.get(`/applicant/jobs/${jobId}`);
+    const response = await axiosInstance.get(`/api/applicant/jobs/${jobId}`);
     return response.data;
   } catch (error) {
     console.error("[jobsAPI] getJobById error:", error);
@@ -28,7 +56,7 @@ export const getJobById = async (jobId) => {
 export const createJob = async (jobData) => {
   try {
     const response = await axiosInstance.post('/recruiter/jobs', jobData);
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] createJob error:", error);
     throw error;
@@ -39,7 +67,7 @@ export const createJob = async (jobData) => {
 export const updateJob = async (jobId, jobData) => {
   try {
     const response = await axiosInstance.put(`/recruiter/jobs/${jobId}`, jobData);
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] updateJob error:", error);
     throw error;
@@ -50,7 +78,7 @@ export const updateJob = async (jobId, jobData) => {
 export const cancelJob = async (jobId, reason) => {
   try {
     const response = await axiosInstance.patch(`/recruiter/jobs/${jobId}/cancel`, { reason });
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] cancelJob error:", error);
     throw error;
@@ -58,9 +86,9 @@ export const cancelJob = async (jobId, reason) => {
 };
 
 // Apply for a job
-export const applyForJob = async (jobId, applicationData) => {
+export const applyForJob = async (jobId, application) => {
   try {
-    const response = await axiosInstance.post(`/applicant/jobs/${jobId}`, applicationData);
+    const response = await axiosInstance.post(`/api/applicant/jobs/${jobId}`, application);
     return response.data;
   } catch (error) {
     console.error("[jobsAPI] applyForJob error:", error);
@@ -72,7 +100,7 @@ export const applyForJob = async (jobId, applicationData) => {
 export const getJobCategories = async () => {
   try {
     const response = await axiosInstance.get('/recruiter/skills');
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] getJobCategories error:", error);
     throw error;
@@ -84,7 +112,7 @@ export const getRecruitmentProcesses = async (params = {}) => {
   try {
     const queryString = objectToQueryString(params);
     const response = await axiosInstance.get(`/recruiter/processes?${queryString}`);
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] getRecruitmentProcesses error:", error);
     throw error;
@@ -95,7 +123,7 @@ export const getRecruitmentProcesses = async (params = {}) => {
 export const saveJob = async (jobId) => {
   try {
     const response = await axiosInstance.post(`/applicant/saved-jobs/${jobId}`);
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] saveJob error:", error);
     throw error;
@@ -106,7 +134,7 @@ export const saveJob = async (jobId) => {
 export const unsaveJob = async (jobId) => {
   try {
     const response = await axiosInstance.delete(`/applicant/saved-jobs/${jobId}`);
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] unsaveJob error:", error);
     throw error;
@@ -118,7 +146,7 @@ export const getSavedJobs = async (params = {}) => {
   try {
     const queryString = objectToQueryString(params);
     const response = await axiosInstance.get(`/applicant/saved-jobs?${queryString}`);
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[jobsAPI] getSavedJobs error:", error);
     throw error;

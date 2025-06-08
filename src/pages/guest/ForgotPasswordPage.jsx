@@ -5,10 +5,8 @@ import ForgotPasswordForm from "../../components/auth/ForgotPasswordForm";
 import AuthImageSection from "../../components/auth/AuthImageSection";
 
 const ForgotPasswordPage = () => {
-  // Thông tin cho AuthImageSection
-  const forgotPasswordImage = "/assets/images/forgot_password.png"; // Path ảnh bạn cung cấp
-  const forgotPasswordQuote =
-    "In fashion, one day you're in and the next you're out."; // Trích dẫn từ design
+  const forgotPasswordImage = "/assets/images/forgot_password.png";
+  const forgotPasswordQuote = "In fashion, one day you're in and the next you're out.";
   const forgotPasswordAuthor = "Heidi Klum";
 
   return (
@@ -18,7 +16,7 @@ const ForgotPasswordPage = () => {
           <div className="container mx-auto max-w-5xl">
             <Link to="/" className="flex items-center">
               <img
-                src="/assets/images/logo.png" // Path logo.png
+                src="/assets/images/logo.png"
                 alt="MyaCorp Logo"
                 className="h-8 w-auto mr-2"
               />
@@ -28,11 +26,9 @@ const ForgotPasswordPage = () => {
         </header>
         <div className="flex flex-col md:flex-row items-center w-full flex-grow justify-center mt-12 md:mt-10">
           <main className="flex flex-col md:flex-row bg-white rounded-xl md:shadow-xl overflow-hidden w-full max-w-5xl min-h-[550px] md:min-h-[auto]">
-            {/* Left Column: ForgotPassword Form */}
             <div className="w-full md:w-2/5 p-6 sm:p-8 md:p-10 flex flex-col justify-center">
               <ForgotPasswordForm />
             </div>
-            {/* Right Column: Image and Quote */}
             <div className="w-full md:w-3/5 hidden md:flex flex-col justify-center items-center p-8 lg:p-10 bg-white">
               <AuthImageSection
                 imageSrc={forgotPasswordImage}

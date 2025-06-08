@@ -8,7 +8,7 @@ const Footer = () => {
 
   const socialLinks = [
     {
-      href: "https://facebook.com/myacorp", // Update with actual links
+      href: "https://facebook.com/myacorp",
       icon: ["fab", "facebook-f"],
       label: "Facebook",
     },
@@ -18,8 +18,8 @@ const Footer = () => {
       label: "Twitter",
     },
     {
-      href: "https://google.com", // Google+ is deprecated, consider another platform or remove
-      icon: ["fab", "google"], // Or another relevant icon like 'google-plus-g' if you meant that
+      href: "https://google.com",
+      icon: ["fab", "google"],
       label: "Google",
     },
     {
@@ -36,16 +36,16 @@ const Footer = () => {
 
   const applicantLinks = [
     { to: "/jobs", label: "Find Jobs" },
-    { to: "/companies", label: "Company List" }, // Assuming a route for company list
-    { to: "/career-guide", label: "Career Guide" }, // Assuming a route
-    { to: "/salary-reference", label: "Salary Reference" }, // Assuming a route
+    { to: "/companies", label: "Company List" },
+    { to: "/career-guide", label: "Career Guide" },
+    { to: "/salary-reference", label: "Salary Reference" },
   ];
 
   const employerLinks = [
     { to: "/admin/jobs/create", label: "Post Job Openings" },
-    { to: "/admin/applicants", label: "Search Resumes" }, // Link to applicant management
-    { to: "/pricing", label: "Service Price List" }, // Assuming a pricing page
-    { to: "/admin/contact", label: "Contact Us" }, // Assuming an admin contact or use general contact
+    { to: "/admin/applicants", label: "Search Resumes" },
+    { to: "/pricing", label: "Service Price List" },
+    { to: "/admin/contact", label: "Contact Us" },
   ];
 
   const contactInfo = [
@@ -53,19 +53,18 @@ const Footer = () => {
       icon: "map-marker-alt",
       text: "ThuDuc HCM",
       href: "https://maps.google.com/?q=ThuDuc+HCM",
-    }, // Example link
+    },
     {
       icon: "envelope",
       text: "info@gmail.com",
       href: "mailto:info@gmail.com",
     },
     { icon: "phone", text: "+84 99999999", href: "tel:+8499999999" },
-    { icon: "phone", text: "+84 99999999", href: "tel:+8499999999" }, // Assuming two different numbers or a typo in design
+    { icon: "phone", text: "+84 99999999", href: "tel:+8499999999" },
   ];
 
   return (
     <footer className="site-footer text-white">
-      {/* Top section with social links */}
       <div className="bg-teal-500 py-4">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row justify-between items-center">
           <span className="text-sm mb-2 sm:mb-0">
@@ -88,22 +87,18 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Main footer content */}
       <div className="bg-gray-800 py-12">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
-          {/* Column 1: Logo and About (Optional, design shows logo here) */}
           <div className="footer-section md:col-span-2 lg:col-span-1">
             <Link to="/" className="footer-logo mb-6 inline-block">
               <img
-                src="/assets/images/logo.png" // Use the new logo
+                src="/assets/images/logo.png"
                 alt="SIUUUcorp Logo"
-                className="h-16 w-auto filter brightness-0 invert" // Invert for dark bg
+                className="h-16 w-auto filter brightness-0 invert"
               />
             </Link>
-            {/* Optional: Add a short description here if needed */}
           </div>
 
-          {/* Column 2: Applicants */}
           <div className="footer-section">
             <h3 className="text-md font-semibold text-white uppercase tracking-wider mb-5 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-10 after:h-0.5 after:bg-teal-500">
               APPLICANTS
@@ -122,7 +117,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 3: Employers */}
           <div className="footer-section">
             <h3 className="text-md font-semibold text-white uppercase tracking-wider mb-5 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-10 after:h-0.5 after:bg-teal-500">
               EMPLOYERS
@@ -141,7 +135,6 @@ const Footer = () => {
             </ul>
           </div>
 
-          {/* Column 4: Contact */}
           <div className="footer-section">
             <h3 className="text-md font-semibold text-white uppercase tracking-wider mb-5 relative pb-2 after:content-[''] after:absolute after:left-0 after:bottom-0 after:w-10 after:h-0.5 after:bg-teal-500">
               CONTACT
@@ -167,12 +160,10 @@ const Footer = () => {
         </div>
       </div>
 
-      {/* Bottom bar */}
       <div className="bg-gray-900 py-4">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <p className="text-xs text-gray-500">
-            &copy; {currentYear} Copyright: MyaCorp.com{" "}
-            {/* Updated copyright text */}
+            &copy; {currentYear} Copyright: MyaCorp.com
           </p>
         </div>
       </div>

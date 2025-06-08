@@ -29,19 +29,19 @@ const ApplicantLayout = () => {
   };
 
   const menuItems = [
-    { label: "Tổng quan", path: "/applicant/dashboard", icon: "gauge-high" },
-    { label: "Tìm việc", path: "/applicant/jobs", icon: "briefcase" },
+    { label: "Overview", path: "/applicant/dashboard", icon: "gauge-high" },
+    { label: "Find Jobs", path: "/applicant/jobs", icon: "briefcase" },
     {
-      label: "Việc làm đã lưu",
+      label: "Saved Jobs",
       path: "/applicant/saved-jobs",
       icon: "bookmark",
     },
     {
-      label: "Đơn ứng tuyển",
+      label: "My Applications",
       path: "/applicant/applications",
       icon: "file-alt",
     },
-    { label: "Hồ sơ", path: "/applicant/profile", icon: "user" },
+    { label: "Profile", path: "/applicant/profile", icon: "user" },
   ];
 
   const navLinkClasses = ({ isActive }) =>
@@ -77,7 +77,7 @@ const ApplicantLayout = () => {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="text-md font-semibold text-gray-800 truncate">
-                    {user?.firstName || user?.name || "Ứng viên"}
+                    {user?.firstName || user?.name || "Applicant"}
                   </h3>
                   <p className="text-xs text-gray-600 truncate">
                     {user?.email}
@@ -135,7 +135,7 @@ const ApplicantLayout = () => {
                   sidebarOpen ? "" : "mx-auto"
                 }`}
               />
-              {sidebarOpen && <span>Đăng xuất</span>}
+              {sidebarOpen && <span>Logout</span>}
             </button>
           </div>
         </aside>

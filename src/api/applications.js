@@ -160,8 +160,8 @@ const mockApplications = [
 export const getUserApplications = async (params = {}) => {
   try {
     const queryString = objectToQueryString(params);
-    const response = await axiosInstance.get(`/api/applicant/applications?${queryString}`);
-    return response.data;
+    const response = await axiosInstance.get(`/applicant/applications?${queryString}`);
+    return response.data.payload;
   } catch (error) {
     console.error("[applicationsAPI] getUserApplications error:", error);
     throw error;
@@ -171,8 +171,8 @@ export const getUserApplications = async (params = {}) => {
 // Get application details
 export const getApplicationDetails = async (applicationId) => {
   try {
-    const response = await axiosInstance.get(`/api/applicant/applications/${applicationId}`);
-    return response.data;
+    const response = await axiosInstance.get(`/applicant/applications/${applicationId}`);
+    return response.data.payload;
   } catch (error) {
     console.error("[applicationsAPI] getApplicationDetails error:", error);
     throw error;
@@ -183,8 +183,8 @@ export const getApplicationDetails = async (applicationId) => {
 export const getJobApplications = async (jobId, params = {}) => {
   try {
     const queryString = objectToQueryString(params);
-    const response = await axiosInstance.get(`/api/recruiter/jobs/${jobId}/applications?${queryString}`);
-    return response.data;
+    const response = await axiosInstance.get(`/recruiter/jobs/${jobId}/applications?${queryString}`);
+    return response.data.payload;
   } catch (error) {
     console.error("[applicationsAPI] getJobApplications error:", error);
     throw error;
@@ -194,11 +194,11 @@ export const getJobApplications = async (jobId, params = {}) => {
 // Update application status (for recruiters)
 export const updateApplicationStatus = async (applicationId, status, feedback = null) => {
   try {
-    const response = await axiosInstance.patch(`/api/recruiter/applications/${applicationId}/status`, {
+    const response = await axiosInstance.patch(`/recruiter/applications/${applicationId}/status`, {
       status,
       feedback
     });
-    return response.data;
+    return response.data.payload;
   } catch (error) {
     console.error("[applicationsAPI] updateApplicationStatus error:", error);
     throw error;
@@ -208,82 +208,47 @@ export const updateApplicationStatus = async (applicationId, status, feedback = 
 // Schedule interview (for recruiters)
 export const scheduleInterview = async (applicationId, interviewData) => {
   try {
-    // Kiểm tra xem đơn ứng tuyển có tồn tại không
-    const application = mockApplications.find(app => app.id === parseInt(applicationId));
-    
-    if (!application) {
-      return {
-        success: false,
-        error: 'Application not found'
-      };
-    }
-    
-    // Cập nhật interviewDetails trực tiếp vào application
-    application.interviewDetails = {
-      id: Date.now(), // Tạo ID giả cho interview
-      applicationId: parseInt(applicationId),
-      ...interviewData
-    };
-    
-    // Cập nhật trạng thái đơn ứng tuyển thành "INTERVIEW_SCHEDULED" nếu chưa phải
-    if (application.status !== 'INTERVIEW_SCHEDULED') {
-      application.status = 'INTERVIEW_SCHEDULED';
-      // Thêm event vào timeline
-      const newTimelineEvent = {
-        date: new Date().toISOString(),
-        title: "Interview Scheduled",
-        description: `Interview scheduled for ${interviewData.datetime} (${interviewData.type}).`
-      };
-      if (!application.timeline) {
-        application.timeline = [];
-      }
-      application.timeline.push(newTimelineEvent);
-    }
-
-    // Lưu thay đổi vào mockApplications (nếu mockApplications là global mutable array)
-    const appIndex = mockApplications.findIndex(app => app.id === parseInt(applicationId));
-    if (appIndex !== -1) {
-      mockApplications[appIndex] = application;
-    }
-    setApplicationsToStorage(mockApplications); // Cập nhật localStorage
-    
-    return {
-      success: true,
-      interview: application.interviewDetails // Trả về interviewDetails
-    };
+    const response = await axiosInstance.post(
+      `/recruiter/applications/${applicationId}/interview`,
+      interviewData
+    );
+    return response.data.payload;
   } catch (error) {
-    console.error(`Schedule interview for application ${applicationId} error:`, error);
-    return { success: false, error: 'Failed to schedule interview.' };
+    console.error("[applicationsAPI] scheduleInterview error:", error);
+    throw error;
+  }
+};
+
+// Update interview result (for recruiters)
+export const updateInterviewResult = async (applicationId, interviewResult) => {
+  try {
+    const response = await axiosInstance.patch(
+      `/recruiter/applications/${applicationId}/interview-result`,
+      interviewResult
+    );
+    return response.data.payload;
+  } catch (error) {
+    console.error("[applicationsAPI] updateInterviewResult error:", error);
+    throw error;
   }
 };
 
 // Get interview details
 export const getInterviewDetails = async (applicationId) => {
   try {
-    const application = mockApplications.find(app => app.id === parseInt(applicationId));
-    
-    if (application && application.interviewDetails) {
-      return {
-        success: true,
-        interview: application.interviewDetails
-      };
-    } else {
-      return {
-        success: false,
-        error: 'Interview not found'
-      };
-    }
+    const response = await axiosInstance.get(`/applicant/applications/${applicationId}/interview`);
+    return response.data.payload;
   } catch (error) {
-    console.error(`Get interview details for application ${applicationId} error:`, error);
-    return { success: false, error: 'Failed to fetch interview details.' };
+    console.error("[applicationsAPI] getInterviewDetails error:", error);
+    throw error;
   }
 };
 
 // Withdraw application (for applicants)
 export const withdrawApplication = async (applicationId) => {
   try {
-    const response = await axiosInstance.delete(`/api/applicant/applications/${applicationId}`);
-    return response.data;
+    const response = await axiosInstance.patch(`/applicant/applications/${applicationId}/withdraw`);
+    return response.data.payload;
   } catch (error) {
     console.error("[applicationsAPI] withdrawApplication error:", error);
     throw error;
@@ -293,33 +258,24 @@ export const withdrawApplication = async (applicationId) => {
 // Get application statistics (for recruiters)
 export const getApplicationStats = async (jobId) => {
   try {
-    const response = await axiosInstance.get(`/api/recruiter/jobs/${jobId}/applications/stats`);
-    return response.data;
+    const response = await axiosInstance.get(`/recruiter/jobs/${jobId}/applications/stats`);
+    return response.data.payload;
   } catch (error) {
     console.error("[applicationsAPI] getApplicationStats error:", error);
     throw error;
   }
 };
 
-// Download resume (for recruiters)
+// Download resume
 export const downloadResume = async (applicationId) => {
   try {
-    const application = mockApplications.find(app => app.id === parseInt(applicationId));
-    
-    if (!application) {
-      return {
-        success: false,
-        error: 'Application not found'
-      };
-    }
-    
-    // Giả lập tạo một file PDF trống (không thực sự tạo file trong trình duyệt)
-    alert(`Đang tải xuống file ${application.resumeUrl}`);
-    
-    return { success: true };
+    const response = await axiosInstance.get(`/applicant/applications/${applicationId}/resume`, {
+      responseType: 'blob' // Important for file downloads
+    });
+    return response.data;
   } catch (error) {
-    console.error(`Download resume for application ${applicationId} error:`, error);
-    return { success: false, error: 'Failed to download resume.' };
+    console.error("[applicationsAPI] downloadResume error:", error);
+    throw error;
   }
 };
 

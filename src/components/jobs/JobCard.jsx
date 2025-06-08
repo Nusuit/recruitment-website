@@ -21,6 +21,7 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
 
   const {
     id,
+    jobId,
     title,
     company,
     location,
@@ -30,6 +31,9 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
     logoUrl = "/assets/images/company-logo-placeholder.png",
     tags,
   } = job;
+
+  // Use jobId if available, otherwise fallback to id
+  const jobIdentifier = jobId || id;
 
   const handleSaveClick = async (e) => {
     e.stopPropagation();
@@ -44,13 +48,13 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
     try {
       setIsSaving(true);
       if (isSaved) {
-        await unsaveJob(id);
+        await unsaveJob(jobIdentifier);
         toast.success("Job unsaved successfully", {
           position: "top-right",
           autoClose: 3000,
         });
       } else {
-        await saveJob(id);
+        await saveJob(jobIdentifier);
         toast.success("Job saved successfully", {
           position: "top-right",
           autoClose: 3000,
@@ -58,7 +62,7 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
       }
       setIsSaved(!isSaved);
       if (onSaveStatusChange) {
-        onSaveStatusChange(id, !isSaved);
+        onSaveStatusChange(jobIdentifier, !isSaved);
       }
     } catch (error) {
       toast.error(error.message || "Failed to update save status", {
@@ -71,10 +75,20 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
   };
 
   const handleCardClick = () => {
-    navigate(`/jobs/${id}`);
+    const jobPath = isAuthenticated && user?.role?.toLowerCase() === "applicant"
+      ? `/applicant/jobs/${jobIdentifier}`
+      : `/jobs/${jobIdentifier}`;
+    navigate(jobPath);
   };
 
-  const canSave = isAuthenticated && user?.role?.toLowerCase() === "candidate";
+  const canSave = isAuthenticated && user?.role?.toLowerCase() === "applicant";
+
+  // Get the correct job details path based on user role
+  const getJobDetailsPath = () => {
+    return isAuthenticated && user?.role?.toLowerCase() === "applicant"
+      ? `/applicant/jobs/${jobIdentifier}`
+      : `/jobs/${jobIdentifier}`;
+  };
 
   // Design V2
   if (designVersion === "v2") {
@@ -86,7 +100,7 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
 
     return (
       <Link
-        to={`/jobs/${id}`}
+        to={getJobDetailsPath()}
         className="job-card-v2 block bg-white p-5 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-200"
       >
         <div className="flex items-center mb-4">
@@ -164,7 +178,7 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
   // Design V1
   return (
     <Link
-      to={`/jobs/${id}`}
+      to={getJobDetailsPath()}
       className="job-card block bg-white p-6 rounded-lg shadow-sm border border-transparent hover:shadow-lg hover:border-blue-500 transition-all duration-200 mb-4 no-underline"
     >
       <div className="flex flex-col sm:flex-row gap-4">
@@ -198,7 +212,6 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
               </button>
             )}
           </div>
-          <p className="text-sm font-medium text-gray-700">{company}</p>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-500 mt-2">
             <div className="flex items-center gap-1.5">
               <FontAwesomeIcon icon="location-dot" />
@@ -224,7 +237,8 @@ const JobCard = ({ job, designVersion = "v1", onSaveStatusChange }) => {
 
 JobCard.propTypes = {
   job: PropTypes.shape({
-    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    id: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    jobId: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
     title: PropTypes.string.isRequired,
     company: PropTypes.string.isRequired,
     location: PropTypes.string.isRequired,

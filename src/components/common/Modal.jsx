@@ -75,8 +75,7 @@ const Modal = ({ title, children, onClose, isOpen, size = "md" }) => {
         <div className="p-4 md:p-5 flex-grow overflow-y-auto">{children}</div>
         {/* Optional: Modal Actions/Footer can be added here if needed by passing props */}
       </div>
-      {/* Add keyframes for modalShow animation in your global CSS or Tailwind config */}
-      <style jsx global>{`
+      <style>{`
         @keyframes modalShow {
           to {
             opacity: 1;

@@ -53,7 +53,6 @@ const ApplicationsList = ({
       case "hired":
         return "bg-green-100 text-green-800";
       case "rejected":
-      case "notselected":
         return "bg-red-100 text-red-800";
       case "withdrawn":
         return "bg-gray-100 text-gray-500";
@@ -63,18 +62,20 @@ const ApplicationsList = ({
   };
 
   return (
-    <div className="applications-list-component bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-      <div className="flex justify-between items-center mb-6 pb-3 border-b border-gray-200">
-        <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
-        {showViewAllLink && applications.length > (limit || 0) && (
-          <Link
-            to={viewAllLinkPath}
-            className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
-          >
-            View All <FontAwesomeIcon icon="arrow-right" size="xs" />
-          </Link>
-        )}
-      </div>
+    <div className="applications-list">
+      {title && (
+        <div className="flex justify-between items-center mb-6">
+          <h3 className="text-xl font-semibold text-gray-800">{title}</h3>
+          {showViewAllLink && applications.length > (limit || 0) && (
+            <Link
+              to={viewAllLinkPath}
+              className="text-sm text-blue-600 hover:underline font-medium flex items-center gap-1"
+            >
+              View All <FontAwesomeIcon icon="arrow-right" size="xs" />
+            </Link>
+          )}
+        </div>
+      )}
 
       {applicationsToDisplay.length === 0 ? (
         <EmptyState
@@ -103,7 +104,7 @@ const ApplicationsList = ({
               <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center">
                 <div>
                   <Link
-                    to={`/jobs/${app.jobId}`}
+                    to={`/applicant/jobs/${app.jobId}`}
                     className="font-semibold text-gray-800 hover:text-blue-600 text-md"
                   >
                     {app.jobTitle}

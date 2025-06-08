@@ -5,15 +5,15 @@ import { AuthContext } from "../../contexts/AuthContext";
 import { validateForgotPasswordForm } from "../../utils/validators";
 import Button from "../common/Button";
 import Input from "../common/Input";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"; // For icon in button
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const ForgotPasswordForm = () => {
   const { forgotPassword, loading: authLoading } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
-  const [error, setError] = useState(""); // Lỗi từ API
-  const [validationError, setValidationError] = useState(""); // Lỗi từ client-side validation
+  const [error, setError] = useState("");
+  const [validationError, setValidationError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e) => {
@@ -34,14 +34,13 @@ const ForgotPasswordForm = () => {
 
     setIsSubmitting(true);
     try {
-      const result = await forgotPassword(email); // Hàm này trong AuthContext nên xử lý việc gọi API
+      const result = await forgotPassword(email);
       if (result.success) {
-        // Điều hướng đến trang /check-email với thông điệp phù hợp
         navigate("/check-email", {
           state: {
             email: email,
-            message: `If an account with email ${email} exists, we have sent instructions to reset your password. Please check your inbox (and spam folder).`, // Thông điệp rõ ràng hơn
-            purpose: "passwordReset", // Giữ lại purpose để trang CheckEmailPage có thể tùy biến hiển thị nếu cần
+            message: `If an account with email ${email} exists, we have sent instructions to reset your password. Please check your inbox (and spam folder).`,
+            purpose: "passwordReset",
           },
         });
       } else {
@@ -51,7 +50,6 @@ const ForgotPasswordForm = () => {
         );
       }
     } catch (err) {
-      console.error("Forgot password error:", err);
       setError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);

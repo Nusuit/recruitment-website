@@ -1,20 +1,29 @@
 // src/components/home/LatestJobs.jsx
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import { Link } from "react-router-dom";
 import PropTypes from "prop-types";
 import { JobsContext } from "../../contexts/JobsContext";
-import JobCard from "../jobs/JobCard"; // JobCard này cũng cần được cập nhật theo design mới
+import JobCard from "../jobs/JobCard";
 import LoadingSpinner from "../common/LoadingSpinner";
 import EmptyState from "../common/EmptyState";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const LatestJobs = ({ limit = 4 }) => {
-  // Design hiển thị 4 jobs
   const {
     jobs,
     loading: jobsLoading,
     error: jobsError,
+    fetchAllJobs
   } = useContext(JobsContext);
+
+  // Fetch latest jobs on mount
+  useEffect(() => {
+    fetchAllJobs({ 
+      page: 0,
+      size: limit,
+      sort: 'createdAt,desc'
+    });
+  }, [fetchAllJobs, limit]);
 
   if (jobsLoading) {
     return (
@@ -24,7 +33,6 @@ const LatestJobs = ({ limit = 4 }) => {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 sm:mb-0">
               Latest job open
             </h2>
-            {/* Skeleton for link */}
             <div className="h-6 bg-gray-200 rounded w-32 animate-pulse"></div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -66,12 +74,9 @@ const LatestJobs = ({ limit = 4 }) => {
     );
   }
 
-  const latestActiveJobs = jobs
-    .filter((job) => job.status === "ACTIVE" || !job.status)
-    .sort((a, b) => new Date(b.postedDate) - new Date(a.postedDate))
-    .slice(0, limit);
+  const latestJobs = jobs.slice(0, limit);
 
-  if (latestActiveJobs.length === 0 && !jobsLoading) {
+  if (latestJobs.length === 0 && !jobsLoading) {
     return (
       <section className="latest-jobs-section py-16 md:py-20 bg-gray-50">
         <div className="container mx-auto px-4">
@@ -102,8 +107,6 @@ const LatestJobs = ({ limit = 4 }) => {
 
   return (
     <section className="latest-jobs-section py-16 md:py-20 bg-gray-50">
-      {" "}
-      {/* Nền xám nhạt theo design */}
       <div className="container mx-auto px-4">
         <div className="flex flex-col sm:flex-row justify-between items-center mb-10 md:mb-12">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4 sm:mb-0">
@@ -111,20 +114,23 @@ const LatestJobs = ({ limit = 4 }) => {
           </h2>
           <Link
             to="/jobs"
-            className="text-purple-600 font-semibold hover:text-purple-700 transition-colors duration-200 flex items-center group text-sm" // Màu tím cho link
+            className="text-purple-600 font-semibold hover:text-purple-700 transition-colors duration-200 flex items-center group text-sm"
           >
             See Job available
             <FontAwesomeIcon
-              icon="arrow-right" // Đảm bảo icon này được đăng ký
+              icon="arrow-right"
               className="ml-2 transform group-hover:translate-x-1 transition-transform duration-200"
             />
           </Link>
         </div>
 
-        {/* Grid hiển thị 2 cột job card */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {latestActiveJobs.map((job) => (
-            <JobCard key={job.id} job={job} designVersion="v2" /> // Thêm prop designVersion
+          {latestJobs.map((job) => (
+            <JobCard 
+              key={job.jobId || job.id} 
+              job={job} 
+              designVersion="v2" 
+            />
           ))}
         </div>
       </div>

@@ -2,7 +2,8 @@ import axiosInstance from './config/axiosConfig';
 
 export const applicantAPI = {
   getJobs: async (params) => {
-    try {      const response = await axiosInstance.get('/applicant/jobs', { params });
+    try {
+      const response = await axiosInstance.get('/api/applicant/jobs', { params });
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -11,7 +12,7 @@ export const applicantAPI = {
 
   getMySavedJobs: async () => {
     try {
-      const response = await axiosInstance.get('/applicant/saved-jobs');
+      const response = await axiosInstance.get('/api/applicant/saved-jobs');
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -19,7 +20,7 @@ export const applicantAPI = {
   },
   saveJob: async (jobId) => {
     try {
-      const response = await axiosInstance.post(`/applicant/saved-jobs/${jobId}`);
+      const response = await axiosInstance.post(`/api/applicant/saved-jobs/${jobId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -27,7 +28,7 @@ export const applicantAPI = {
   },
   unsaveJob: async (jobId) => {
     try {
-      const response = await axiosInstance.delete(`/applicant/saved-jobs/${jobId}`);
+      const response = await axiosInstance.delete(`/api/applicant/saved-jobs/${jobId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -35,18 +36,29 @@ export const applicantAPI = {
   },
   applyJob: async (jobId, applicationData) => {
     try {
+      console.log("Submitting application for job ID:", jobId);
+      console.log("Application data:", applicationData);
+      
       const response = await axiosInstance.post(
-        `/applicant/jobs/${jobId}/applications`,
-        applicationData
+        `/api/applicant/jobs/${jobId}`,
+        applicationData,
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
       );
+      
+      console.log("Application submission response:", response.data);
       return response.data;
     } catch (error) {
+      console.error("Error submitting application:", error);
       throw error.response?.data || error;
     }
   },
   getApplications: async () => {
     try {
-      const response = await axiosInstance.get('/applicant/applications');
+      const response = await axiosInstance.get('/api/applicant/applications');
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -54,7 +66,7 @@ export const applicantAPI = {
   },
   getApplicationDetail: async (applicationId) => {
     try {
-      const response = await axiosInstance.get(`/applicant/applications/${applicationId}`);
+      const response = await axiosInstance.get(`/api/applicant/applications/${applicationId}`);
       return response.data;
     } catch (error) {
       throw error.response?.data || error;
@@ -67,7 +79,7 @@ export const applicantAPI = {
         `/candidate/applications/${applicationId}`,
         data
       );
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -78,7 +90,7 @@ export const applicantAPI = {
       const response = await axiosInstance.delete(
         `/candidate/applications/${applicationId}`
       );
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -87,7 +99,7 @@ export const applicantAPI = {
   getProfile: async () => {
     try {
       const response = await axiosInstance.get('/candidate/profile');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -96,7 +108,7 @@ export const applicantAPI = {
   updateProfile: async (profileData) => {
     try {
       const response = await axiosInstance.put('/candidate/profile', profileData);
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -112,7 +124,7 @@ export const applicantAPI = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -128,7 +140,7 @@ export const applicantAPI = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -137,7 +149,7 @@ export const applicantAPI = {
   getGenders: async () => {
     try {
       const response = await axiosInstance.get('/candidate/genders');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       throw error.response?.data || error;
     }
@@ -147,7 +159,7 @@ export const applicantAPI = {
   getApplicantProfile: async () => {
     try {
       const response = await axiosInstance.get('/api/applicant/profile');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] getApplicantProfile error:", error);
       throw error;
@@ -158,7 +170,7 @@ export const applicantAPI = {
   updateApplicantProfile: async (profileData) => {
     try {
       const response = await axiosInstance.put('/api/applicant/profile', profileData);
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] updateApplicantProfile error:", error);
       throw error;
@@ -175,7 +187,7 @@ export const applicantAPI = {
           'Content-Type': 'multipart/form-data',
         },
       });
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] uploadResume error:", error);
       throw error;
@@ -186,7 +198,7 @@ export const applicantAPI = {
   deleteResume: async () => {
     try {
       const response = await axiosInstance.delete('/api/applicant/profile/resume');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] deleteResume error:", error);
       throw error;
@@ -197,7 +209,7 @@ export const applicantAPI = {
   getApplicantSkills: async () => {
     try {
       const response = await axiosInstance.get('/api/applicant/profile/skills');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] getApplicantSkills error:", error);
       throw error;
@@ -208,7 +220,7 @@ export const applicantAPI = {
   updateApplicantSkills: async (skills) => {
     try {
       const response = await axiosInstance.put('/api/applicant/profile/skills', { skills });
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] updateApplicantSkills error:", error);
       throw error;
@@ -219,7 +231,7 @@ export const applicantAPI = {
   getApplicantEducation: async () => {
     try {
       const response = await axiosInstance.get('/api/applicant/profile/education');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] getApplicantEducation error:", error);
       throw error;
@@ -230,7 +242,7 @@ export const applicantAPI = {
   updateApplicantEducation: async (education) => {
     try {
       const response = await axiosInstance.put('/api/applicant/profile/education', { education });
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] updateApplicantEducation error:", error);
       throw error;
@@ -241,7 +253,7 @@ export const applicantAPI = {
   getApplicantExperience: async () => {
     try {
       const response = await axiosInstance.get('/api/applicant/profile/experience');
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] getApplicantExperience error:", error);
       throw error;
@@ -252,12 +264,78 @@ export const applicantAPI = {
   updateApplicantExperience: async (experience) => {
     try {
       const response = await axiosInstance.put('/api/applicant/profile/experience', { experience });
-      return response.data;
+      return response.data.payload;
     } catch (error) {
       console.error("[applicantAPI] updateApplicantExperience error:", error);
       throw error;
     }
-  }
+  },
+
+  // Get applicant certifications
+  getApplicantCertifications: async () => {
+    try {
+      const response = await axiosInstance.get('/api/applicant/profile/certifications');
+      return response.data.payload;
+    } catch (error) {
+      console.error("[applicantAPI] getApplicantCertifications error:", error);
+      throw error;
+    }
+  },
+
+  // Update applicant certifications
+  updateApplicantCertifications: async (certifications) => {
+    try {
+      const response = await axiosInstance.put('/api/applicant/profile/certifications', { certifications });
+      return response.data.payload;
+    } catch (error) {
+      console.error("[applicantAPI] updateApplicantCertifications error:", error);
+      throw error;
+    }
+  },
+
+  // Get applicant languages
+  getApplicantLanguages: async () => {
+    try {
+      const response = await axiosInstance.get('/api/applicant/profile/languages');
+      return response.data.payload;
+    } catch (error) {
+      console.error("[applicantAPI] getApplicantLanguages error:", error);
+      throw error;
+    }
+  },
+
+  // Update applicant languages
+  updateApplicantLanguages: async (languages) => {
+    try {
+      const response = await axiosInstance.put('/api/applicant/profile/languages', { languages });
+      return response.data.payload;
+    } catch (error) {
+      console.error("[applicantAPI] updateApplicantLanguages error:", error);
+      throw error;
+    }
+  },
+
+  // Get applicant social links
+  getApplicantSocialLinks: async () => {
+    try {
+      const response = await axiosInstance.get('/api/applicant/profile/social-links');
+      return response.data.payload;
+    } catch (error) {
+      console.error("[applicantAPI] getApplicantSocialLinks error:", error);
+      throw error;
+    }
+  },
+
+  // Update applicant social links
+  updateApplicantSocialLinks: async (socialLinks) => {
+    try {
+      const response = await axiosInstance.put('/api/applicant/profile/social-links', { socialLinks });
+      return response.data.payload;
+    } catch (error) {
+      console.error("[applicantAPI] updateApplicantSocialLinks error:", error);
+      throw error;
+    }
+  },
 };
 
 export default applicantAPI;

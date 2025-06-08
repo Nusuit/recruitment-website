@@ -2,12 +2,11 @@
 import React from "react";
 import PropTypes from "prop-types";
 
-// Sử dụng JavaScript default parameters thay vì defaultProps
 const AuthImageSection = ({
-  imageSrc = "/assets/images/login.png", // Ảnh mặc định
-  imageAlt = "Fashion Illustration",   // Alt text mặc định
-  quoteText = "Style is a way to say who you are without having to speak.", // Trích dẫn mặc định
-  quoteAuthor = "Rachel Zoe"             // Tác giả mặc định
+  imageSrc = "/assets/images/login.png",
+  imageAlt = "Fashion Illustration",
+  quoteText = "Style is a way to say who you are without having to speak.",
+  quoteAuthor = "Rachel Zoe"
 }) => {
   return (
     <div className="flex flex-col justify-center items-center h-full text-center px-4">
@@ -31,13 +30,10 @@ const AuthImageSection = ({
 };
 
 AuthImageSection.propTypes = {
-  // Không còn .isRequired vì đã có giá trị mặc định
   imageSrc: PropTypes.string,
   imageAlt: PropTypes.string,
   quoteText: PropTypes.string,
   quoteAuthor: PropTypes.string,
 };
-
-// Bỏ hoàn toàn khối AuthImageSection.defaultProps
 
 export default AuthImageSection;

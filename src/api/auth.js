@@ -26,16 +26,14 @@ const login = async (email, password, role) => {
       payload = { email: email, password: password };
     }
 
-    console.log(`[authAPI] Attempting POST to : ${endpoint} with payload :`, payload);
     const response = await axiosInstance.post(endpoint, payload);
-    console.log("[authAPI] Login response from backend:", response);
 
     const { success, message, payload: responsePayload } = response.data || {};
 
     if (success && responsePayload && responsePayload.accessToken) {
-      localStorage.setItem("token", responsePayload.accessToken); // Save accessToken
+      localStorage.setItem("token", responsePayload.accessToken);
       if (responsePayload.user) {
-        localStorage.setItem("user", JSON.stringify(responsePayload.user)); // Save user object
+        localStorage.setItem("user", JSON.stringify(responsePayload.user));
       }
       return {
         success: true,
@@ -46,7 +44,7 @@ const login = async (email, password, role) => {
     } else {
       return {
         success: false,
-        error: message || responsePayload?.error || "Đăng nhập thất bại: Không nhận được token hoặc thông tin không hợp lệ.",
+        error: message || responsePayload?.error || "Login failed: Invalid token or information.",
       };
     }
   } catch (error) {
@@ -65,30 +63,28 @@ const registerCandidate = async (userData) => {
       email: userData.email,
       password: userData.password,
     };
-    console.log("[authAPI] Payload for /auth/applicant/signup:", payload);
     const response = await axiosInstance.post(
       "/auth/applicant/signup",
       payload
     );
-    console.log("[authAPI] registerCandidate response from backend:", response);
 
     if (response.data && (response.data.success !== undefined ? response.data.success : true)) {
       return {
         success: true,
-        message: response.data.message || "Đăng ký ứng viên thành công! Vui lòng kiểm tra email để xác thực.",
+        message: response.data.message || "Candidate registration successful! Please check your email for verification.",
         email: userData.email,
       };
     } else {
       return {
         success: false,
-        error: response.data?.message || "Đăng ký ứng viên thất bại từ API",
+        error: response.data?.message || "Candidate registration failed from API",
       };
     }
   } catch (error) {
     console.error("[authAPI] registerCandidate error (catch block):", error.response || error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message || "Đăng ký ứng viên thất bại",
+      error: error.response?.data?.message || error.message || "Candidate registration failed",
     };
   }
 };
@@ -98,10 +94,8 @@ const registerCandidate = async (userData) => {
  * @returns {Promise<object>} An object containing success status and token, or an error.
  */
 const getAdminJwtToken = async () => {
-  console.log("[authAPI] getAdminJwtToken called");
   try {
       const response = await axiosInstance.get('/auth/recruiter/get-jwt');
-      console.log("[authAPI] getAdminJwtToken response:", response);
       if (response.data?.success && response.data?.payload?.accessToken) {
           return {
               success: true,
@@ -128,29 +122,26 @@ const getAdminJwtToken = async () => {
  * @returns {Promise<object>} An object containing success status and/or message/error.
  */
 const verifyOTP = async (email, otp) => {
-  console.log("[authAPI] verifyOTP called with:", { email, otp });
   try {
     let verifyUrl = "/auth/applicant/signup/verify";
-    console.log("[authAPI] Attempting POST to:", verifyUrl);
     const response = await axiosInstance.post(verifyUrl, { email, otp });
-    console.log("[authAPI] verifyOTP response from backend:", response);
 
     if (response.data && (response.data.success !== undefined ? response.data.success : true)) {
       return {
         success: true,
-        message: response.data.message || "Xác thực OTP thành công",
+        message: response.data.message || "OTP verification successful",
       };
     } else {
       return {
         success: false,
-        error: response.data?.message || "Xác thực OTP thất bại từ API",
+        error: response.data?.message || "OTP verification failed from API",
       };
     }
   } catch (error) {
     console.error("[authAPI] verifyOTP error (catch block):", error.response || error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message || "Xác thực OTP thất bại",
+      error: error.response?.data?.message || error.message || "OTP verification failed",
     };
   }
 };
@@ -161,29 +152,26 @@ const verifyOTP = async (email, otp) => {
  * @returns {Promise<object>} An object containing success status and/or message/error.
  */
 const resendOTP = async (email) => {
-  console.log("[authAPI] resendOTP called for:", { email });
   try {
     let resendUrl = "/auth/applicant/signup/resend-otp";
-    console.log("[authAPI] Attempting POST to:", resendUrl);
     const response = await axiosInstance.post(resendUrl, { email });
-    console.log("[authAPI] resendOTP response from backend:", response);
 
     if (response.data && response.data.success) {
       return {
         success: true,
-        message: response.data.message || "Gửi lại OTP thành công",
+        message: response.data.message || "OTP resend successful",
       };
     } else {
       return {
         success: false,
-        error: response.data?.message || "Gửi lại OTP thất bại",
+        error: response.data?.message || "OTP resend failed",
       };
     }
   } catch (error) {
     console.error("[authAPI] resendOTP error (catch block):", error.response || error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message || "Không thể gửi lại mã xác minh",
+      error: error.response?.data?.message || error.message || "Could not resend verification code",
     };
   }
 };
@@ -194,20 +182,18 @@ const resendOTP = async (email) => {
  * @returns {Promise<object>} An object containing success status and/or message/error.
  */
 const forgotPassword = async (email) => {
-  console.log("[authAPI] forgotPassword called for:", email);
   try {
     const response = await axiosInstance.post("/auth/forgot-password", { email });
-    console.log("[authAPI] forgotPassword response:", response);
     return {
       success: true,
-      message: response.data.message || "Email đặt lại mật khẩu đã được gửi",
+      message: response.data.message || "Password reset email has been sent",
     };
   } catch (error) {
     console.error("[authAPI] forgotPassword error:", error.response || error);
     return {
       success: false,
       error:
-        error.response?.data?.message || error.message || "Yêu cầu đặt lại mật khẩu thất bại",
+        error.response?.data?.message || error.message || "Password reset request failed",
     };
   }
 };
@@ -219,19 +205,17 @@ const forgotPassword = async (email) => {
  * @returns {Promise<object>} An object containing success status and/or message/error.
  */
 const resetPassword = async (token, newPassword) => {
-  console.log("[authAPI] resetPassword called with token (first 5 chars):", token ? token.substring(0,5) : "NO_TOKEN");
   try {
     const response = await axiosInstance.post("/auth/reset-password", { token, newPassword });
-    console.log("[authAPI] resetPassword response:", response);
     return {
       success: true,
-      message: response.data.message || "Mật khẩu đã được đặt lại thành công",
+      message: response.data.message || "Password has been reset successfully",
     };
   } catch (error) {
     console.error("[authAPI] resetPassword error:", error.response || error);
     return {
       success: false,
-      error: error.response?.data?.message || error.message || "Đặt lại mật khẩu thất bại",
+      error: error.response?.data?.message || error.message || "Password reset failed",
     };
   }
 };
@@ -242,40 +226,29 @@ const resetPassword = async (token, newPassword) => {
  * @returns {Promise<object>} An object containing success status, token, and/or error message.
  */
 const loginWithGoogleOAuth = async (code) => {
-  console.log("[authAPI] loginWithGoogleOAuth called with code");
   try {
-    // Backend endpoint to exchange the code for application tokens
-    // Based on your instructions, this is a GET request to /auth/applicant/login/oauth2
     let oauthUrl = `/auth/applicant/login/oauth2?code=${code}`;
-    console.log("[authAPI] Attempting GET to:", oauthUrl);
-    const response = await axiosInstance.get(oauthUrl); // Using GET as per your backend instruction
-    console.log("[authAPI] loginWithGoogleOAuth response from backend:", response);
+    const response = await axiosInstance.get(oauthUrl);
+    const { success, message, payload: responsePayload } = response.data || {};
 
-    const { data, success, message } = response.data || {};
-
-    if (success) {
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-      axiosInstance.defaults.headers.common['Authorization'] = `Bearer ${data.token}`;
+    if (success && responsePayload && responsePayload.accessToken) {
+      localStorage.setItem("token", responsePayload.accessToken);
+      if (responsePayload.user) {
+        localStorage.setItem("user", JSON.stringify(responsePayload.user));
+      }
       return {
         success: true,
-        user: data.user,
-        token: data.token,
+        token: responsePayload.accessToken,
+        user: responsePayload.user,
       };
     } else {
       return {
         success: false,
-        error: message || "Đăng nhập Google OAuth thất bại",
+        error: message || responsePayload?.error || "Google OAuth login failed: Invalid token or information.",
       };
     }
   } catch (error) {
-    console.error("[authAPI] loginWithGoogleOAuth error (catch block):", error.response || error);
-    return {
-      success: false,
-      error:
-        error.response?.data?.message || error.message ||
-        "Đã xảy ra lỗi trong quá trình đăng nhập Google OAuth",
-    };
+    return handleError(error);
   }
 };
 
@@ -285,32 +258,24 @@ const loginWithGoogleOAuth = async (code) => {
  * @returns {Promise<object>} An object indicating logout success.
  */
 const logout = async (role) => {
-  console.log("[authAPI] Logging out for role:", role);
   try {
-    let logoutUrl = "";
-    if (role === "applicant") {
-      logoutUrl = "/auth/applicant/logout";
-    } else if (role === "recruiter") {
-      logoutUrl = "/auth/recruiter/logout";
-    } else {
-      console.warn("[authAPI] Unknown role for logout, clearing local data only.");
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
-      delete axiosInstance.defaults.headers.common["Authorization"];
-      return { success: true };
+    let endpoint = "";
+    if (role === "recruiter") {
+      endpoint = "/auth/recruiter/logout";
+    } else if (role === "applicant") {
+      endpoint = "/auth/applicant/logout";
     }
-    const response = await axiosInstance.post(logoutUrl);
-    console.log("[authAPI] Logout API response:", response);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    delete axiosInstance.defaults.headers.common["Authorization"];
-    return { success: true, message: response.data?.message };
+
+    if (endpoint) {
+      await axiosInstance.post(endpoint, {});
+    }
+    return { success: true, message: "Logout successful" };
   } catch (error) {
-    console.error("[authAPI] Logout API error:", error.response || error);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    delete axiosInstance.defaults.headers.common["Authorization"];
-    return { success: false, error: error.response?.data?.message || error.message };
+    console.error("[authAPI] API logout error:", error.response || error);
+    return {
+      success: false,
+      error: error.response?.data?.message || error.message || "Logout failed on API side.",
+    };
   }
 };
 
@@ -321,7 +286,7 @@ const logout = async (role) => {
 const isAuthenticated = () => {
   const token = localStorage.getItem("token");
   const user = localStorage.getItem("user");
-  return !!(token && user);
+  return !!token && !!user;
 };
 
 /**
@@ -329,13 +294,8 @@ const isAuthenticated = () => {
  * @returns {object|null} The user object if found and parsed, otherwise null.
  */
 const getCurrentUser = () => {
-  const userString = localStorage.getItem("user");
-  try {
-      return userString ? JSON.parse(userString) : null;
-  } catch (e) {
-      console.error("[authAPI] Error parsing user from localStorage", e);
-      return null;
-  }
+  const user = localStorage.getItem("user");
+  return user ? JSON.parse(user) : null;
 };
 
 /**
@@ -343,22 +303,12 @@ const getCurrentUser = () => {
  * @returns {Promise<object>} An object containing success status and user payload, or an error.
  */
 const getCurrentUserProfile = async () => {
-  console.log("[authAPI] getCurrentUserProfile called");
   try {
-    const response = await axiosInstance.get("/auth/me"); // Endpoint để lấy profile
-    console.log("[authAPI] getCurrentUserProfile response from backend (raw):", response);
-    if (response.data) {
-      // Check for special recruiter email
-      if (response.data.user?.email === "hacnguyet108@gmail.com") {
-        response.data.user.role = "recruiter";
-        response.data.user.isSuperRecruiter = true;
-        response.data.user.isAdmin = true;
-      }
-      return response.data;
-    }
-    return { success: false, error: "Empty response data from /auth/me" };
+    const response = await axiosInstance.get('/api/users/me');
+    return response.data;
   } catch (error) {
-    return handleError(error);
+    handleError(error, '[authAPI] getCurrentUserProfile error');
+    throw error;
   }
 };
 
@@ -368,36 +318,24 @@ const getCurrentUserProfile = async () => {
  * @returns {object} An object with success: false and an error message.
  */
 const handleError = (error) => {
-  console.error("API call error:", error);
-  let errorMessage = "An unexpected error occurred.";
-  if (error.response) {
-    errorMessage = error.response.data?.message || error.response.data?.error || error.message;
-    if (error.response.status === 401) {
-      errorMessage = "Unauthorized. Please log in again.";
-    } else if (error.response.status === 403) {
-      errorMessage = "Access denied.";
-    }
-  } else if (error.request) {
-    errorMessage = "No response from server. Please check your internet connection.";
-  } else {
-    errorMessage = error.message;
-  }
+  const errorMessage = error.response?.data?.message || error.message || "An unexpected error occurred.";
+  console.error("[authAPI] Error:", errorMessage, error.response?.data || error);
   return { success: false, error: errorMessage };
 };
-
 
 export const authAPI = {
   login,
   registerCandidate,
-  logout,
-  forgotPassword,
   verifyOTP,
   resendOTP,
-  getCurrentUserProfile,
+  forgotPassword,
+  resetPassword,
   loginWithGoogleOAuth,
-  resetPassword, // Đảm bảo hàm resetPassword cũng được export
-  isAuthenticated, // Export hàm isAuthenticated
-  getCurrentUser, // Export hàm getCurrentUser
+  logout,
+  isAuthenticated,
+  getCurrentUser,
+  getCurrentUserProfile,
+  getAdminJwtToken,
 };
 
 export default authAPI;

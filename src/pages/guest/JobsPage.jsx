@@ -5,10 +5,16 @@ import { JobsContext } from "../../contexts/JobsContext";
 import { AuthContext } from "../../contexts/AuthContext"; // Import AuthContext
 import JobList from "../../components/jobs/JobList";
 import JobFilters from "../../components/jobs/JobFilters";
+import JobSearchBar from "../../components/jobs/JobSearch";
 import Pagination from "../../components/common/Pagination";
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import EmptyState from "../../components/common/EmptyState";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
+import { Box, Container, Grid, Typography, Button } from '@mui/material';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import JobCard from '../../components/jobs/JobCard';
 
 const GuestJobsPage = () => {
   const {
@@ -16,10 +22,15 @@ const GuestJobsPage = () => {
     loading: contextLoading,
     error: contextError,
     setLoading: setContextLoading,
+    totalPages,
+    totalElements,
+    fetchAllJobs,
   } = useContext(JobsContext);
   const { user, isAuthenticated } = useContext(AuthContext); // Lấy user và isAuthenticated từ AuthContext
   const location = useLocation();
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
   const [filteredJobs, setFilteredJobs] = useState([]);
   const [searchParams, setSearchParams] = useState({
@@ -31,11 +42,12 @@ const GuestJobsPage = () => {
     jobType: [],
     education: [],
     jobLevel: [],
+    page: 0,
+    size: 10,
+    sort: "createdAt,desc"
   });
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [totalJobsCount, setTotalJobsCount] = useState(0);
-  const JOBS_PER_PAGE = 10; // Số lượng jobs mỗi trang
+  const [showFilters, setShowFilters] = useState(!isMobile);
 
   // Hàm parse query params từ URL và cập nhật state
   const parseAndUpdateSearchParams = useCallback(() => {
@@ -49,6 +61,9 @@ const GuestJobsPage = () => {
       jobType: query.getAll("jobType") || [],
       education: query.getAll("education") || [],
       jobLevel: query.getAll("jobLevel") || [],
+      page: parseInt(query.get("page") || "0"),
+      size: parseInt(query.get("size") || "10"),
+      sort: query.get("sort") || "createdAt,desc"
     };
     setSearchParams(newSearchParams);
     setCurrentPage(parseInt(query.get("page") || "1"));
@@ -149,45 +164,36 @@ const GuestJobsPage = () => {
         );
       });
 
-      setTotalJobsCount(tempFilteredJobs.length);
-      setTotalPages(Math.ceil(tempFilteredJobs.length / JOBS_PER_PAGE));
-
-      // Phân trang
-      const startIndex = (currentPage - 1) * JOBS_PER_PAGE;
-      const endIndex = startIndex + JOBS_PER_PAGE;
-      setFilteredJobs(tempFilteredJobs.slice(startIndex, endIndex));
+      setFilteredJobs(tempFilteredJobs);
       setContextLoading(false); // Kết thúc loading cục bộ
     } else if (!contextLoading && allJobs.length === 0) {
       setFilteredJobs([]);
-      setTotalJobsCount(0);
-      setTotalPages(1);
     }
-  }, [allJobs, searchParams, currentPage, contextLoading, setContextLoading]);
+  }, [allJobs, searchParams, contextLoading, setContextLoading]);
 
   const handleFilterChange = (newFilters) => {
-    // newFilters là một object chứa một key filter đã thay đổi, ví dụ { experience: ['0_1 Years'] }
-    // hoặc { keyword: 'new keyword' }
-    const updatedSearchParams = {
-      ...searchParams,
+    const updatedSearchParams = { 
+      ...searchParams, 
       ...newFilters,
+      page: 0 // Reset to first page when filters change
     };
     setSearchParams(updatedSearchParams);
-    setCurrentPage(1); // Reset về trang 1 khi filter thay đổi
-
+    setCurrentPage(1);
+    
     const query = new URLSearchParams();
-    Object.keys(updatedSearchParams).forEach((key) => {
-      const value = updatedSearchParams[key];
+    Object.entries(updatedSearchParams).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach((item) => query.append(key, item));
-      } else if (value) {
+        value.forEach(item => query.append(key, item));
+      } else if (value !== null && value !== undefined && value !== '') {
         query.append(key, value);
       }
     });
+    
     navigate(`/jobs?${query.toString()}`);
   };
 
   const handleClearFilters = () => {
-    const clearedSearchParams = {
+    const defaultParams = {
       keyword: "",
       location: "",
       category: "",
@@ -196,8 +202,11 @@ const GuestJobsPage = () => {
       jobType: [],
       education: [],
       jobLevel: [],
+      page: 0,
+      size: 10,
+      sort: "createdAt,desc"
     };
-    setSearchParams(clearedSearchParams);
+    setSearchParams(defaultParams);
     setCurrentPage(1);
     navigate("/jobs");
   };
@@ -205,35 +214,33 @@ const GuestJobsPage = () => {
   const handlePageChange = (pageNumber) => {
     setCurrentPage(pageNumber);
     const query = new URLSearchParams(location.search);
-    query.set("page", pageNumber);
+    query.set("page", pageNumber.toString());
     navigate(`?${query.toString()}`);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleMainSearchInputChange = (e) => {
     const { name, value } = e.target;
-    setSearchParams((prev) => ({ ...prev, [name]: value }));
+    setSearchParams(prev => ({ ...prev, [name]: value }));
   };
 
   const handleMainSearch = () => {
-    setCurrentPage(1); // Reset về trang 1 khi thực hiện search mới
+    const updatedSearchParams = {
+      ...searchParams,
+      page: 0 // Reset to first page on new search
+    };
+    setCurrentPage(1);
+    
     const query = new URLSearchParams();
-    Object.keys(searchParams).forEach((key) => {
-      const value = searchParams[key];
+    Object.entries(updatedSearchParams).forEach(([key, value]) => {
       if (Array.isArray(value)) {
-        value.forEach((item) => query.append(key, item));
-      } else if (
-        value &&
-        key !== "experience" &&
-        key !== "salary" &&
-        key !== "jobType" &&
-        key !== "education" &&
-        key !== "jobLevel"
-      ) {
-        // Chỉ thêm các param của main search
+        value.forEach(item => query.append(key, item));
+      } else if (value !== null && value !== undefined && value !== '' && 
+                 ["keyword", "location", "category", "page", "size", "sort"].includes(key)) {
         query.append(key, value);
       }
     });
+    
     navigate(`/jobs?${query.toString()}`);
   };
 
@@ -241,143 +248,83 @@ const GuestJobsPage = () => {
   const isRecruiterOrAdmin = isAuthenticated && (user?.role?.toLowerCase() === 'recruiter' || user?.role?.toLowerCase() === 'admin');
 
   if (contextLoading && !allJobs.length) {
-    // Chỉ hiển thị loading ban đầu khi chưa có jobs nào
-    return <LoadingSpinner fullPage />;
+    return <LoadingSpinner fullPage message="Loading jobs..." />;
   }
 
   if (contextError) {
     return (
-      <div className="bg-red-100 text-red-700 p-4 rounded mb-4">
+      <div className="p-4 text-red-600 bg-red-100 rounded-md">
         {contextError}
       </div>
     );
   }
 
   return (
-    <div className="job-search-page py-8 px-4 md:px-6 lg:px-8">
-      <div className="text-center mb-12">
+    <Container maxWidth="xl" sx={{ py: 4 }}>
+      <div className="text-center mb-8">
         <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-3">
-          Khám phá các cơ hội việc làm của chúng tôi
+          Find Your Next Opportunity
         </h1>
         <p className="text-gray-600 max-w-2xl mx-auto text-base md:text-lg">
-          Duyệt qua danh sách việc làm của chúng tôi và thực hiện bước đầu tiên
-          hướng tới một sự nghiệp thú vị với chúng tôi.
+          Explore job openings tailored to your skills and preferences.
         </p>
       </div>
 
-      {/* Main Search Bar */}
-      <div className="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-8 flex flex-col md:flex-row items-center gap-3 md:gap-4">
-        <div className="w-full md:flex-1 relative">
-          <FontAwesomeIcon
-            icon="magnifying-glass"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            name="keyword"
-            placeholder="Chức danh, từ khóa..."
-            value={searchParams.keyword}
-            onChange={handleMainSearchInputChange}
-            className="w-full p-3 pl-10 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-        <div className="w-full md:flex-1 relative">
-          <FontAwesomeIcon
-            icon="location-dot"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <input
-            type="text"
-            name="location"
-            placeholder="Địa điểm"
-            value={searchParams.location}
-            onChange={handleMainSearchInputChange}
-            className="w-full p-3 pl-10 border border-gray-300 rounded-md focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-          />
-        </div>
-        <div className="w-full md:flex-1 relative">
-          <FontAwesomeIcon
-            icon="briefcase"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
-          <select
-            name="category"
-            value={searchParams.category}
-            onChange={handleMainSearchInputChange}
-            className="w-full p-3 pl-10 pr-8 border border-gray-300 rounded-md appearance-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
-          >
-            <option value="">Chọn danh mục</option>
-            <option value="design">Thiết kế thời trang</option>
-            <option value="marketing">Tiếp thị</option>
-            <option value="sales">Bán hàng</option>
-            <option value="production">Sản xuất</option>
-            <option value="management">Quản lý</option>
-            <option value="retail">Bán lẻ</option>
-            {/* Thêm các category khác */}
-          </select>
-          <FontAwesomeIcon
-            icon="chevron-down"
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
-          />
-        </div>
-        <button
-          className="w-full md:w-auto px-6 py-3 bg-blue-600 text-white rounded-md font-medium hover:bg-blue-700 transition-colors duration-200"
-          onClick={handleMainSearch}
-        >
-          Tìm việc
-        </button>
-      </div>
+      <JobSearchBar
+        searchParams={searchParams}
+        onSearchChange={handleMainSearchInputChange}
+        onSearch={handleMainSearch}
+      />
 
-      {/* NEW: Nút "Đăng Job Mới" cho Recruiter/Admin */}
-      {isRecruiterOrAdmin && (
-        <div className="flex justify-end mb-6"> {/* Sử dụng flex justify-end để căn phải */}
-          <Link
-            to="/admin/jobs/create"
-            className="px-5 py-2.5 bg-green-600 text-white rounded-md font-medium hover:bg-green-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
-          >
-            <FontAwesomeIcon icon="plus" /> Đăng Job Mới
-          </Link>
-        </div>
-      )}
+      <Grid container spacing={3}>
+        {/* Mobile Filter Toggle */}
+        {isMobile && (
+          <Grid item xs={12}>
+            <Button
+              fullWidth
+              variant="outlined"
+              startIcon={<FilterListIcon />}
+              onClick={() => setShowFilters(!showFilters)}
+            >
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </Button>
+          </Grid>
+        )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Filters Sidebar */}
-        <div className="lg:col-span-1">
-          <JobFilters
-            filters={searchParams}
-            onFilterChange={handleFilterChange} // Truyền hàm này xuống
-            onClearFilters={handleClearFilters}
-          />
-        </div>
+        {/* Filters Section */}
+        {showFilters && (
+          <Grid item xs={12} md={3}>
+            <JobFilters
+              filters={searchParams}
+              onFilterChange={handleFilterChange}
+              onClearFilters={handleClearFilters}
+            />
+          </Grid>
+        )}
 
-        {/* Job Results */}
-        <div className="lg:col-span-3">
-          <div className="flex justify-between items-center mb-4">
-            <div className="text-sm text-gray-600">
-              Hiển thị {filteredJobs.length} trong số {totalJobsCount} việc
-              làm
-            </div>
-            {/* Nút Đăng Job Mới đã được di chuyển ra ngoài khối này */}
-          </div>
-
-          {contextLoading && filteredJobs.length === 0 ? ( // Hiển thị loading khi đang lọc và chưa có kết quả
+        {/* Jobs List Section */}
+        <Grid item xs={12} md={showFilters ? 9 : 12}>
+          {contextLoading && filteredJobs.length === 0 ? (
             <LoadingSpinner />
           ) : filteredJobs.length === 0 ? (
             <EmptyState
-              icon="search" // Hoặc một icon phù hợp hơn
-              title="Không tìm thấy việc làm nào"
-              description="Không có việc làm nào phù hợp với tiêu chí tìm kiếm của bạn. Hãy thử điều chỉnh bộ lọc hoặc xóa bớt tiêu chí."
+              icon="search"
+              title="No Jobs Found"
+              description="No jobs match your current search criteria. Try adjusting your filters."
               action={
                 <button
                   onClick={handleClearFilters}
-                  className="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700 transition-colors duration-200"
+                  className="px-6 py-2 bg-blue-600 text-white font-medium rounded-md hover:bg-blue-700"
                 >
-                  Xóa tất cả bộ lọc
+                  Clear All Filters
                 </button>
               }
             />
           ) : (
             <>
+              <div className="text-sm text-gray-600 mb-4">
+                Showing {filteredJobs.length} of {totalElements} jobs
+              </div>
               <JobList jobs={filteredJobs} />
               {totalPages > 1 && (
                 <Pagination
@@ -388,9 +335,9 @@ const GuestJobsPage = () => {
               )}
             </>
           )}
-        </div>
-      </div>
-    </div>
+        </Grid>
+      </Grid>
+    </Container>
   );
 };
 

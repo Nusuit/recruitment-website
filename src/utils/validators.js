@@ -8,17 +8,14 @@ export const isValidEmail = (email) => {
   return emailRegex.test(String(email).toLowerCase());
 };
 
-// Password validation (ít nhất 8 ký tự)
+// Password validation (minimum 8 characters)
 export const isValidPassword = (password) => {
-  // SỬA ĐỔI: Chỉ kiểm tra độ dài tối thiểu 8 ký tự
   return password && password.length >= 3; 
 };
 
 // Phone number validation
 export const isValidPhone = (phone) => {
-  // Basic international format check (allows +, digits, spaces, hyphens, parentheses, min 8 digits)
   const phoneRegex = /^\+?[\d\s\-()]{8,20}$/;
-  // More strict example for a specific format like (Vietnam): /^(0|84|\+84)?([3|5|7|8|9])([0-9]{8})\b$/
   return phoneRegex.test(phone);
 };
 
@@ -57,7 +54,6 @@ export const hasMaxLength = (value, maxLength) => {
 
 // Numeric value validation
 export const isNumeric = (value) => {
-  // Allows strings that can be converted to numbers, including decimals
   return !isNaN(parseFloat(value)) && isFinite(value);
 };
 
@@ -73,14 +69,14 @@ export const isInteger = (value) => {
 export const isPastDate = (dateString) => {
   const date = new Date(dateString);
   const today = new Date();
-  today.setHours(0,0,0,0); // Compare dates only, ignore time
+  today.setHours(0,0,0,0);
   return date < today;
 };
 
 export const isFutureDate = (dateString) => {
   const date = new Date(dateString);
   const today = new Date();
-  today.setHours(0,0,0,0); // Compare dates only, ignore time
+  today.setHours(0,0,0,0);
   return date > today;
 };
 
@@ -89,10 +85,8 @@ export const isValidDate = (dateString) => {
     return date instanceof Date && !isNaN(date);
 };
 
-
 // File type validation
 export const isValidFileType = (file, allowedTypes) => {
-  // allowedTypes is an array of MIME types, e.g., ['image/jpeg', 'image/png']
   return file && allowedTypes.includes(file.type);
 };
 
@@ -129,7 +123,6 @@ export const validateSignupForm = (values) => {
   const errors = {};
   console.log("[Validator] Validating Signup Form with values:", values);
 
-  // SỬA ĐỔI: Không còn validate firstName và lastName cho Applicant Signup
   if (!isNotEmpty(values.email)) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(values.email)) {
@@ -138,7 +131,7 @@ export const validateSignupForm = (values) => {
   
   if (!isNotEmpty(values.password)) {
     errors.password = 'Password is required';
-  } else if (!isValidPassword(values.password)) { // SỬA ĐỔI: Chỉnh sửa thông báo lỗi
+  } else if (!isValidPassword(values.password)) {
     errors.password = 'Password must be at least 8 characters.'; 
   }
 
@@ -171,7 +164,7 @@ export const validateResetPasswordForm = (values) => {
   console.log("[Validator] Validating Reset Password Form:", values);
   if (!isNotEmpty(values.password)) {
     errors.password = 'New password is required';
-  } else if (!isValidPassword(values.password)) { // SỬA ĐỔI: Chỉnh sửa thông báo lỗi
+  } else if (!isValidPassword(values.password)) {
     errors.password = 'Password must be at least 8 characters.'; 
   }
 
@@ -219,7 +212,7 @@ export const validateApplicationForm = (values) => {
   const errors = {};
   console.log("[Validator] Validating Application Form:", values);
 
-  if (!isNotEmpty(values.fullName)) { // Giả sử có trường fullName thay vì firstName, lastName
+  if (!isNotEmpty(values.fullName)) {
     errors.fullName = 'Full name is required';
   }
   if (!isNotEmpty(values.email)) {
@@ -232,11 +225,11 @@ export const validateApplicationForm = (values) => {
   } else if (!isValidPhone(values.phone)) {
     errors.phone = 'Invalid phone number format';
   }
-  if (!values.resume) { // Giả sử 'resume' là đối tượng File
+  if (!values.resume) {
     errors.resume = 'Resume is required';
   } else if (values.resume && !isValidFileType(values.resume, ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'])) {
     errors.resume = 'Resume must be a PDF or Word document';
-  } else if (values.resume && !isValidFileSize(values.resume, 5)) { // 5MB max
+  } else if (values.resume && !isValidFileSize(values.resume, 5)) {
     errors.resume = 'Resume file size must be less than 5MB';
   }
   if (values.coverLetter && !hasMaxLength(values.coverLetter, 2000)) {
@@ -254,30 +247,46 @@ export const validateJobPostingForm = (values) => {
   const errors = {};
   console.log("[Validator] Validating Job Posting Form:", values);
 
-  if (!isNotEmpty(values.title)) errors.title = 'Job title is required';
-  if (!isNotEmpty(values.location)) errors.location = 'Location is required';
-  if (!isNotEmpty(values.type)) errors.jobType = 'Job type is required'; // e.g., full-time, part-time
-  if (!isNotEmpty(values.description)) errors.description = 'Job description is required';
-  if (!isNotEmpty(values.requirement)) errors.requirement = 'Requirements are required';
-  
-  if (values.salaryMin && !isNumeric(values.salaryMin)) {
-    errors.salaryMin = 'Minimum salary must be a number.';
+  if (!isNotEmpty(values.title)) {
+    errors.title = 'Job title is required';
   }
-  if (values.salaryMax && !isNumeric(values.salaryMax)) {
-    errors.salaryMax = 'Maximum salary must be a number.';
+  if (!isNotEmpty(values.department)) {
+    errors.department = 'Department is required';
   }
-  if (isNotEmpty(values.salaryMin) && isNotEmpty(values.salaryMax) && parseFloat(values.salaryMin) > parseFloat(values.salaryMax)) {
-    errors.salaryMax = 'Maximum salary should be greater than or equal to minimum salary.';
+  if (!isNotEmpty(values.location)) {
+    errors.location = 'Location is required';
+  }
+  if (!isNotEmpty(values.type)) {
+    errors.type = 'Job type is required';
+  }
+  if (!isNotEmpty(values.description)) {
+    errors.description = 'Job description is required';
+  }
+  if (!isNotEmpty(values.requirements)) {
+    errors.requirements = 'Requirements are required';
+  }
+  if (!isNotEmpty(values.benefits)) {
+    errors.benefits = 'Benefits are required';
+  }
+  if (!isNotEmpty(values.salaryMin)) {
+    errors.salaryMin = 'Minimum salary is required';
+  }
+  if (!isNotEmpty(values.salaryMax)) {
+    errors.salaryMax = 'Maximum salary is required';
   }
   if (!isNotEmpty(values.deadline)) {
     errors.deadline = 'Application deadline is required';
-  } else if (!isValidDate(values.deadline) || !isFutureDate(values.deadline)) {
-    errors.deadline = 'Deadline must be a valid future date.';
   }
-   if (values.numberOfVacancies && (!isInteger(values.numberOfVacancies) || !isPositiveNumber(values.numberOfVacancies))) {
-    errors.numberOfVacancies = 'Number of vacancies must be a positive integer.';
+  if (!isNotEmpty(values.educationLevel)) {
+    errors.educationLevel = 'Education level is required';
   }
-  // ... thêm các rule khác cho department, experienceLevel, etc.
+  if (!isNotEmpty(values.experienceLevel)) {
+    errors.experienceLevel = 'Experience level is required';
+  }
+  if (!isNotEmpty(values.status)) {
+    errors.status = 'Job status is required';
+  }
+
   console.log("[Validator] Job Posting Form Errors:", errors);
   return errors;
 };
@@ -287,20 +296,20 @@ export const validateContactForm = (values) => {
   const errors = {};
   console.log("[Validator] Validating Contact Form:", values);
 
-  if (!isNotEmpty(values.name)) errors.name = 'Your name is required';
+  if (!isNotEmpty(values.name)) {
+    errors.name = 'Name is required';
+  }
   if (!isNotEmpty(values.email)) {
     errors.email = 'Email is required';
   } else if (!isValidEmail(values.email)) {
     errors.email = 'Invalid email format';
   }
-  if (values.subject && !hasMaxLength(values.subject, 100)) {
-    errors.subject = 'Subject should not exceed 100 characters.';
-  }
   if (!isNotEmpty(values.message)) {
     errors.message = 'Message is required';
-  } else if (!hasMinLength(values.message, 10)) {
-    errors.message = 'Message must be at least 10 characters long.';
+  } else if (!hasMaxLength(values.message, 1000)) {
+    errors.message = 'Message should not exceed 1000 characters.';
   }
+
   console.log("[Validator] Contact Form Errors:", errors);
   return errors;
 };
@@ -315,18 +324,22 @@ export const validateInterviewForm = (values) => {
   } else if (!isValidDate(values.interviewDate) || !isFutureDate(values.interviewDate)) {
     errors.interviewDate = 'Interview date must be a valid future date.';
   }
-  if (!isNotEmpty(values.interviewTime)) errors.interviewTime = 'Interview time is required'; // Cần validate định dạng thời gian cụ thể hơn
-  if (!isNotEmpty(values.interviewType)) errors.interviewType = 'Interview type is required'; // e.g., online, in-person
+  if (!isNotEmpty(values.interviewTime)) {
+    errors.interviewTime = 'Interview time is required';
+  }
+  if (!isNotEmpty(values.interviewType)) {
+    errors.interviewType = 'Interview type is required';
+  }
 
   if (values.interviewType === 'in-person' && !isNotEmpty(values.location)) {
     errors.location = 'Location is required for in-person interviews.';
   }
-  if (values.interviewType === 'online' && !isNotEmpty(values.meetingLink)) { // Thêm kiểm tra isNotEmpty
+  if (values.interviewType === 'online' && !isNotEmpty(values.meetingLink)) {
     errors.meetingLink = 'Meeting link is required for online interviews.';
-  } else if (values.interviewType === 'online' && values.meetingLink && !isValidUrl(values.meetingLink)) { // Thêm kiểm tra values.meetingLink
+  } else if (values.interviewType === 'online' && values.meetingLink && !isValidUrl(values.meetingLink)) {
     errors.meetingLink = 'Invalid meeting link format.';
   }
-  // ... thêm các rule khác cho interviewer, notes, etc.
+
   console.log("[Validator] Interview Form Errors:", errors);
   return errors;
 };

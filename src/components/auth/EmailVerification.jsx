@@ -2,15 +2,14 @@
 // This is the component, not the page. The page `src/pages/guest/EmailVerificationPage.jsx` wraps this.
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import { AuthContext } from "../../contexts/AuthContext"; // Assuming context handles OTP
-import authAPI from "../../api/auth"; // Or use API directly
+import { AuthContext } from "../../contexts/AuthContext";
+import authAPI from "../../api/auth";
 import LoadingSpinner from "../common/LoadingSpinner";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 const EmailVerificationComponent = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  // const { verifyOtp, resendOtp } = useContext(AuthContext); // Get functions from context if available
 
   const [otp, setOtp] = useState(new Array(6).fill(""));
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -125,7 +124,7 @@ const EmailVerificationComponent = () => {
 
   const handleResendCode = async () => {
     if (!canResend) return;
-    setIsSubmitting(true); // Disable resend while processing
+    setIsSubmitting(true);
     setSubmitError("");
     setResendMessage("");
     try {
@@ -163,8 +162,6 @@ const EmailVerificationComponent = () => {
 
   return (
     <div className="verification-form-section w-full p-8 flex flex-col justify-center">
-      {" "}
-      {/* Styles from AuthForms.scss */}
       <div className="brand-logo mb-8 text-center md:text-left">
         <Link to="/" className="inline-flex items-center gap-2">
           <img
@@ -249,4 +246,4 @@ const EmailVerificationComponent = () => {
   );
 };
 
-export default EmailVerificationComponent; // Renamed to avoid conflict with page
+export default EmailVerificationComponent;

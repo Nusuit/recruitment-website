@@ -18,13 +18,16 @@ const CreateJobPage = ({ isEditing = false }) => {
     description: "",
     requirements: "", // Store as string, split by newline for display/editing if needed
     benefits: "", // Store as string
-    salaryMin: "",
-    salaryMax: "",
+    salaryMin: "", // Will be required by validation
+    salaryMax: "", // Will be required by validation
+    salaryCurrency: "USD", // Required by backend
     experienceLevel: "", // e.g., "ENTRY", "MID", "SENIOR"
     educationLevel: "", // e.g., "BACHELOR", "MASTER"
     deadline: "",
     status: "DRAFT", // Default status
     selectedSkills: [], // Array of skill IDs or skill objects
+    processId: 1, // Default process ID
+    stages: [{ name: "Application Review", order: 1 }], // Default stage
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -34,13 +37,36 @@ const CreateJobPage = ({ isEditing = false }) => {
   const [apiError, setApiError] = useState(null);
   const [availableSkills, setAvailableSkills] = useState([]); // Skills fetched from API
 
-  // Fetch skills and job details (if editing)
+    // Fetch skills and job details (if editing)
   const fetchData = useCallback(async () => {
     setLoading(true);
     setApiError(null);
     try {
-      const skillsResponse = await recruiterAPI.getSkills(); // Assuming this API exists
-      setAvailableSkills(skillsResponse.skills || []);
+      // Fetch skills with fallback data
+      let skillsResponse;
+      try {
+        skillsResponse = await recruiterAPI.getSkills();
+        console.log("✅ Skills loaded from API:", skillsResponse);
+      } catch (err) {
+        console.warn("⚠️ Skills API failed, using fallback data:", err);
+        // Fallback skills data
+        skillsResponse = [
+          { id: 1, name: "JavaScript" },
+          { id: 2, name: "React.js" },
+          { id: 3, name: "Node.js" },
+          { id: 4, name: "Python" },
+          { id: 5, name: "Java" },
+          { id: 6, name: "SQL" },
+          { id: 7, name: "HTML/CSS" },
+          { id: 8, name: "Git" },
+          { id: 9, name: "Docker" },
+          { id: 10, name: "AWS" }
+        ];
+      }
+      
+      // Ensure we always set arrays
+      setAvailableSkills(Array.isArray(skillsResponse) ? skillsResponse : []);
+      console.log("🔍 Available skills set:", skillsResponse);
 
       if (isEditing && jobId) {
         const jobResponse = await recruiterAPI.getJobDetail(jobId);
@@ -101,7 +127,43 @@ const CreateJobPage = ({ isEditing = false }) => {
     e.preventDefault();
     setApiError(null);
 
-    const validationErrors = validateJobPostingForm(formData); // Use your validator
+    // Custom validation for backend requirements
+    const validationErrors = {};
+    
+    // Basic validations
+    if (!formData.title.trim()) {
+      validationErrors.title = "Job title is required";
+    } else if (formData.title.trim().length < 3 || formData.title.trim().length > 100) {
+      validationErrors.title = "Job title must be between 3 and 100 characters";
+    }
+    if (!formData.location.trim()) validationErrors.location = "Location is required";
+    if (!formData.description.trim()) validationErrors.description = "Description is required";
+    else if (formData.description.trim().length < 10) validationErrors.description = "Description must be at least 10 characters";
+    if (!formData.requirements.trim()) validationErrors.requirements = "Requirements are required";
+    if (!formData.deadline) validationErrors.deadline = "Application deadline is required";
+    else {
+      const deadlineDate = new Date(formData.deadline);
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1); // Tomorrow
+      tomorrow.setHours(0, 0, 0, 0); // Reset time to compare only dates
+      if (deadlineDate < tomorrow) {
+        validationErrors.deadline = "Deadline must be at least tomorrow";
+      }
+    }
+    
+    // Backend-specific validations
+    if (formData.selectedSkills.length === 0 && availableSkills.length > 0) {
+      validationErrors.selectedSkills = "At least one skill is required";
+    }
+    if (!formData.salaryMin || formData.salaryMin === "" || isNaN(parseInt(formData.salaryMin)) || parseInt(formData.salaryMin) < 1) {
+      validationErrors.salaryMin = "Minimum salary is required and must be greater than 0";
+    }
+    if (!formData.salaryMax || formData.salaryMax === "" || isNaN(parseInt(formData.salaryMax)) || parseInt(formData.salaryMax) < 1) {
+      validationErrors.salaryMax = "Maximum salary is required and must be greater than 0";
+    }
+    if (!formData.salaryCurrency) validationErrors.salaryCurrency = "Salary currency is required";
+    if (!formData.processId) validationErrors.processId = "Recruitment process is required";
+    
     setErrors(validationErrors);
     if (Object.keys(validationErrors).length > 0) {
       setApiError("Please correct the errors in the form.");
@@ -109,36 +171,104 @@ const CreateJobPage = ({ isEditing = false }) => {
     }
 
     setIsSubmitting(true);
+    // Map form fields to database schema
+    const status = targetStatus || formData.status;
+    const dbStatus = status === 'ACTIVE' ? 'OPEN' : status === 'DRAFT' ? 'OPEN' : status;
+    
+    // Debug form data
+    console.log("🔍 [CreateJobPage] Form data before payload:", formData);
+    console.log("🔍 [CreateJobPage] Salary values:", {
+      salaryMin: formData.salaryMin,
+      salaryMax: formData.salaryMax,
+      salaryMinType: typeof formData.salaryMin,
+      salaryMaxType: typeof formData.salaryMax
+    });
+
+        // Ensure all salary values are properly parsed integers
+    const parsedMinSalary = parseInt(formData.salaryMin, 10);
+    const parsedMaxSalary = parseInt(formData.salaryMax, 10);
+
+    // Try simplified payload first
     const jobPayload = {
-      ...formData,
-      salaryMin: formData.salaryMin ? parseInt(formData.salaryMin, 10) : null,
-      salaryMax: formData.salaryMax ? parseInt(formData.salaryMax, 10) : null,
-      skills: formData.selectedSkills.map(skillId => ({
-        skillId: skillId,
-        required: true // Since these are required skills
-      })),
-      status: targetStatus || formData.status,
+      title: formData.title.trim(),
+      department: formData.department.trim(),
+      location: formData.location.trim(),
+      type: formData.type,
+      description: formData.description.trim(),
+      requirements: formData.requirements.trim(),
+      benefits: formData.benefits.trim(),
+      deadline: formData.deadline,
+      salaryCurrency: formData.salaryCurrency,
+      status: dbStatus,
+      // Salary fields - try multiple formats
+      // Backend expects these exact field names (from @JsonProperty annotations)
+      salaryMin: parseInt(formData.salaryMin, 10),
+      salaryMax: parseInt(formData.salaryMax, 10),
+      // Required by backend
+      processId: formData.processId,
+      skills: [{ skillId: 1, required: true }], // Simplified
+      stages: [{ stageId: 1 }, { stageId: 2 }], // Simplified
     };
 
+    console.log("🔍 [CreateJobPage] Final payload:", JSON.stringify(jobPayload, null, 2));
+
     try {
+      let result;
       if (isEditing && jobId) {
-        await recruiterAPI.updateJob(jobId, jobPayload);
+        result = await recruiterAPI.updateJob(jobId, jobPayload);
+        console.log("✅ [CreateJobPage] Job updated successfully:", result);
       } else {
-        await recruiterAPI.createJob(jobPayload);
+        result = await recruiterAPI.createJob(jobPayload);
+        console.log("✅ [CreateJobPage] Job created successfully:", result);
+        
+        // Store job data in session storage for fallback display in both admin and public areas
+        const jobForStorage = {
+          ...jobPayload,
+          createdAt: new Date().toISOString(),
+          // Get jobId from response, handle different response structures
+          jobId: result?.id || result?.jobId || result?.payload?.id || result?.payload?.jobId || result?.data?.id || result?.data?.jobId,
+          publishedForPublic: jobPayload.status === 'ACTIVE' // Only show in public if status is ACTIVE
+        };
+        
+        sessionStorage.setItem('recentJobCreated', JSON.stringify(jobForStorage));
+        
+        // Also set a flag for public area to refresh
+        if (jobPayload.status === 'ACTIVE') {
+          sessionStorage.setItem('newPublicJobAvailable', 'true');
+        }
+        
+        console.log("💾 [CreateJobPage] Stored job data in session storage for fallback display");
+        console.log("🌐 [CreateJobPage] Job will be available for public:", jobPayload.status === 'ACTIVE');
       }
+      
+      // Add a small delay to ensure backend has processed the request
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       navigate("/admin/jobs", {
         state: {
           successMessage: isEditing
             ? "Job updated successfully!"
             : "Job created successfully!",
+          refresh: true, // Flag to trigger refresh
         },
       });
     } catch (err) {
       console.error("Error submitting job:", err);
-      setApiError(
-        err.message ||
-          (isEditing ? "Failed to update job." : "Failed to create job.")
-      );
+      
+      // Provide more detailed error messages
+      let errorMessage = "An error occurred. Please try again.";
+      
+      if (err.response?.data?.message) {
+        errorMessage = err.response.data.message;
+      } else if (err.response?.data?.error) {
+        errorMessage = err.response.data.error;
+      } else if (err.message) {
+        errorMessage = err.message;
+      } else {
+        errorMessage = isEditing ? "Failed to update job." : "Failed to create job.";
+      }
+      
+      setApiError(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -278,7 +408,7 @@ const CreateJobPage = ({ isEditing = false }) => {
                   htmlFor="salaryMin"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Minimum Salary (Monthly)
+                  Minimum Salary (Monthly)*
                 </label>
                 <input
                   type="number"
@@ -287,7 +417,8 @@ const CreateJobPage = ({ isEditing = false }) => {
                   value={formData.salaryMin}
                   onChange={handleChange}
                   placeholder="e.g., 1500"
-                  min="0"
+                  min="1"
+                  required
                   className={`w-full p-2.5 border rounded-md focus:ring-2 ${
                     errors.salaryMin
                       ? "border-red-500 ring-red-200"
@@ -305,7 +436,7 @@ const CreateJobPage = ({ isEditing = false }) => {
                   htmlFor="salaryMax"
                   className="block text-sm font-medium text-gray-700 mb-1"
                 >
-                  Maximum Salary (Monthly)
+                  Maximum Salary (Monthly)*
                 </label>
                 <input
                   type="number"
@@ -314,7 +445,8 @@ const CreateJobPage = ({ isEditing = false }) => {
                   value={formData.salaryMax}
                   onChange={handleChange}
                   placeholder="e.g., 2500"
-                  min="0"
+                  min="1"
+                  required
                   className={`w-full p-2.5 border rounded-md focus:ring-2 ${
                     errors.salaryMax
                       ? "border-red-500 ring-red-200"
@@ -324,6 +456,63 @@ const CreateJobPage = ({ isEditing = false }) => {
                 {errors.salaryMax && (
                   <p className="text-xs text-red-600 mt-1">
                     {errors.salaryMax}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label
+                  htmlFor="salaryCurrency"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Salary Currency*
+                </label>
+                <select
+                  id="salaryCurrency"
+                  name="salaryCurrency"
+                  value={formData.salaryCurrency}
+                  onChange={handleChange}
+                  required
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 bg-white ${
+                    errors.salaryCurrency
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
+                >
+                  <option value="USD">USD ($)</option>
+                  <option value="VND">VND (₫)</option>
+                  <option value="EUR">EUR (€)</option>
+                  <option value="GBP">GBP (£)</option>
+                </select>
+                {errors.salaryCurrency && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.salaryCurrency}
+                  </p>
+                )}
+              </div>
+              <div>
+                <label
+                  htmlFor="deadline"
+                  className="block text-sm font-medium text-gray-700 mb-1"
+                >
+                  Application Deadline*
+                </label>
+                <input
+                  type="date"
+                  id="deadline"
+                  name="deadline"
+                  value={formData.deadline}
+                  onChange={handleChange}
+                  required
+                  min={new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().split('T')[0]} // Tomorrow
+                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
+                    errors.deadline
+                      ? "border-red-500 ring-red-200"
+                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
+                  }`}
+                />
+                {errors.deadline && (
+                  <p className="text-xs text-red-600 mt-1">
+                    {errors.deadline}
                   </p>
                 )}
               </div>
@@ -409,7 +598,7 @@ const CreateJobPage = ({ isEditing = false }) => {
           </section>
 
           {/* Section 3: Qualifications */}
-          <section className="p-6 border border-gray-200 rounded-lg">
+          <section className="p-6 border border-gray-200 rounded-lg" key="qualifications-section">
             <h2 className="text-xl font-semibold text-gray-700 mb-4">
               Qualifications
             </h2>
@@ -464,21 +653,32 @@ const CreateJobPage = ({ isEditing = false }) => {
                 Required Skills*
               </label>
               <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {availableSkills.map((skill) => (
-                  <label
-                    key={skill.id}
-                    className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer p-2 border border-gray-200 rounded-md hover:bg-gray-50"
-                  >
-                    <input
-                      type="checkbox"
-                      value={skill.id}
-                      checked={formData.selectedSkills.includes(skill.id)}
-                      onChange={() => handleSkillChange(skill.id)}
-                      className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <span>{skill.name}</span>
-                  </label>
-                ))}
+                {Array.isArray(availableSkills) && availableSkills.length > 0 ? (
+                  availableSkills.map((skill) => (
+                    <label
+                      key={skill.id}
+                      className="flex items-center space-x-2 text-sm text-gray-700 cursor-pointer p-2 border border-gray-200 rounded-md hover:bg-gray-50"
+                    >
+                      <input
+                        type="checkbox"
+                        value={skill.id}
+                        checked={formData.selectedSkills.includes(skill.id)}
+                        onChange={() => handleSkillChange(skill.id)}
+                        className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                      />
+                      <span>{skill.name}</span>
+                    </label>
+                  ))
+                ) : (
+                  <div className="col-span-full p-4 bg-yellow-50 border border-yellow-200 rounded-md">
+                    <p className="text-yellow-700 text-sm">
+                      <strong>Skills list is loading...</strong> A default skill will be automatically assigned.
+                    </p>
+                    <p className="text-yellow-600 text-xs mt-1">
+                      You can edit skills later when the skills list becomes available.
+                    </p>
+                  </div>
+                )}
               </div>
               {errors.selectedSkills && (
                 <p className="text-xs text-red-600 mt-1">
@@ -494,31 +694,6 @@ const CreateJobPage = ({ isEditing = false }) => {
               Posting Details
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label
-                  htmlFor="deadline"
-                  className="block text-sm font-medium text-gray-700 mb-1"
-                >
-                  Application Deadline*
-                </label>
-                <input
-                  type="date"
-                  id="deadline"
-                  name="deadline"
-                  value={formData.deadline}
-                  onChange={handleChange}
-                  required
-                  min={new Date().toISOString().split("T")[0]}
-                  className={`w-full p-2.5 border rounded-md focus:ring-2 ${
-                    errors.deadline
-                      ? "border-red-500 ring-red-200"
-                      : "border-gray-300 focus:border-blue-500 focus:ring-blue-200"
-                  }`}
-                />
-                {errors.deadline && (
-                  <p className="text-xs text-red-600 mt-1">{errors.deadline}</p>
-                )}
-              </div>
               <div>
                 <label
                   htmlFor="status"

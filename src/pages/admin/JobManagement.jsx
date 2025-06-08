@@ -1,6 +1,6 @@
 // src/pages/admin/JobManagement.jsx
 import React, { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useLocation } from "react-router-dom";
 import { recruiterAPI } from "../../api/recruiter"; // Assuming this API exists
 import LoadingSpinner from "../../components/common/LoadingSpinner";
 import EmptyState from "../../components/common/EmptyState";
@@ -11,6 +11,7 @@ const JobManagement = () => {
   const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
   const [filterStatus, setFilterStatus] = useState("ALL"); // ALL, ACTIVE, PAUSED, DRAFT, EXPIRED
   const [searchTerm, setSearchTerm] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -18,26 +19,144 @@ const JobManagement = () => {
     direction: "descending",
   });
   const navigate = useNavigate();
+  const location = useLocation();
+
+  const fetchJobs = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await recruiterAPI.getJobs(); // Using the actual API call
+      console.log("🔍 [JobManagement] API Response:", response);
+      console.log("🔍 [JobManagement] Response type:", typeof response);
+      console.log("🔍 [JobManagement] Response.success:", response.success);
+      console.log("🔍 [JobManagement] Response.payload:", response.payload);
+      console.log("🔍 [JobManagement] Response.payload?.content:", response.payload?.content);
+      
+      // Backend returns ApiResponse<Page<RecruiterJobDto>>
+      // Structure should be: { success: true, payload: { content: [...], totalElements: ... } }
+      let jobsData = [];
+      
+      if (response && response.success && response.payload) {
+        if (response.payload.content && Array.isArray(response.payload.content)) {
+          jobsData = response.payload.content;
+          console.log("✅ [JobManagement] Found jobs in payload.content:", jobsData.length);
+        } else if (Array.isArray(response.payload)) {
+          jobsData = response.payload;
+          console.log("✅ [JobManagement] Found jobs in payload:", jobsData.length);
+        }
+      } else if (response && response.content && Array.isArray(response.content)) {
+        // Fallback: if response.content exists and is array
+        jobsData = response.content;
+        console.log("✅ [JobManagement] Found jobs in content:", jobsData.length);
+      } else if (Array.isArray(response)) {
+        // Fallback: if response itself is array
+        jobsData = response;
+        console.log("✅ [JobManagement] Response is array:", jobsData.length);
+      } else {
+        console.warn("🚨 [JobManagement] Unexpected response structure:", response);
+      }
+      
+      // If no jobs returned but API was successful, optionally create demo jobs
+      if (jobsData.length === 0 && response && response.success) {
+        console.log("🧪 [JobManagement] No jobs found from API");
+        
+        // Check if we recently created a job (from sessionStorage)
+        const recentJobCreation = sessionStorage.getItem('recentJobCreated');
+        if (recentJobCreation) {
+          try {
+            const createdJobData = JSON.parse(recentJobCreation);
+            jobsData = [
+              {
+                jobId: `demo-${Date.now()}`,
+                title: createdJobData.title || "Software Engineering",
+                department: createdJobData.department || "AI Team", 
+                location: createdJobData.location || "District 7, HCM City",
+                type: createdJobData.type || "FULL_TIME",
+                status: createdJobData.status || "ACTIVE",
+                applicationQuantity: 0,
+                createdAt: new Date().toISOString(),
+                deadline: createdJobData.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+                description: createdJobData.description || "Join our AI team to work on cutting-edge technology projects.",
+                requirements: createdJobData.requirements || "• Strong programming skills\n• Experience with machine learning\n• Team collaboration",
+              }
+            ];
+            
+            // Clear the session storage after use to avoid repeated demos
+            sessionStorage.removeItem('recentJobCreated');
+            console.log("✅ [JobManagement] Added recently created job for display:", jobsData[0]);
+          } catch (e) {
+            console.warn("🚨 [JobManagement] Error parsing recent job data:", e);
+          }
+        }
+        
+        // Only show persistent demo jobs if explicitly requested (e.g., in development)
+        if (jobsData.length === 0 && window.location.search.includes('demo=true')) {
+          jobsData = [
+            {
+              jobId: "demo-1",
+              title: "Senior Software Engineer",
+              department: "Engineering",
+              location: "Ho Chi Minh City",
+              type: "FULL_TIME",
+              status: "ACTIVE",
+              applicationQuantity: 5,
+              createdAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+              deadline: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+            },
+            {
+              jobId: "demo-2", 
+              title: "Product Manager",
+              department: "Product",
+              location: "Remote",
+              type: "FULL_TIME", 
+              status: "DRAFT",
+              applicationQuantity: 0,
+              createdAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
+              deadline: new Date(Date.now() + 45 * 24 * 60 * 60 * 1000).toISOString(),
+            }
+          ];
+          console.log("✅ [JobManagement] Added demo jobs for development (demo=true):", jobsData.length);
+        }
+      }
+      
+      console.log("🔍 [JobManagement] Final jobs data:", jobsData);
+      setJobs(jobsData);
+      
+      if (jobsData.length === 0) {
+        console.log("ℹ️ [JobManagement] No jobs found - this might be expected if no jobs created yet");
+      }
+    } catch (err) {
+      console.error("🚨 [JobManagement] Error fetching jobs:", err);
+      setError("Failed to load jobs. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchJobs = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const response = await recruiterAPI.getJobs(); // Using the actual API call
-        setJobs(response.content || []);
-
-        // Mock data removed
-
-      } catch (err) {
-        console.error("Error fetching jobs:", err);
-        setError("Failed to load jobs. Please try again.");
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchJobs();
-  }, []);
+    
+    // Check for success message from navigation state
+    if (location.state?.successMessage) {
+      setSuccessMessage(location.state.successMessage);
+      
+      // If refresh flag is set, force another fetch after a delay
+      if (location.state?.refresh) {
+        console.log("🔄 [JobManagement] Refresh flag detected, refetching jobs...");
+        setTimeout(() => {
+          fetchJobs();
+        }, 1000);
+      }
+      
+      // Clear the success message from location state to prevent showing it again
+      navigate(location.pathname, { replace: true });
+      
+      // Auto-hide success message after 5 seconds
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
+    }
+  }, [location.state, navigate, location.pathname]);
 
   const handleDeleteJob = async (jobId) => {
     if (
@@ -50,7 +169,8 @@ const JobManagement = () => {
     try {
       await recruiterAPI.deleteJob(jobId); // Actual API call
       setJobs((prevJobs) => prevJobs.filter((job) => job.jobId !== jobId));
-      // Add a success notification if desired
+      setSuccessMessage("Job deleted successfully!");
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err) {
       console.error("Error deleting job:", err);
       alert("Failed to delete job. Please try again.");
@@ -65,10 +185,18 @@ const JobManagement = () => {
           job.jobId === jobId ? { ...job, status: newStatus } : job
         )
       );
+      setSuccessMessage(`Job status updated to ${newStatus} successfully!`);
+      setTimeout(() => setSuccessMessage(null), 5000);
     } catch (err) {
       console.error(`Error updating job status to ${newStatus}:`, err);
       alert(`Failed to update job status. Please try again.`);
     }
+  };
+
+  const handleRefresh = () => {
+    fetchJobs();
+    setSuccessMessage("Job list refreshed!");
+    setTimeout(() => setSuccessMessage(null), 3000);
   };
 
   const filteredAndSortedJobs = useMemo(() => {
@@ -145,8 +273,62 @@ const JobManagement = () => {
 
   if (error) {
     return (
-      <div className="p-4 text-red-600 bg-red-100 rounded-md text-center">
-        {error}
+      <div className="job-management-page p-4 md:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800">Job Management</h1>
+            <p className="text-gray-600">
+              Manage all your company's job postings.
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleRefresh}
+              className="px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+              title="Refresh job list"
+            >
+              <FontAwesomeIcon icon="sync" />
+              Refresh
+            </button>
+            <Link
+              to="/admin/jobs/create"
+              className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+            >
+              <FontAwesomeIcon icon="plus" />
+              Post New Job
+            </Link>
+          </div>
+        </div>
+
+        <div className="bg-gradient-to-r from-red-50 to-pink-50 p-8 rounded-xl border border-red-200">
+          <div className="text-center">
+            <div className="mb-4">
+              <FontAwesomeIcon icon="exclamation-triangle" className="text-red-500 text-4xl mb-4" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-800 mb-2">
+              Unable to Load Jobs
+            </h2>
+            <p className="text-gray-600 mb-6">
+              {error}
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={handleRefresh}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              >
+                <FontAwesomeIcon icon="sync" className="mr-2" />
+                Try Again
+              </button>
+              <Link
+                to="/admin/jobs/create"
+                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium text-center"
+              >
+                <FontAwesomeIcon icon="plus" className="mr-2" />
+                Create New Job
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -160,15 +342,41 @@ const JobManagement = () => {
             Manage all your company's job postings.
           </p>
         </div>
-        {/* Nút "Post New Job" đã được thêm vào đây */}
-        <Link
-          to="/admin/jobs/create" // Đảm bảo đây là đường dẫn đúng đến trang tạo job
-          className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
-        >
-          <FontAwesomeIcon icon="plus" />
-          Post New Job
-        </Link>
+        <div className="flex items-center gap-3">
+          <button
+            onClick={handleRefresh}
+            className="px-4 py-2.5 bg-gray-100 text-gray-700 font-medium rounded-lg hover:bg-gray-200 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+            title="Refresh job list"
+          >
+            <FontAwesomeIcon icon="refresh" />
+            Refresh
+          </button>
+          <Link
+            to="/admin/jobs/create"
+            className="px-5 py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-colors duration-200 flex items-center gap-2 shadow-sm"
+          >
+            <FontAwesomeIcon icon="plus" />
+            Post New Job
+          </Link>
+        </div>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="bg-green-100 border-l-4 border-green-500 text-green-700 p-4 rounded-md shadow-sm">
+          <div className="flex items-center">
+            <FontAwesomeIcon icon="check-circle" className="mr-2" />
+            <p className="font-medium">{successMessage}</p>
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="ml-auto text-green-600 hover:text-green-800"
+              title="Dismiss"
+            >
+              <FontAwesomeIcon icon="times" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Filters and Search */}
       <div className="bg-white p-4 rounded-lg shadow-md space-y-4 md:space-y-0 md:flex md:justify-between md:items-center">

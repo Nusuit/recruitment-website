@@ -9,8 +9,8 @@ const HeroBanner = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useState({
     keyword: "",
-    location: "", // Trong design không có location, nhưng giữ lại nếu bạn muốn thêm sau
-    department: "", // Thay category bằng department theo design
+    location: "", // Location field kept for future use
+    department: "", // Changed from category to department according to design
   });
 
   const handleInputChange = (e) => {
@@ -25,11 +25,10 @@ const HeroBanner = () => {
       query.append("keyword", searchParams.keyword.trim());
     if (searchParams.department)
       query.append("department", searchParams.department);
-    // if (searchParams.location) query.append("location", searchParams.location.trim()); // Nếu muốn thêm location
     navigate(`/jobs?${query.toString()}`);
   };
 
-  // Danh sách các department mẫu, bạn có thể lấy từ API hoặc config
+  // Sample departments list, can be fetched from API or config
   const departments = [
     "All Departments",
     "Sales",
@@ -38,7 +37,6 @@ const HeroBanner = () => {
     "Marketing",
     "UI/UX",
     "Production",
-    // Thêm các department khác nếu cần
   ];
 
   const mostSearchedJobs = [
@@ -55,8 +53,7 @@ const HeroBanner = () => {
           {/* Text Content */}
           <div className="text-center md:text-left">
             <h1 className="text-4xl sm:text-5xl font-bold text-gray-800 mb-4 leading-tight">
-              <span className="text-teal-500">SIUUUcorp</span>{" "}
-              {/* Tên công ty theo design */}
+              <span className="text-teal-500">SIUUUcorp</span>
             </h1>
             <h2 className="text-3xl sm:text-4xl font-bold text-gray-800 mb-6 leading-tight">
               Step into the Fashion World
@@ -74,7 +71,7 @@ const HeroBanner = () => {
             >
               <div className="flex-grow relative">
                 <FontAwesomeIcon
-                  icon="search" // Sử dụng icon search
+                  icon="search"
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
                 />
                 <input
@@ -124,8 +121,6 @@ const HeroBanner = () => {
                     className="text-xs bg-gray-200 text-gray-700 px-3 py-1 rounded-full cursor-pointer hover:bg-gray-300"
                     onClick={() => {
                       setSearchParams((prev) => ({ ...prev, keyword: job }));
-                      // Optionally trigger search immediately:
-                      // navigate(`/jobs?keyword=${encodeURIComponent(job)}`);
                     }}
                   >
                     {job}

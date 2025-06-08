@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 const WhyJoinUs = () => {
   const benefits = [
     {
-      icon: "users", // Thay thế bằng icon phù hợp từ design, ví dụ: 'file-alt' hoặc 'clipboard-list'
+      icon: "users", // Replace with appropriate icon from design, e.g., 'file-alt' or 'clipboard-list'
       title: "Collaborative Culture",
       description:
         "Work with talented professionals in a supportive, creative team.",
@@ -17,7 +17,7 @@ const WhyJoinUs = () => {
         "Ongoing learning, mentorship, and clear career growth paths.",
     },
     {
-      icon: "balance-scale", // Thay thế bằng icon phù hợp, ví dụ: 'handshake' hoặc 'heart'
+      icon: "balance-scale", // Replace with appropriate icon, e.g., 'handshake' or 'heart'
       title: "Work-Life Balance",
       description:
         "Flexible work, benefits, and wellness programs for your wellbeing.",

@@ -17,6 +17,7 @@ const ApplicantsManagement = () => {
   const [filterStatus, setFilterStatus] = useState("ALL");
   const [filterJob, setFilterJob] = useState("ALL");
   const [sortBy, setSortBy] = useState("appliedDate_desc"); // e.g., 'applicantName_asc', 'appliedDate_desc'
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
 
   const [selectedApplication, setSelectedApplication] = useState(null);
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -38,132 +39,98 @@ const ApplicantsManagement = () => {
     "WITHDRAWN",
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        // TODO: Replace with actual API calls
-        // const appsResponse = await recruiterAPI.getAllApplications();
-        // const jobsResponse = await recruiterAPI.getAllJobsForFilter(); // API to get job titles for filter
-        // setApplications(appsResponse.applications || []);
-        // setAvailableJobs(jobsResponse.jobs || []);
+  const fetchData = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      // Fetch applications and jobs data with sorting
+      const [appsResponse, jobsResponse] = await Promise.all([
+        recruiterAPI.getAllApplications({
+          sort: "createdAt,desc" // Always sort by creation date descending
+        }),
+        recruiterAPI.getJobs()
+      ]);
 
-        // Mock data
-        await new Promise((resolve) => setTimeout(resolve, 800));
-        const mockApplications = [
-          {
-            id: "app101",
-            applicantName: "Nguyen Van A",
-            email: "nguyenvana@example.com",
-            phone: "0901234567",
-            jobId: "job1",
-            jobTitle: "Senior Fashion Designer",
-            appliedDate: new Date(
-              Date.now() - 1 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "PENDING_REVIEW",
-            resumeUrl: "#",
-            rating: 0,
-          },
-          {
-            id: "app102",
-            applicantName: "Tran Thi B",
-            email: "tranthib@example.com",
-            phone: "0902345678",
-            jobId: "job2",
-            jobTitle: "Retail Store Manager",
-            appliedDate: new Date(
-              Date.now() - 2 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "SHORTLISTED",
-            resumeUrl: "#",
-            rating: 0,
-          },
-          {
-            id: "app103",
-            applicantName: "Le Van C",
-            email: "levanc@example.com",
-            phone: "0903456789",
-            jobId: "job1",
-            jobTitle: "Senior Fashion Designer",
-            appliedDate: new Date(
-              Date.now() - 3 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "INTERVIEW_SCHEDULED",
-            resumeUrl: "#",
-            rating: 0,
-          },
-          {
-            id: "app104",
-            applicantName: "Pham Thi D",
-            email: "phamthid@example.com",
-            phone: "0904567890",
-            jobId: "job3",
-            jobTitle: "Marketing Intern",
-            appliedDate: new Date(
-              Date.now() - 4 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "HIRED",
-            resumeUrl: "#",
-            rating: 0,
-          },
-          {
-            id: "app105",
-            applicantName: "Hoang Van E",
-            email: "hoangvane@example.com",
-            phone: "0905678901",
-            jobId: "job2",
-            jobTitle: "Retail Store Manager",
-            appliedDate: new Date(
-              Date.now() - 5 * 24 * 60 * 60 * 1000
-            ).toISOString(),
-            status: "REJECTED",
-            resumeUrl: "#",
-            rating: 0,
-          },
-        ];
-        setApplications(mockApplications);
-        setAvailableJobs([
-          { id: "job1", title: "Senior Fashion Designer" },
-          { id: "job2", title: "Retail Store Manager" },
-          { id: "job3", title: "Marketing Intern" },
-        ]);
-      } catch (err) {
-        console.error("Error fetching applicants data:", err);
-        setError("Failed to load applicant data. Please try again.");
-      } finally {
-        setLoading(false);
+      if (appsResponse.success && jobsResponse.success) {
+        // Handle applications
+        const applications = Array.isArray(appsResponse.payload) 
+          ? appsResponse.payload 
+          : (appsResponse.payload?.content || []);
+        setApplications(applications);
+
+        // Handle jobs for filtering
+        const jobs = Array.isArray(jobsResponse.payload)
+          ? jobsResponse.payload
+          : (jobsResponse.payload?.content || []);
+        setAvailableJobs(jobs.map(job => ({ id: job.id, title: job.title })));
+      } else {
+        throw new Error(appsResponse.message || jobsResponse.message || "Failed to fetch data");
       }
-    };
+    } catch (err) {
+      console.error("Error fetching applicants data:", err);
+      setError("Failed to load applicant data. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh data every 30 seconds
+  useEffect(() => {
     fetchData();
+    const interval = setInterval(() => {
+      setLastRefresh(Date.now());
+    }, 30000);
+    return () => clearInterval(interval);
   }, []);
+
+  // Fetch data whenever lastRefresh changes
+  useEffect(() => {
+    fetchData();
+  }, [lastRefresh]);
+
+  const handleRefresh = () => {
+    setLastRefresh(Date.now());
+  };
 
   const handleUpdateStatus = async () => {
     if (!selectedApplication || !newStatus) return;
-    // TODO: Implement API call to update application status
-    // await recruiterAPI.updateApplicationStatus(selectedApplication.id, newStatus);
-    setApplications((prevApps) =>
-      prevApps.map((app) =>
-        app.id === selectedApplication.id ? { ...app, status: newStatus } : app
-      )
-    );
-    setShowStatusModal(false);
-    setSelectedApplication(null);
+    
+    setLoading(true);
+    try {
+      const response = await recruiterAPI.updateApplicationStatus(selectedApplication.id, newStatus);
+      if (response.success) {
+        // Update the local state with the new status
+        setApplications(prevApps =>
+          prevApps.map(app =>
+            app.id === selectedApplication.id ? { ...app, status: newStatus } : app
+          )
+        );
+        setShowStatusModal(false);
+        setSelectedApplication(null);
+      } else {
+        throw new Error(response.message || "Failed to update status");
+      }
+    } catch (error) {
+      console.error("Error updating application status:", error);
+      setError("Failed to update application status. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const filteredApplications = useMemo(() => {
     return applications
       .filter((app) => {
-        const nameMatch = app.applicantName
+        const searchTermLower = searchTerm.toLowerCase();
+        const nameMatch = (app.applicantName || '')
           .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-        const emailMatch = app.email
+          .includes(searchTermLower);
+        const emailMatch = (app.email || '')
           .toLowerCase()
-          .includes(searchTerm.toLowerCase());
-        const jobTitleMatch = app.jobTitle
+          .includes(searchTermLower);
+        const jobTitleMatch = (app.jobTitle || '')
           .toLowerCase()
-          .includes(searchTerm.toLowerCase());
+          .includes(searchTermLower);
         const statusMatch =
           filterStatus === "ALL" || app.status === filterStatus;
         const jobMatch = filterJob === "ALL" || app.jobId === filterJob;
@@ -173,11 +140,11 @@ const ApplicantsManagement = () => {
       })
       .sort((a, b) => {
         const [key, direction] = sortBy.split("_");
-        let valA = a[key];
-        let valB = b[key];
+        let valA = a[key] || '';
+        let valB = b[key] || '';
         if (key === "appliedDate") {
-          valA = new Date(valA);
-          valB = new Date(valB);
+          valA = new Date(valA || 0);
+          valB = new Date(valB || 0);
         } else if (typeof valA === "string") {
           valA = valA.toLowerCase();
           valB = valB.toLowerCase();
@@ -247,92 +214,90 @@ const ApplicantsManagement = () => {
     );
 
   return (
-    <div className="applicants-management-page p-4 md:p-6 space-y-6">
-      <h1 className="text-3xl font-bold text-gray-800">
-        Applicants Management
-      </h1>
+    <div className="container mx-auto px-4 py-8">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Applicant Management</h1>
+        <div className="flex gap-4">
+          <Link
+            to="/admin/interviews"
+            className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors flex items-center gap-2"
+          >
+            <FontAwesomeIcon icon="calendar-check" />
+            Manage Interviews
+          </Link>
+        </div>
+        <button 
+          onClick={handleRefresh}
+          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors flex items-center gap-2"
+        >
+          <FontAwesomeIcon icon="sync" className="h-4 w-4" />
+          Refresh
+        </button>
+      </div>
 
-      {/* Filters and Search */}
-      <div className="bg-white p-4 rounded-lg shadow-md space-y-4 md:space-y-0 md:flex md:flex-wrap md:justify-between md:items-center gap-4">
-        <div className="relative flex-grow md:max-w-md">
-          <FontAwesomeIcon
-            icon="search"
-            className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-          />
+      {/* Search and Filters */}
+      <div className="mb-6 flex flex-col sm:flex-row gap-4">
+        <div className="flex-1">
           <input
             type="text"
             placeholder="Search by name, email, job title..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-2.5 pl-10 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </div>
-        <div className="flex flex-col sm:flex-row gap-4">
-          <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            <option value="ALL">All Statuses</option>
-            {applicationStatuses.map((status) => (
-              <option key={status} value={status}>
-                {formatApplicationStatus(status)}
-              </option>
-            ))}
-          </select>
-          <select
-            value={filterJob}
-            onChange={(e) => setFilterJob(e.target.value)}
-            className="p-2.5 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white"
-          >
-            <option value="ALL">All Jobs</option>
-            {availableJobs.map((job) => (
-              <option key={job.id} value={job.id}>
-                {job.title}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={filterStatus}
+          onChange={(e) => setFilterStatus(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="ALL">All Statuses</option>
+          {applicationStatuses.map((status) => (
+            <option key={status} value={status}>
+              {formatApplicationStatus(status)}
+            </option>
+          ))}
+        </select>
+        <select
+          value={filterJob}
+          onChange={(e) => setFilterJob(e.target.value)}
+          className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+        >
+          <option value="ALL">All Jobs</option>
+          {availableJobs.map((job) => (
+            <option key={job.id} value={job.id}>
+              {job.title}
+            </option>
+          ))}
+        </select>
       </div>
 
-      {paginatedApplications.length === 0 ? (
+      {/* Applications Table */}
+      {loading ? (
+        <LoadingSpinner />
+      ) : error ? (
+        <div className="text-red-500 bg-red-50 p-4 rounded-lg">{error}</div>
+      ) : applications.length === 0 ? (
         <EmptyState
-          icon="users-slash"
-          title="No Applicants Found"
-          description={
-            searchTerm || filterStatus !== "ALL" || filterJob !== "ALL"
-              ? "No applicants match your current filters."
-              : "There are no applications to display."
-          }
+          message="No applications found"
+          description="There are currently no applications in the system."
         />
       ) : (
-        <div className="bg-white shadow-lg rounded-lg overflow-x-auto">
+        <div className="overflow-x-auto bg-white rounded-lg shadow">
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th
-                  onClick={() => requestSort("applicantName")}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                >
-                  Applicant {getSortIcon("applicantName")}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Applicant
                 </th>
-                <th
-                  onClick={() => requestSort("jobTitle")}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                >
-                  Job Title {getSortIcon("jobTitle")}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Job Title
                 </th>
-                <th
-                  onClick={() => requestSort("appliedDate")}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                >
-                  Applied {getSortIcon("appliedDate")}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Applied Date
                 </th>
-                <th
-                  onClick={() => requestSort("status")}
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                >
-                  Status {getSortIcon("status")}
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Status
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Actions
@@ -340,62 +305,56 @@ const ApplicantsManagement = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {paginatedApplications.map((app) => (
-                <tr key={app.id} className="hover:bg-gray-50 transition-colors">
+              {applications.map((application) => (
+                <tr key={application.id} className="hover:bg-gray-50">
                   <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-medium text-gray-900">
-                      {app.applicantName}
+                    <div className="flex items-center">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">
+                          {application.candidateName || "N/A"}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {application.candidateEmail || "N/A"}
+                        </div>
+                      </div>
                     </div>
-                    <div className="text-xs text-gray-500">{app.email}</div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    <Link
-                      to={`/admin/jobs/${app.jobId}`}
-                      className="hover:text-blue-600"
-                    >
-                      {app.jobTitle}
-                    </Link>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm text-gray-900">
+                      {application.job?.title || "N/A"}
+                    </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
-                    {formatDate(app.appliedDate)}
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {formatDate(application.appliedDate)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span
-                      className={`px-2.5 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusPillClass(
-                        app.status
+                      className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusPillClass(
+                        application.status
                       )}`}
                     >
-                      {formatApplicationStatus(app.status)}
+                      {formatApplicationStatus(application.status)}
                     </span>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
-                    <Link
-                      to={`/admin/applications/${app.id}`}
-                      className="text-blue-600 hover:text-blue-800"
-                      title="View Details"
-                    >
-                      <FontAwesomeIcon icon="eye" />
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setSelectedApplication(app);
-                        setNewStatus(app.status);
-                        setShowStatusModal(true);
-                      }}
-                      className="text-yellow-600 hover:text-yellow-800"
-                      title="Change Status"
-                    >
-                      <FontAwesomeIcon icon="edit" />
-                    </button>
-                    <a
-                      href={app.resumeUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-green-600 hover:text-green-800"
-                      title="Download Resume"
-                    >
-                      <FontAwesomeIcon icon="file-arrow-down" />
-                    </a>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                    <div className="flex space-x-2">
+                      <Link
+                        to={`/admin/applications/${application.id}`}
+                        className="text-blue-600 hover:text-blue-900"
+                      >
+                        View
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setSelectedApplication(application);
+                          setNewStatus(application.status);
+                          setShowStatusModal(true);
+                        }}
+                        className="text-indigo-600 hover:text-indigo-900"
+                      >
+                        Update Status
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))}
@@ -403,77 +362,82 @@ const ApplicantsManagement = () => {
           </table>
         </div>
       )}
-      {totalPages > 1 && (
+
+      {/* Status Update Modal */}
+      <Modal
+        isOpen={showStatusModal}
+        onClose={() => {
+          setShowStatusModal(false);
+          setSelectedApplication(null);
+        }}
+        title="Update Application Status"
+      >
+        <div className="p-4">
+          <select
+            value={newStatus}
+            onChange={(e) => setNewStatus(e.target.value)}
+            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 mb-4"
+          >
+            {applicationStatuses.map((status) => (
+              <option key={status} value={status}>
+                {formatApplicationStatus(status)}
+              </option>
+            ))}
+          </select>
+          <div className="flex justify-end space-x-2">
+            <button
+              onClick={() => {
+                setShowStatusModal(false);
+                setSelectedApplication(null);
+              }}
+              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleUpdateStatus}
+              className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            >
+              Update
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Pagination */}
+      <div className="mt-4">
         <Pagination
           currentPage={currentPage}
-          totalPages={totalPages}
+          totalPages={Math.ceil(applications.length / ITEMS_PER_PAGE)}
           onPageChange={setCurrentPage}
         />
-      )}
-
-      {showStatusModal && selectedApplication && (
-        <Modal
-          title={`Update Status for ${selectedApplication.applicantName}`}
-          isOpen={showStatusModal}
-          onClose={() => setShowStatusModal(false)}
-          size="md"
-        >
-          <div className="p-2 space-y-4">
-            <p className="text-sm text-gray-600">
-              Applied for:{" "}
-              <span className="font-semibold">
-                {selectedApplication.jobTitle}
-              </span>
-            </p>
-            <p className="text-sm text-gray-600">
-              Current Status:{" "}
-              <span
-                className={`font-semibold ${getStatusPillClass(
-                  selectedApplication.status
-                )} px-2 py-0.5 rounded-full text-xs`}
-              >
-                {formatApplicationStatus(selectedApplication.status)}
-              </span>
-            </p>
-            <div>
-              <label
-                htmlFor="newStatus"
-                className="block text-sm font-medium text-gray-700 mb-1"
-              >
-                New Status:
-              </label>
-              <select
-                id="newStatus"
-                value={newStatus}
-                onChange={(e) => setNewStatus(e.target.value)}
-                className="w-full p-2.5 border border-gray-300 rounded-md focus:ring-blue-500 focus:border-blue-500 bg-white"
-              >
-                {applicationStatuses.map((status) => (
-                  <option key={status} value={status}>
-                    {formatApplicationStatus(status)}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="flex justify-end gap-3 mt-4">
-              <button
-                onClick={() => setShowStatusModal(false)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleUpdateStatus}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700"
-              >
-                Update Status
-              </button>
-            </div>
-          </div>
-        </Modal>
-      )}
+      </div>
     </div>
   );
+};
+
+// Helper function for status colors
+const getStatusColor = (status) => {
+  switch (status) {
+    case "PENDING_REVIEW":
+      return "bg-yellow-100 text-yellow-800";
+    case "IN_REVIEW":
+      return "bg-blue-100 text-blue-800";
+    case "SHORTLISTED":
+      return "bg-indigo-100 text-indigo-800";
+    case "INTERVIEW_SCHEDULED":
+      return "bg-purple-100 text-purple-800";
+    case "OFFER_EXTENDED":
+      return "bg-pink-100 text-pink-800";
+    case "HIRED":
+      return "bg-green-100 text-green-800";
+    case "REJECTED":
+      return "bg-red-100 text-red-800";
+    case "WITHDRAWN":
+      return "bg-gray-100 text-gray-500";
+    default:
+      return "bg-gray-100 text-gray-800";
+  }
 };
 
 export default ApplicantsManagement;

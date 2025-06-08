@@ -1,5 +1,5 @@
 // src/contexts/AuthContext.js
-import React, { createContext, useState, useEffect, useCallback, useRef } from "react"; // Import useRef
+import React, { createContext, useState, useEffect, useCallback, useRef } from "react";
 import { authAPI } from "../api";
 import axiosInstance from "../api/config/axiosConfig";
 
@@ -8,14 +8,12 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [authError, setAuthError] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Thêm ref để theo dõi trạng thái hiện tại của AuthProvider, tránh vòng lặp
   const isInitialCheckDone = useRef(false); 
 
   const clearAuthData = useCallback(() => {
-    console.log("[AuthContext] Clearing auth data. Token removed, user cleared."); // NEW LOG
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     delete axiosInstance.defaults.headers.common["Authorization"];
@@ -42,21 +40,6 @@ export const AuthProvider = ({ children }) => {
     }
     
     // Enhanced Vietnamese name handling
-    const vnNames = ['huy', 'kien', 'nguyet', 'tuan', 'anh', 'minh', 'duc', 'hoang', 'phuong', 'thao', 'linh', 'mai', 'trang', 'ha', 'nga', 'thu', 'hang', 'huong', 'lan', 'yen'];
-    
-    // First try compound names (e.g. huykien)
-    for (const name of vnNames) {
-      const restOfEmail = emailName.toLowerCase().substring(name.length);
-      if (emailName.toLowerCase().startsWith(name) && (
-        // Check if the rest starts with another Vietnamese name
-        vnNames.some(otherName => restOfEmail.startsWith(otherName)) ||
-        // Or if it's followed by numbers/special chars
-        /^[0-9_-]/.test(restOfEmail) ||
-        restOfEmail.length === 0
-      )) {
-        return name.charAt(0).toUpperCase() + name.slice(1);
-      }
-    }
     
     // Default case - just capitalize the first part
     const possibleName = emailName.match(/^[a-z]+|[0-9]+/i)[0];
@@ -64,25 +47,20 @@ export const AuthProvider = ({ children }) => {
   };
 
   const fetchUserProfile = useCallback(async () => {
-    console.log("[AuthContext] fetchUserProfile called. Attempting to get user profile from backend.");
     setAuthError(null);
     const token = localStorage.getItem("token");
     if (!token) {
-      console.log("[AuthContext] No token found during profile fetch in localStorage. Calling clearAuthData.");
       clearAuthData();
       return { success: false, error: "No token found." };
     }
 
     axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
-    console.log("[AuthContext] Axios Authorization header set with token.");
 
     try {
       const profileResult = await authAPI.getCurrentUserProfile();
-      console.log("[AuthContext] GetCurrentUserProfile response received:", profileResult);
 
       if (profileResult.success && profileResult.payload) {
         const rawUserData = profileResult.payload;
-        console.log('[AuthContext] rawUserData:', rawUserData);
         let fetchedUser;
 
         // Handle recruiter profile response structure
@@ -91,7 +69,6 @@ export const AuthProvider = ({ children }) => {
 
         // Special recruiter email check - must be done first
         if (userData?.email?.toLowerCase() === "hacnguyet108@gmail.com") {
-          console.log("[AuthContext] Special recruiter detected - setting as applicant");
           fetchedUser = {
             email: userData.email,
             name: userData.name || 'Nguyet',
@@ -122,9 +99,7 @@ export const AuthProvider = ({ children }) => {
           // Extract firstName if not provided or empty
           if (!fetchedUser.firstName || fetchedUser.firstName.trim() === '') {
             if (fetchedUser.email) {
-              console.log("[AuthContext] Extracting name from email:", fetchedUser.email);
               fetchedUser.firstName = extractNameFromEmail(fetchedUser.email);
-              console.log("[AuthContext] Extracted firstName:", fetchedUser.firstName);
             }
           }
 
@@ -150,21 +125,18 @@ export const AuthProvider = ({ children }) => {
           }
         }
 
-        // Update state and storage chỉ khi có email hợp lệ
+        // Update state and storage only if email is valid
         if (fetchedUser.email && fetchedUser.email.trim() !== '') {
           setUser(fetchedUser);
           setIsAuthenticated(true);
           localStorage.setItem("user", JSON.stringify(fetchedUser));
-          console.log("[AuthContext] User profile fetched and set. IsAuthenticated now: true, User role:", fetchedUser.role, "Name:", fetchedUser.firstName);
           return { success: true, user: fetchedUser };
         } else {
-          // Nếu không có email, coi như guest
-          console.warn('[AuthContext] User profile không có email, clearAuthData');
+          // If no email, treat as guest
           clearAuthData();
           return { success: false, error: 'User profile missing email.' };
         }
       } else {
-        console.warn("[AuthContext] Token validation failed or user data missing in payload");
         clearAuthData();
         return { 
           success: false, 
@@ -173,7 +145,6 @@ export const AuthProvider = ({ children }) => {
         };
       }
     } catch (error) {
-      console.error("[AuthContext] Error in fetchUserProfile (API call failed):", error);
       clearAuthData();
       return { 
         success: false, 
@@ -183,121 +154,79 @@ export const AuthProvider = ({ children }) => {
     }
   }, [clearAuthData]);
 
-  // Đảm bảo checkAuthStatus là useCallback
   const checkAuthStatus = useCallback(async () => {
-    console.log("[AuthContext] checkAuthStatus called. Current loading state:", loading); 
-    setAuthError(null);
-    const token = localStorage.getItem("token");
-    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-    let result;
-    // Always check for special recruiter email first
-    if (storedUser.email === "hacnguyet108@gmail.com") {
-      console.log("[AuthContext] Special recruiter detected during auth check");
-      storedUser.role = "recruiter";
-      storedUser.isSuperRecruiter = true;
-      storedUser.isAdmin = true;
-      localStorage.setItem("user", JSON.stringify(storedUser));
-    }
-    if (token) {
-      console.log("[AuthContext] Token found in localStorage. Attempting to validate/fetch profile.");
-      result = await fetchUserProfile();
-      if (!result.success) {
-        console.log("[AuthContext] Profile fetch failed, clearing auth data");
+    try {
+      setLoading(true);
+      const token = localStorage.getItem("token");
+      const storedUser = localStorage.getItem("user");
+
+      if (!token || !storedUser) {
         clearAuthData();
+        return false;
       }
-    } else {
-      console.log("[AuthContext] No token found in localStorage, treating as guest user");
+
+      // Validate token and refresh user data
+      const profileResult = await fetchUserProfile();
+      
+      if (!profileResult.success) {
+        clearAuthData();
+        return false;
+      }
+
+      setUser(profileResult.user);
+      setIsAuthenticated(true);
+      return true;
+    } catch (error) {
+      console.error("[AuthContext] Auth status check failed:", error);
       clearAuthData();
-      result = { success: false, error: "No token found", isGuest: true };
+      return false;
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
-    return result;
-  }, [fetchUserProfile, clearAuthData, loading]);
+  }, [clearAuthData, fetchUserProfile]);
 
+  // Initialize auth state
   useEffect(() => {
-    // This effect should only run once when the AuthProvider mounts
-    if (!isInitialCheckDone.current) {
-      isInitialCheckDone.current = true;
-      console.log("[AuthContext] AuthProvider mounted. Performing initial auth check.");
-      const initialCheck = async () => {
-        setLoading(true);
-        // First check if we have a stored user that's the special recruiter
-        const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
-        if (storedUser.email === "hacnguyet108@gmail.com") {
-          console.log("[AuthContext] Special recruiter detected in stored user");
-          storedUser.role = "recruiter";
-          storedUser.isSuperRecruiter = true;
-          storedUser.isAdmin = true;
-          localStorage.setItem("user", JSON.stringify(storedUser));
-        }
-        const result = await checkAuthStatus();
-        if (result.success) {
-          console.log("[AuthContext] Initial auth check successful:", result.user?.email);
-        } else {
-          // Handle guest user case
-          if (result.isGuest) {
-            console.log("[AuthContext] No authentication found, treating as guest user");
-            setIsAuthenticated(false);
-            setUser(null);
-          } else {
-            console.log("[AuthContext] Auth check failed:", result.error);
-            clearAuthData();
-          }
-        }
-        setLoading(false);
-      };
-      initialCheck();
-    }
-    // Không return gì ở đây (chỉ return function cleanup nếu cần)
-  }, [checkAuthStatus, clearAuthData]);
-
+    checkAuthStatus();
+  }, [checkAuthStatus]);
 
   const login = useCallback(async (email, password, role) => {
-    console.log("[AuthContext] Attempting login with credentials:", { email, role }); // NEW LOG
-    setLoading(true); // Start loading for login operation
+    setLoading(true);
     setAuthError(null);
 
     try {
       const result = await authAPI.login(email, password, role);
-      console.log("[AuthContext] Login API result:", result); // NEW LOG
 
       if (result && result.success && result.token) {
-        // Token and user should already be in localStorage from authAPI.login
-        // Now, confirm by fetching profile
         const profileFetchResult = await fetchUserProfile();
         if (profileFetchResult.success) { 
-          console.log("[AuthContext] Login successful. User profile fetched after credential login."); // NEW LOG
           return { success: true, user: profileFetchResult.user }; 
         } else {
-          console.warn("[AuthContext] Failed to fetch user profile after credential login, but token seems valid:", profileFetchResult.error); // NEW LOG
+          console.warn("[AuthContext] Failed to fetch user profile after credential login, but token seems valid:", profileFetchResult.error);
           clearAuthData();
           return { success: false, error: profileFetchResult.error || "Login successful but failed to fetch user profile." };
         }
       } else {
-        console.log("[AuthContext] Login failed via credentials. Error:", result?.error); // NEW LOG
+        console.log("[AuthContext] Login failed via credentials. Error:", result?.error);
         clearAuthData();
         return { success: false, error: result?.error || "Email or password invalid." };
       }
     } catch (error) {
-      console.error("[AuthContext] Login context error (credentials):", error.response?.status, error.message); // NEW LOG
+      console.error("[AuthContext] Login context error (credentials):", error.response?.status, error.message);
       setAuthError(error.message || "Login failed due to an unexpected error.");
       clearAuthData();
       return { success: false, error: error.message || "Login failed due to an unexpected error." };
     } finally {
-      setLoading(false); // End loading for login operation
-      console.log("[AuthContext] Login process finished.");
+      setLoading(false);
     }
   }, [clearAuthData, fetchUserProfile]);
 
   const signup = useCallback(async (userData) => {
-    console.log("[AuthContext] Attempting signup with userData:", userData.email);
     setLoading(true);
     setAuthError(null);
     try {
       const result = await authAPI.registerCandidate(userData);
-      console.log("[AuthContext] Signup API result:", result);
       if (result && result.success) {
-        console.log("[AuthContext] Signup successful:", result.message);
         return { success: true, message: result.message, email: userData.email };
       } else {
         const errorMsg = result ? (result.error || "Signup failed from API") : "Signup API did not return expected structure.";
@@ -310,12 +239,10 @@ export const AuthProvider = ({ children }) => {
       return { success: false, error: error.message || "Signup failed." };
     } finally {
       setLoading(false);
-      console.log("[AuthContext] Signup process finished.");
     }
   }, []);
 
   const logout = useCallback(async () => {
-    console.log("[AuthContext] Logging out. Current user role:", user?.role); // NEW LOG
     setLoading(true);
     setAuthError(null);
     try {
@@ -323,22 +250,19 @@ export const AuthProvider = ({ children }) => {
       await authAPI.logout(currentUserRole);
     }
     catch (error) {
-      console.error("[AuthContext] API logout error:", error.response || error); // NEW LOG
+      console.error("[AuthContext] API logout error:", error.response || error);
       setAuthError(error.message || "Logout failed on API side, but local data cleared.");
     } finally {
       clearAuthData();
       setLoading(false);
-      console.log("[AuthContext] Logout finished.");
     }
   }, [clearAuthData, user]);
 
   const forgotPassword = useCallback(async (email) => {
-    console.log("[AuthContext] Requesting password reset for:", email);
     setLoading(true);
     setAuthError(null);
     try {
       const result = await authAPI.forgotPassword(email);
-      console.log("[AuthContext] Forgot password API result:", result);
       if (result.success) {
         return { success: true, message: result.message };
       } else {
@@ -354,22 +278,19 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loginWithGoogle = useCallback(() => {
-    console.log("[AuthContext] Initiating Google login. Redirecting to backend OAuth endpoint."); // NEW LOG
     const apiBaseUrl = process.env.REACT_APP_API_URL || "http://localhost:8080/api";
     const backendBaseUrl = apiBaseUrl.replace('/api', '');
 
     const authorizeUrl = `${backendBaseUrl}/oauth2/authorization/google`; 
     
-    window.location.href = authorizeUrl; // Direct browser redirect
+    window.location.href = authorizeUrl;
   }, []);
 
   const verifyOTP = useCallback(async (email, otp) => {
-    console.log("[AuthContext] Verifying OTP for:", email); // NEW LOG
     setLoading(true);
     setAuthError(null);
     try {
       const result = await authAPI.verifyOTP(email, otp);
-      console.log("[AuthContext] Verify OTP API result:", result);
       return result;
     } catch (error) {
       console.error("[AuthContext] Verify OTP error:", error.response || error);
@@ -381,12 +302,10 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const resendOTP = useCallback(async (email) => {
-    console.log("[AuthContext] Resending OTP for:", email); // NEW LOG
     setLoading(true);
     setAuthError(null);
     try {
       const result = await authAPI.resendOTP(email);
-      console.log("[AuthContext] Resend OTP API result:", result);
       return result;
     } catch (error) {
       console.error("[AuthContext] Resend OTP error:", error.response || error);
@@ -398,7 +317,6 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const updateUserContext = useCallback((updatedUserData) => {
-    console.log("[AuthContext] Updating user context with partial data:", updatedUserData); // NEW LOG
     setUser(prevUser => {
         const newUser = { ...prevUser, ...updatedUserData };
         localStorage.setItem("user", JSON.stringify(newUser));
@@ -407,51 +325,50 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const handleGoogleOAuthCallback = useCallback(async (token) => {
-    console.log("[AuthContext] Processing OAuth token");
     setLoading(true);
     setAuthError(null);
+    
     try {
-      // Validate token
       if (!token) {
-        console.error("[AuthContext] No token provided for OAuth callback");
-        throw new Error("Không nhận được token xác thực");
+        throw new Error("No authentication token provided");
       }
 
       // Clear any existing auth data
       clearAuthData();
       
-      // Set up authentication with new token
-      console.log("[AuthContext] Setting up OAuth authentication");
+      // Set up axios with the new token
       axiosInstance.defaults.headers.common["Authorization"] = `Bearer ${token}`;
       localStorage.setItem("token", token);
 
-      // Fetch and set up user profile
-      console.log("[AuthContext] Fetching user profile");
+      // Fetch user profile first
       const profileResult = await fetchUserProfile();
-      console.log("[AuthContext] Profile fetch result:", profileResult);
-
-      if (profileResult.success && profileResult.user) {
-        console.log("[AuthContext] OAuth login successful, user:", profileResult.user.email, "role:", profileResult.user.role);
-        return { success: true, user: profileResult.user };
-      } else {
-        console.error("[AuthContext] Failed to get user profile:", profileResult.error);
-        clearAuthData();
-        throw new Error("Không thể lấy thông tin người dùng");
+      
+      if (!profileResult.success || !profileResult.user) {
+        throw new Error(profileResult.error || "Failed to fetch user profile");
       }
+
+      const userData = profileResult.user;
+      
+      // Store user data
+      localStorage.setItem("user", JSON.stringify(userData));
+      setUser(userData);
+      setIsAuthenticated(true);
+      
+      return { success: true, user: userData };
     } catch (error) {
-      console.error("[AuthContext] handleGoogleOAuthCallback error:", error.response?.status, error.message);
-      setAuthError(error.message || "Failed to complete Google login.");
+      console.error("[AuthContext] OAuth callback error:", error);
       clearAuthData();
-      return { success: false, error: error.message || "Failed to complete Google login." };
+      setAuthError(error.message || "Failed to complete authentication");
+      return { 
+        success: false, 
+        error: error.message || "Failed to complete authentication" 
+      };
     } finally {
       setLoading(false);
-      console.log("[AuthContext] handleGoogleOAuthCallback finished.");
     }
   }, [clearAuthData, fetchUserProfile]);
 
-
   const handleSpecialRecruiterLoginSuccess = useCallback(async (email) => {
-    console.log("[AuthContext] Handling special recruiter login success for:", email);
     setLoading(true);
     setAuthError(null);
     try {
@@ -473,7 +390,6 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, [clearAuthData, fetchUserProfile]);
-
 
   const contextValue = {
     user,

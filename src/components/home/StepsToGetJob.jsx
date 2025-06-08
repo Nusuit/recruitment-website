@@ -7,21 +7,21 @@ const StepsToGetJob = () => {
   const steps = [
     {
       number: 1,
-      icon: "user-plus", // Icon cho đăng ký tài khoản
+      icon: "user-plus", // Icon for account registration
       title: "Register for an account",
       description:
         "Create your profile with us to start your journey. It's quick and easy!",
     },
     {
       number: 2,
-      icon: "file-arrow-up", // Icon cho upload CV
+      icon: "file-arrow-up", // Icon for CV upload
       title: "Upload Your CV",
       description:
         "Showcase your skills and experience by uploading your most up-to-date CV.",
     },
     {
       number: 3,
-      icon: "paper-plane", // Icon cho apply job
+      icon: "paper-plane", // Icon for job application
       title: "Apply For Job!",
       description:
         "Browse through numerous job openings and apply for the one that fits you best.",

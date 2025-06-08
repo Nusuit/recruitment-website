@@ -1,7 +1,7 @@
 // src/components/auth/ResetPasswordForm.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import authAPI from "../../api/auth"; // Using authAPI directly for this specific action
+import authAPI from "../../api/auth";
 import { validateResetPasswordForm } from "../../utils/validators";
 import Button from "../common/Button";
 import Input from "../common/Input";
@@ -64,7 +64,7 @@ const ResetPasswordForm = ({ onFormSubmitSuccess }) => {
 
     setIsSubmitting(true);
     try {
-      const result = await authAPI.resetPassword(token, formData.password); // Using direct API call
+      const result = await authAPI.resetPassword(token, formData.password);
       if (result.success) {
         setSubmitSuccess(true);
         if (onFormSubmitSuccess) {
@@ -86,7 +86,6 @@ const ResetPasswordForm = ({ onFormSubmitSuccess }) => {
         );
       }
     } catch (err) {
-      console.error("Reset password submission error:", err);
       setSubmitError("An unexpected error occurred. Please try again later.");
     } finally {
       setIsSubmitting(false);
@@ -109,7 +108,6 @@ const ResetPasswordForm = ({ onFormSubmitSuccess }) => {
   }
 
   if (!token && !isSubmitting) {
-    // Show error if token is missing and not currently submitting
     return (
       <div className="text-center p-6 bg-red-50 border border-red-200 rounded-lg shadow-sm">
         <FontAwesomeIcon
@@ -185,7 +183,7 @@ const ResetPasswordForm = ({ onFormSubmitSuccess }) => {
 };
 
 ResetPasswordForm.propTypes = {
-  onFormSubmitSuccess: PropTypes.func, // Optional callback for parent page
+  onFormSubmitSuccess: PropTypes.func,
 };
 
 export default ResetPasswordForm;
